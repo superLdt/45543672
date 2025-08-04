@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}数据接入 - 财务对账{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-white sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="sidebar-header">
+                    <h4>财务对账</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.index') }}">
+                            首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('reconciliation_bp.data_import') }}">
+                            数据接入
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.approval_process') }}">
+                            审核流程管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.exception_handling') }}">
+                            异常处理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.feishu_collaboration') }}">
+                            飞书协同
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.settlement_documents') }}">
+                            结算单据管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_query') }}">
+                            数据存储与查询
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <!-- 用户信息区域 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">数据接入</h1>
+                <div class="user-info">
+                    <span>欢迎, {{ user.full_name }} ({{ user.username }})</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary ms-2">退出登录</a>
+                </div>
+            </div>
+
+            <!-- 功能区域 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">供应商/报账数据导入</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="fileUpload" class="form-label">选择Excel/CSV文件</label>
+                            <input class="form-control" type="file" id="fileUpload" name="file" accept=".xlsx,.xls,.csv" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dataSource" class="form-label">数据来源</label>
+                            <select class="form-select" id="dataSource" name="data_source" required>
+                                <option value="supplier">供应商数据</option>
+                                <option value="reimbursement">报账审核数据</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">上传并校验</button>
+                    </form>
+
+                    <div class="mt-4">
+                        <h5>数据校验结果</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>字段</th>
+                                        <th>状态</th>
+                                        <th>备注</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>容积</td>
+                                        <td><span class="badge bg-success">通过</span></td>
+                                        <td>符合标准范围</td>
+                                    </tr>
+                                    <tr>
+                                        <td>车型</td>
+                                        <td><span class="badge bg-danger">异常</span></td>
+                                        <td>未在系统车型库中找到匹配项</td>
+                                    </tr>
+                                    <!-- 更多校验结果行 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-header">
+        <h1>编辑角色权限</h1>
+        <p>为角色分配模块访问权限</p>
+    </div>
+
+    <div class="content-section">
+        <div class="form-container">
+            {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+
+            <div class="role-info-card">
+                <h2>{{ role.name }}</h2>
+                <p>{{ role.description }}</p>
+            </div>
+
+            <form method="POST">
+                <div class="permission-groups">
+                    {% set current_module = None %}
+                    {% for permission in permissions %}
+                        {% if permission.module != current_module %}
+                            {% if current_module != None %}
+                                </div>
+                            {% endif %}
+                            <div class="permission-module">
+                                <h3>{{ permission.module | capitalize }} 模块</h3>
+                                {% set current_module = permission.module %}
+                        {% endif %}
+
+                        <label class="permission-checkbox">
+                            <input type="checkbox" name="permissions" value="{{ permission.id }}" {% if permission.id in role_permissions %}checked{% endif %}>
+                            <span class="permission-name">{{ permission.name | replace('_', ' ') | capitalize }}</span>
+                            <span class="permission-desc">{{ permission.description }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存权限</button>
+                    <a href="{{ url_for('user_management_bp.role_list') }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

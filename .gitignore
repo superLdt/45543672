@@ -1,0 +1,7 @@
+.vercel/
+__pycache__/
+absolute/
+database.db
+error.log
+~$*.docx
+*.pyc

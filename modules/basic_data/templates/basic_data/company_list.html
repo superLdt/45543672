@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}单位管理{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="content-header">
+        <h2>单位管理</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('basic_data_bp.company_new') }}" class="btn btn-primary">
+                <i class="icon-plus"></i> 添加单位
+            </a>
+            <a href="{{ url_for('basic_data_bp.company_export') }}" class="btn btn-success">
+                <i class="icon-download"></i> 导出Excel
+            </a>
+            <a href="{{ url_for('basic_data_bp.company_import') }}" class="btn btn-info">
+                <i class="icon-upload"></i> 导入Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>单位名称</th>
+                        <th>联系人</th>
+                        <th>联系电话</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr>
+                        <td>{{ company.name }}</td>
+                        <td>{{ company.contact_person }}</td>
+                        <td>{{ company.contact_phone }}</td>
+                        <td class="action-cell">
+                            <a href="{{ url_for('basic_data_bp.company_edit', id=company.id) }}" class="btn btn-sm btn-secondary">编辑</a>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ company.id }})">删除</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="no-data">暂无单位数据，请添加单位</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id) {
+    if (confirm('确定要删除此单位吗？此操作不可撤销。')) {
+        // 修改了这里的URL生成方式
+        fetch('{{ url_for('basic_data_bp.company_delete', id=0) }}'.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrf_token')
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('删除失败，请重试');
+            }
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

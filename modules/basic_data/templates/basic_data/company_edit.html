@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if company %}编辑单位{% else %}添加单位{% endif %}{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="content-header">
+        <h2>{% if company %}编辑单位{% else %}添加单位{% endif %}</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('basic_data_bp.company_list') }}" class="btn btn-secondary">
+                <i class="icon-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="form-horizontal">
+                <div class="form-group">
+                    <label class="form-label" for="name">单位名称 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ company.name if company else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="bank_name">开户行</label>
+                    <input type="text" id="bank_name" name="bank_name" class="form-control" value="{{ company.bank_name if company else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="account_number">银行账户</label>
+                    <input type="text" id="account_number" name="account_number" class="form-control" value="{{ company.account_number if company else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="address">单位地址</label>
+                    <textarea id="address" name="address" class="form-control" rows="3">{{ company.address if company else '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="contact_person">联系人</label>
+                    <input type="text" id="contact_person" name="contact_person" class="form-control" value="{{ company.contact_person if company else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="contact_phone">联系电话</label>
+                    <input type="tel" id="contact_phone" name="contact_phone" class="form-control" value="{{ company.contact_phone if company else '' }}">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('basic_data_bp.company_list') }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

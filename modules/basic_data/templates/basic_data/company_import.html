@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% block title %}单位数据导入{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="content-header">
+        <h2 class="page-title">单位数据导入</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('basic_data_bp.company_list') }}" class="btn btn-default">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card fs-card">
+        <div class="card-body">
+            <div class="import-guide">
+                <h3 class="section-title">数据导入说明</h3>
+                <p class="guide-text">请确保您的Excel文件符合以下要求：</p>
+                <div class="requirements-box">
+                    <ul class="requirements-list">
+                        <li class="requirement-item">
+                            <i class="fas fa-check-circle required-icon"></i>
+                            <span><strong>必须包含列：</strong>单位名称</span>
+                        </li>
+                        <li class="requirement-item">
+                            <i class="fas fa-circle optional-icon"></i>
+                            <span><strong>可选包含列：</strong>开户行、银行账户、单位地址、联系人、联系电话</span>
+                        </li>
+                        <li class="requirement-item">
+                            <i class="fas fa-exclamation-circle warning-icon"></i>
+                            <span>请确保列名与上述名称一致，否则可能导致导入失败</span>
+                        </li>
+                        <li class="requirement-item">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <span>导入过程中，系统会自动跳过重复的单位名称</span>
+                        </li>
+                    </ul>
+                    <div class="template-download mt-3">
+                        <a href="{{ url_for('basic_data_bp.company_import_template') }}" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> 下载导入模板
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="import-form">
+                <div class="form-group">
+                    <label class="form-label" for="file">选择Excel文件 <span class="required">*</span></label>
+                    <div class="file-upload-container">
+                        <input type="file" id="file" name="file" class="file-upload-input" accept=".xlsx, .xls" required>
+                        <label for="file" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <span class="upload-text">点击上传或拖拽文件到此处</span>
+                            <span class="file-format">支持 .xlsx 和 .xls 格式</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary fs-primary-btn">
+                        <i class="fas fa-upload"></i> 导入数据
+                    </button>
+                    <a href="{{ url_for('basic_data_bp.company_list') }}" class="btn btn-default">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if import_result %}
+    <div class="card fs-card mt-4 result-card">
+        <div class="card-header">
+            <h3 class="section-title">导入结果</h3>
+        </div>
+        <div class="card-body">
+            <div class="result-stats">
+                <div class="stat-item">
+                    <p class="stat-label">总记录数</p>
+                    <p class="stat-value">{{ import_result.total }}</p>
+                </div>
+                <div class="stat-item success-item">
+                    <p class="stat-label">成功导入</p>
+                    <p class="stat-value">{{ import_result.success }}</p>
+                </div>
+                <div class="stat-item error-item">
+                    <p class="stat-label">导入失败</p>
+                    <p class="stat-value">{{ import_result.fail }}</p>
+                </div>
+            </div>
+            {% if import_result.errors %}
+            <div class="error-section mt-4">
+                <h4 class="error-title">错误信息</h4>
+                <ul class="error-list">
+                    {% for error in import_result.errors %}
+                    <li class="error-item">
+                        <i class="fas fa-times-circle error-icon"></i>
+                        <span>{{ error }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* 飞书风格基础样式 */
+    :root {
+        --fs-primary: #007AFF;
+        --fs-primary-light: #E8F3FF;
+        --fs-success: #00B42A;
+        --fs-success-light: #E6FFED;
+        --fs-error: #F53F3F;
+        --fs-error-light: #FFEBEB;
+        --fs-warning: #FF7D00;
+        --fs-warning-light: #FFF2E8;
+        --fs-info: #86909C;
+        --fs-bg: #F2F3F5;
+        --fs-card-bg: #FFFFFF;
+        --fs-border: #E5E6EB;
+        --fs-text: #1D2129;
+        --fs-text-secondary: #4E5969;
+        --fs-text-tertiary: #86909C;
+    }
+
+    .content-container {
+        background-color: var(--fs-bg);
+        min-height: calc(100vh - 3rem);
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--fs-text);
+        margin: 0;
+    }
+
+    .fs-card {
+        background-color: var(--fs-card-bg);
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--fs-border);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .fs-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--fs-text);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--fs-border);
+    }
+
+    .import-guide {
+        margin-bottom: 2rem;
+    }
+
+    .guide-text {
+        color: var(--fs-text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .requirements-box {
+        background-color: var(--fs-primary-light);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .requirements-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .requirement-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.5rem 0;
+        color: var(--fs-text-secondary);
+    }
+
+    .required-icon {
+        color: var(--fs-success);
+        margin-right: 0.5rem;
+        margin-top: 0.1rem;
+    }
+
+    .optional-icon {
+        color: var(--fs-info);
+        margin-right: 0.5rem;
+        margin-top: 0.1rem;
+    }
+
+    .warning-icon {
+        color: var(--fs-warning);
+        margin-right: 0.5rem;
+        margin-top: 0.1rem;
+    }
+
+    .info-icon {
+        color: var(--fs-primary);
+        margin-right: 0.5rem;
+        margin-top: 0.1rem;
+    }
+
+    .import-form {
+        margin-top: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--fs-text);
+    }
+
+    .file-upload-container {
+        position: relative;
+        border: 2px dashed var(--fs-border);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #FAFAFA;
+    }
+
+    .file-upload-container:hover {
+        border-color: var(--fs-primary);
+        background-color: var(--fs-primary-light);
+    }
+
+    .file-upload-input {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        color: var(--fs-primary);
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        font-size: 1rem;
+        color: var(--fs-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .file-format {
+        font-size: 0.85rem;
+        color: var(--fs-text-tertiary);
+    }
+
+    .form-actions {
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        .template-download {
+            display: flex;
+            justify-content: flex-end;
+        }
+    
+        .btn-secondary {
+            background-color: #86909C;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+    
+        .btn-secondary:hover {
+            background-color: #6B7785;
+        }
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--fs-primary);
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #0066CC;
+    }
+
+    .btn-default {
+        background-color: white;
+        color: var(--fs-text-secondary);
+        border: 1px solid var(--fs-border);
+    }
+
+    .btn-default:hover {
+        background-color: #F7F8FA;
+    }
+
+    .fs-primary-btn {
+        padding: 0.6rem 1.5rem;
+    }
+
+    .result-stats {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        flex: 1;
+        min-width: 120px;
+        padding: 1rem;
+        background-color: #FAFAFA;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .success-item {
+        background-color: var(--fs-success-light);
+    }
+
+    .error-item {
+        background-color: var(--fs-error-light);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--fs-text-tertiary);
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--fs-text);
+    }
+
+    .success-item .stat-value {
+        color: var(--fs-success);
+    }
+
+    .error-item .stat-value {
+        color: var(--fs-error);
+    }
+
+    .error-section {
+        padding: 1rem;
+        background-color: var(--fs-error-light);
+        border-radius: 8px;
+    }
+
+    .error-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--fs-error);
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .error-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.5rem 0;
+        color: var(--fs-text-secondary);
+    }
+
+    .error-item .error-icon {
+        color: var(--fs-error);
+        margin-right: 0.5rem;
+        margin-top: 0.1rem;
+    }
+
+    .required {
+        color: var(--fs-error);
+    }
+
+    @media (max-width: 768px) {
+        .result-stats {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
