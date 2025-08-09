@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}安徽邮政智能运力系统{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* 原有样式保持不变 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --primary-light: #e8f0fe;
+            --text-color: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #f1f3f4;
+            --white: #ffffff;
+            --shadow-sm: 2px 0 5px rgba(0, 0, 0, 0.05);
+            --radius: 8px;
+            --radius-sm: 4px;
+            --transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid #f1f3f4;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h1 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            color: #202124;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border-left-color: #1a73e8;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+
+        .user-details {
+            line-height: 1.3;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .user-role {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid #dadce0;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logout-btn:hover {
+            background-color: #f8f9fa;
+        }
+
+        .module-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e4e7ed;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-truck"></i> 智能运力系统</h1>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i> 控制面板
+                </a>
+            </li>
+            
+            <!-- 供应商和外包供应商只显示财务对账 -->
+            {% set supplier_roles = ['供应商', '外包供应商'] %}
+            {% set is_supplier = user and user.roles and user.roles | selectattr('name', 'in', supplier_roles) | list %}
+
+            {% if is_supplier %}
+            {# 供应商只看财务对账 #}
+                <li class="nav-item">
+                    <a href="{{ url_for('reconciliation_bp.index') }}"
+                    class="nav-link {{ 'active' if request.endpoint.startswith('reconciliation_bp.') }}">
+                        <i class="fas fa-file-invoice-dollar"></i> 财务对账
+                    </a>
+                </li>
+            {% else %}
+                {# 其它用户看到完整菜单 #}
+                {% include 'partials/full_menu.html' %}
+            {% endif %}
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ user.full_name[0] if user and user.full_name else 'U' }}
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name if user and user.full_name else '未知用户' }}</div>
+                    <div class="user-role">
+                        {% if user and user.roles %}
+                            {% set role_names = [] %}
+                            {% for role in user.roles %}
+                                {% set _ = role_names.append(role.name) %}
+                            {% endfor %}
+                            {{ role_names | join(', ') }}
+                        {% else %}
+                            普通用户
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> 退出登录
+            </a>
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

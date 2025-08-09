@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-content">
+    <div class="module-header">
+        <h1>{% if user %}编辑用户{% else %}添加新用户{% endif %}</h1>
+        <p>{% if user %}修改用户信息和角色分配{% else %}创建新用户并分配角色{% endif %}</p>
+    </div>
+
+    <div class="form-card">
+        <div class="form-content">
+            {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" id="userForm">
+                <div class="form-item">
+                    <label for="username" class="form-label">用户名 <sup style="color: var(--primary-color)">*</sup></label>
+                    <input type="text" id="username" name="username" class="fs-input" value="{{ user.username if user else '' }}" required>
+                </div>
+
+                {% if user %}
+                <div class="form-item">
+                    <label for="new_password" class="form-label">新密码 (留空则不修改)</label>
+                    <input type="password" id="new_password" name="new_password" class="fs-input" placeholder="输入新密码">
+                </div>
+                {% else %}
+                <div class="form-item">
+                    <label for="password" class="form-label">密码 <sup style="color: var(--primary-color)">*</sup></label>
+                    <input type="password" id="password" name="password" class="fs-input" required>
+                </div>
+                <div class="form-item">
+                    <label for="confirm_password" class="form-label">确认密码 <sup style="color: var(--primary-color)">*</sup></label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="fs-input" required>
+                    <div id="passwordMatch" class="form-hint"></div>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="full_name" class="form-label">姓名</label>
+                    <input type="text" id="full_name" name="full_name" class="fs-input" value="{{ user.full_name if user else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">邮箱</label>
+                    <input type="email" id="email" name="email" class="fs-input" value="{{ user.email if user else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone" class="form-label">联系电话</label>
+                    <input type="tel" id="phone" name="phone" class="fs-input" value="{{ user.phone if user else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="company_id" class="form-label">所属单位</label>
+                    <select id="company_id" name="company_id" class="fs-select">
+                        <option value="">-- 请选择 --</option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}" {% if user and user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if user %}
+                <div class="form-item">
+                    <label class="fs-checkbox">
+                        <input type="checkbox" name="is_active" {% if user and user.is_active %}checked{% endif %}>
+                        <span class="checkbox-indicator"></span>
+                        <span class="checkbox-label">账号启用</span>
+                    </label>
+                </div>
+                {% endif %}
+
+                <div class="form-item">
+                    <label class="form-label">角色分配 <sup style="color: var(--primary-color)">*</sup></label>
+                    <div class="role-section">
+                        {% for role in roles %}
+                        <label class="fs-checkbox">
+                            <input type="checkbox" name="roles" value="{{ role.id }}" {% if user and role.id in user_roles %}checked{% endif %}>
+                            <span class="checkbox-indicator"></span>
+                            <span class="checkbox-label">{{ role.name }}</span>
+                            <span class="checkbox-hint">{{ role.description }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">保存</button>
+                    <a href="{{ url_for('user_management_bp.user_list') }}" class="btn gray">取消</a>
+                </div>
+            </form>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const form = document.getElementById('userForm');
+                    const password = document.getElementById('password');
+                    const confirmPassword = document.getElementById('confirm_password');
+                    const passwordMatch = document.getElementById('passwordMatch');
+
+                    // 只有在添加新用户时才进行验证
+                    if (password && confirmPassword) {
+                        form.addEventListener('submit', function(e) {
+                            if (password.value !== confirmPassword.value) {
+                                e.preventDefault();
+                                passwordMatch.textContent = '两次输入的密码不一致';
+                                passwordMatch.style.color = 'var(--error-color)';
+                            } else {
+                                passwordMatch.textContent = '';
+                            }
+                        });
+
+                        // 实时验证
+                        confirmPassword.addEventListener('input', function() {
+                            if (password.value !== confirmPassword.value) {
+                                passwordMatch.textContent = '两次输入的密码不一致';
+                                passwordMatch.style.color = 'var(--error-color)';
+                            } else {
+                                passwordMatch.textContent = '密码匹配';
+                                passwordMatch.style.color = 'var(--success-color)';
+                            }
+                        });
+                    }
+                });
+            </script>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 飞书风格表单样式 */
+.form-card {
+    background-color: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.form-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-item {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.fs-input,
+.fs-select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius-sm);
+    background-color: var(--white);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.fs-input:focus,
+.fs-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(58, 93, 231, 0.1);
+}
+
+.fs-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23909399' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.fs-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.fs-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.checkbox-indicator {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 4px;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+}
+
+.fs-checkbox input:checked + .checkbox-indicator {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.fs-checkbox input:checked + .checkbox-indicator::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 6px;
+    height: 10px;
+    border: solid var(--primary-color);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-label {
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.checkbox-hint {
+    display: block;
+    margin-left: 26px;
+    color: var(--text-gray);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.btn {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #2c52cc;
+    box-shadow: 0 2px 8px rgba(58, 93, 231, 0.2);
+}
+
+.btn.gray {
+    background-color: var(--light-gray);
+    color: var(--text-light);
+}
+
+.btn.gray:hover {
+    background-color: var(--medium-gray);
+}
+
+.alert-error {
+    padding: 12px;
+    background-color: #fff2f0;
+    color: #ff4d4f;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+}
+
+#usernameCheck {
+    margin-top: 4px;
+    font-size: 12px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if not user %}
+// 用户名唯一性检查
+const usernameInput = document.getElementById('username');
+const usernameCheck = document.getElementById('usernameCheck');
+const userForm = document.getElementById('userForm');
+
+usernameInput.addEventListener('blur', checkUsername);
+
+function checkUsername() {
+    const username = usernameInput.value.trim();
+    if (!username) {
+        usernameCheck.textContent = '';
+        return;
+    }
+
+    fetch('{{ url_for('user_management_bp.check_username') }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'username=' + encodeURIComponent(username)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.exists) {
+            usernameCheck.textContent = '用户名已存在';
+            usernameCheck.style.color = 'red';
+        } else {
+            usernameCheck.textContent = '用户名可用';
+            usernameCheck.style.color = 'green';
+        }
+    });
+}
+
+userForm.addEventListener('submit', function(e) {
+    const username = usernameInput.value.trim();
+    if (username && usernameCheck.textContent === '用户名已存在') {
+        e.preventDefault();
+        alert('请更换用户名，当前用户名已被使用');
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

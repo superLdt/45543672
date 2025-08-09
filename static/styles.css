@@ -1,0 +1,3014 @@
+:root {
+    --primary-color: #3a5de7;
+    --primary-light: rgba(74, 108, 247, 0.1);
+    --secondary-color: #69b1ff;
+    --accent-color: #ff7d00;
+    --text-color: #333333;
+    --text-light: #666666;
+    --text-gray: #999999;
+    --light-gray: #f5f7fa;
+    --medium-gray: #e4e7ed;
+    --dark-gray: #909399;
+    --white: #ffffff;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --transition: all 0.3s ease;
+    --nav-height: 60px;
+    --table-row-height: 56px;
+    --table-header-bg: #f7f8fa;
+    --table-border-color: #e4e7ed;
+    --table-row-hover-bg: #f7f8fa;
+}
+
+/* 顶部导航样式 */
+.top-nav {
+    background-color: var(--white);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: var(--nav-height);
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+.nav-header h1 {
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.top-nav .nav-menu {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    padding: 0 20px;
+    margin: 0;
+    background-color: var(--white);
+}
+
+.nav-menu .nav-item {
+    margin-bottom: 10px;
+    margin-right: 0;
+}
+
+.top-nav .nav-menu .nav-link {
+    display: inline-block;
+    padding: 12px 15px;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.nav-menu .nav-link.active,
+.nav-menu .nav-link:hover {
+    color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.main-content {
+    margin-top: var(--nav-height);
+    padding: 20px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 450px;
+}
+
+.login-card {
+    background-color: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 40px;
+    transition: transform 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+}
+
+.login-title {
+    color: var(--text-color);
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.login-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background-color: var(--primary-color);
+    border-radius: 3px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    /* 移除固定gap，使用标签margin-right控制间距 */
+}
+
+.form-label {
+    display: block;
+    width: auto;
+    min-width: 120px; /* 匹配最长标签文本长度 */
+    text-align: right;
+    margin-bottom: 0;
+    margin-right: 40px; /* 设置最小间距为40px */
+    white-space: nowrap;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-control {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: 500px; /* 统一输入框最大长度 */
+    height: 50px;
+    padding: 0 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    margin-top: 5px;
+    background-color: var(--light-gray);
+}
+
+/* 针对复选框类型的label单独处理 */
+.form-group.checkbox-group .form-label {
+    width: auto;
+}
+
+/* 飞书风格表格统一样式 */
+div.data-table-container {
+    background-color: var(--white) !important;
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--table-border-color) !important;
+    overflow: hidden !important;
+    transition: var(--transition) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+div.data-table-container:hover {
+    box-shadow: var(--shadow) !important;
+}
+
+table.data-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+}
+
+table.data-table thead {
+    background-color: var(--table-header-bg) !important;
+}
+
+table.data-table th {
+    padding: 12px 16px !important;
+    text-align: left !important;
+    font-weight: 500 !important;
+    color: var(--text-color) !important;
+    font-size: 14px !important;
+    border-bottom: 1px solid var(--table-border-color) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+table.data-table td {
+    padding: 0 16px !important;
+    color: var(--text-light) !important;
+    font-size: 14px !important;
+    border-bottom: 1px solid var(--table-border-color) !important;
+    height: var(--table-row-height) !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+table.data-table tbody tr {
+    transition: var(--transition) !important;
+}
+
+table.data-table tbody tr:hover {
+    background-color: var(--table-row-hover-bg) !important;
+}
+
+table.data-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* 表格中的状态标签和角色标签 */
+span.role-tag {
+    display: inline-block !important;
+    padding: 2px 8px !important;
+    background-color: #f0f7ff !important;
+    color: #1890ff !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    margin-right: 4px !important;
+}
+
+span.status-badge.active {
+    display: inline-block !important;
+    padding: 2px 8px !important;
+    background-color: #f0fff4 !important;
+    color: #52c41a !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+
+span.status-badge.inactive {
+    display: inline-block !important;
+    padding: 2px 8px !important;
+    background-color: #fff2f0 !important;
+    color: #ff4d4f !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+
+/* 表格中的操作按钮 */
+a.action-btn.view-btn,
+button.action-btn.delete-btn {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    transition: var(--transition) !important;
+}
+
+a.action-btn.view-btn {
+    color: #1890ff !important;
+    text-decoration: none !important;
+    margin-right: 12px !important;
+}
+
+button.action-btn.delete-btn {
+    color: #ff4d4f !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+}
+
+a.action-btn.view-btn:hover {
+    color: #40a9ff !important;
+    text-decoration: underline !important;
+}
+
+button.action-btn.delete-btn:hover {
+    color: #ff7875 !important;
+    text-decoration: underline !important;
+}
+
+/* 无数据状态 */
+td.no-data {
+    text-align: center !important;
+    padding: 40px 0 !important;
+    color: var(--text-gray) !important;
+    font-size: 14px !important;
+}
+
+/* 搜索栏样式 */
+.div.search-bar {
+    margin-bottom: 20px !important;
+}
+
+.div.search-bar form {
+    display: flex !important;
+    gap: 10px !important;
+    align-items: center !important;
+}
+
+.div.search-bar input {
+    flex: 1 !important;
+    padding: 8px 12px !important;
+    border: 1px solid var(--medium-gray) !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    color: var(--text-color) !important;
+}
+
+.div.search-bar input:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(58, 93, 231, 0.1) !important;
+}
+
+/* 按钮样式 */
+button.btn,
+a.btn {
+    padding: 8px 16px !important;
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: var(--transition) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+button.btn:hover,
+a.btn:hover {
+    background-color: #2c52cc !important;
+    box-shadow: 0 2px 8px rgba(58, 93, 231, 0.2) !important;
+}
+
+button.btn:active,
+a.btn:active {
+    background-color: #2446ab !important;
+}
+
+/* 灰色按钮变体 */
+button.btn.gray,
+a.btn.gray {
+    background-color: var(--light-gray) !important;
+    color: var(--text-light) !important;
+}
+
+button.btn.gray:hover,
+a.btn.gray:hover {
+    background-color: var(--medium-gray) !important;
+    color: var(--text-color) !important;
+}
+
+/* 主内容区域样式 */
+.div.main-content {
+    padding: 20px !important;
+}
+
+.div.content-section {
+    margin-bottom: 24px !important;
+}
+
+.div.section-title {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--medium-gray) !important;
+}
+
+.div.section-title span {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .div.search-bar form {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .div.search-bar input {
+        width: 100% !important;
+    }
+
+    .div.data-table-container {
+        overflow-x: auto !important;
+    }
+}
+
+.data-table-container:hover {
+    box-shadow: var(--shadow);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.data-table thead {
+    background-color: var(--table-header-bg);
+}
+
+.data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 14px;
+    border-bottom: 1px solid var(--table-border-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.data-table td {
+    padding: 0 16px;
+    color: var(--text-light);
+    font-size: 14px;
+    border-bottom: 1px solid var(--table-border-color);
+    height: var(--table-row-height);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.data-table tbody tr {
+    transition: var(--transition);
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--table-row-hover-bg);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 表格中的状态标签和角色标签 */
+.role-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f0f7ff;
+    color: #1890ff;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+.status-badge.active {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f0fff4;
+    color: #52c41a;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.status-badge.inactive {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #fff2f0;
+    color: #ff4d4f;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* 表格中的操作按钮 */
+.action-btn {
+    font-size: 14px;
+    font-weight: 400;
+    transition: var(--transition);
+}
+
+.action-btn.view-btn:hover {
+    color: #40a9ff;
+    text-decoration: underline;
+}
+
+.action-btn.delete-btn:hover {
+    color: #ff7875;
+    text-decoration: underline;
+}
+
+/* 无数据状态 */
+.no-data {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-gray);
+    font-size: 14px;
+}
+
+/* 搜索栏样式 */
+.search-bar {
+    margin-bottom: 20px;
+}
+
+.search-bar form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(58, 93, 231, 0.1);
+}
+
+/* 按钮样式 */
+.btn {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn:hover {
+    background-color: #2c52cc;
+    box-shadow: 0 2px 8px rgba(58, 93, 231, 0.2);
+}
+
+.btn:active {
+    background-color: #2446ab;
+}
+
+/* 灰色按钮变体 */
+.btn.gray {
+    background-color: var(--light-gray);
+    color: var(--text-light);
+}
+
+.btn.gray:hover {
+    background-color: var(--medium-gray);
+    color: var(--text-color);
+}
+
+/* 主内容区域样式 */
+.main-content {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+.section-title span {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .search-bar form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-bar input {
+        width: 100%;
+    }
+
+    .data-table-container {
+        overflow-x: auto;
+    }
+}
+
+.form-input {
+    width: 100%;
+    height: 50px;
+    padding: 0 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    color: var(--dark-gray);
+    font-size: 14px;
+}
+
+.remember-me input {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+}
+
+.forgot-password {
+    color: var(--primary-color);
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+    color: var(--secondary-color);
+}
+
+.login-button {
+    width: 100%;
+    height: 50px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #3a5de7;
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--dark-gray);
+    font-size: 14px;
+}
+
+.register-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register-link a:hover {
+    color: var(--secondary-color);
+}
+.navbar-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.navbar-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* 用户管理样式 */
+.content-section {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* 增强表单容器样式 - 包含所有表单元素 */
+.form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--medium-gray);
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 优化标题样式 */
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+/* 增强按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 5px rgba(58, 93, 231, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #2d4bbd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 93, 231, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    border: 1px solid var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e4e7ed;
+}
+
+/* 优化角色分配区域 */
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    background-color: #f9f9f9;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+    background-color: #f0f2f5;
+}
+
+/* 增强必填项标记 */
+.form-group label sup {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* 优化表单提示文本 */
+.form-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* 优化错误提示 */
+.alert-error {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+/* 优化表单间距和对齐 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray);
+}
+
+.form-group {
+    margin-bottom: 28px;
+}
+
+.form-group label {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* 增强输入框焦点效果 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(58, 93, 231, 0.2);
+    transform: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 优化选择框样式 */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* 优化复选框样式 */
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    margin-right: 8px;
+}
+
+/* 添加表单字段动画效果 */
+.form-control {
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    transform: translateY(-2px);
+}
+
+/* 优化页面整体边距 */
+.dashboard-container {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-list .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-list .checkbox-label:hover {
+    background-color: var(--light-gray);
+}
+
+.checkbox-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 15px;
+}
+
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.welcome-header p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-badge.inactive {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.role-tag {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.permission-groups {
+    margin-top: 20px;
+}
+
+.permission-module {
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.permission-module h3 {
+    background-color: var(--primary-light);
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 16px;
+}
+
+.permission-checkbox {
+    display: block;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.permission-checkbox:last-child {
+    border-bottom: none;
+}
+
+.permission-name {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.permission-desc {
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+.role-info-card {
+    background-color: var(--primary-light);
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+}
+
+.role-info-card h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.alert {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+.navbar-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.navbar-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* 用户管理样式 */
+.content-section {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* 增强表单容器样式 */
+.form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* 优化标题样式 */
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+/* 增强按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 5px rgba(58, 93, 231, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #2d4bbd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 93, 231, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    border: 1px solid var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e4e7ed;
+}
+
+/* 优化角色分配区域 */
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    background-color: #f9f9f9;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+    background-color: #f0f2f5;
+}
+
+/* 增强必填项标记 */
+.form-group label sup {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* 优化表单提示文本 */
+.form-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* 优化错误提示 */
+.alert-error {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+/* 优化表单间距和对齐 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray);
+}
+
+.form-group {
+    margin-bottom: 28px;
+}
+
+.form-group label {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* 增强输入框焦点效果 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(58, 93, 231, 0.2);
+    transform: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 优化选择框样式 */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* 优化复选框样式 */
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    margin-right: 8px;
+}
+
+/* 添加表单字段动画效果 */
+.form-control {
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    transform: translateY(-2px);
+}
+
+/* 优化页面整体边距 */
+.dashboard-container {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-list .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-list .checkbox-label:hover {
+    background-color: var(--light-gray);
+}
+
+.checkbox-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 15px;
+}
+
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.welcome-header p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-badge.inactive {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.role-tag {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.permission-groups {
+    margin-top: 20px;
+}
+
+.permission-module {
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.permission-module h3 {
+    background-color: var(--primary-light);
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 16px;
+}
+
+.permission-checkbox {
+    display: block;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.permission-checkbox:last-child {
+    border-bottom: none;
+}
+
+.permission-name {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.permission-desc {
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+.role-info-card {
+    background-color: var(--primary-light);
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+}
+
+.role-info-card h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.alert {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+.navbar-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.navbar-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* 用户管理样式 */
+.content-section {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* 增强表单容器样式 */
+.form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* 优化标题样式 */
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+/* 增强按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 5px rgba(58, 93, 231, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #2d4bbd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 93, 231, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    border: 1px solid var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e4e7ed;
+}
+
+/* 优化角色分配区域 */
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    background-color: #f9f9f9;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+    background-color: #f0f2f5;
+}
+
+/* 增强必填项标记 */
+.form-group label sup {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* 优化表单提示文本 */
+.form-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* 优化错误提示 */
+.alert-error {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+/* 优化表单间距和对齐 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray);
+}
+
+.form-group {
+    margin-bottom: 28px;
+}
+
+.form-group label {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* 增强输入框焦点效果 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(58, 93, 231, 0.2);
+    transform: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 优化选择框样式 */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* 优化复选框样式 */
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    margin-right: 8px;
+}
+
+/* 添加表单字段动画效果 */
+.form-control {
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    transform: translateY(-2px);
+}
+
+/* 优化页面整体边距 */
+.dashboard-container {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-list .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-list .checkbox-label:hover {
+    background-color: var(--light-gray);
+}
+
+.checkbox-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 15px;
+}
+
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.welcome-header p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-badge.inactive {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.role-tag {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.permission-groups {
+    margin-top: 20px;
+}
+
+.permission-module {
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.permission-module h3 {
+    background-color: var(--primary-light);
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 16px;
+}
+
+.permission-checkbox {
+    display: block;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.permission-checkbox:last-child {
+    border-bottom: none;
+}
+
+.permission-name {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.permission-desc {
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+.role-info-card {
+    background-color: var(--primary-light);
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+}
+
+.role-info-card h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.alert {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+.navbar-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.navbar-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* 用户管理样式 */
+.content-section {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* 增强表单容器样式 */
+.form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* 优化标题样式 */
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+/* 增强按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 5px rgba(58, 93, 231, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #2d4bbd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 93, 231, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    border: 1px solid var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e4e7ed;
+}
+
+/* 优化角色分配区域 */
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    background-color: #f9f9f9;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+    background-color: #f0f2f5;
+}
+
+/* 增强必填项标记 */
+.form-group label sup {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* 优化表单提示文本 */
+.form-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* 优化错误提示 */
+.alert-error {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+/* 优化表单间距和对齐 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray);
+}
+
+.form-group {
+    margin-bottom: 28px;
+}
+
+.form-group label {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* 增强输入框焦点效果 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(58, 93, 231, 0.2);
+    transform: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 优化选择框样式 */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* 优化复选框样式 */
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    margin-right: 8px;
+}
+
+/* 添加表单字段动画效果 */
+.form-control {
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    transform: translateY(-2px);
+}
+
+/* 优化页面整体边距 */
+.dashboard-container {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-list .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-list .checkbox-label:hover {
+    background-color: var(--light-gray);
+}
+
+.checkbox-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 15px;
+}
+
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.welcome-header p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-badge.inactive {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.role-tag {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.permission-groups {
+    margin-top: 20px;
+}
+
+.permission-module {
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.permission-module h3 {
+    background-color: var(--primary-light);
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 16px;
+}
+
+.permission-checkbox {
+    display: block;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.permission-checkbox:last-child {
+    border-bottom: none;
+}
+
+.permission-name {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.permission-desc {
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+.role-info-card {
+    background-color: var(--primary-light);
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+}
+
+.role-info-card h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.alert {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+.navbar-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.navbar-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* 用户管理样式 */
+.content-section {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+/* 增强表单容器样式 */
+.form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* 优化标题样式 */
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+}
+
+/* 增强按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 5px rgba(58, 93, 231, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #2d4bbd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 93, 231, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    border: 1px solid var(--medium-gray);
+}
+
+.btn-secondary:hover {
+    background-color: #e4e7ed;
+}
+
+/* 优化角色分配区域 */
+.role-section {
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    background-color: #f9f9f9;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-label:hover {
+    background-color: #f0f2f5;
+}
+
+/* 增强必填项标记 */
+.form-group label sup {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* 优化表单提示文本 */
+.form-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* 优化错误提示 */
+.alert-error {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+/* 优化表单间距和对齐 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray);
+}
+
+.form-group {
+    margin-bottom: 28px;
+}
+
+.form-group label {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* 增强输入框焦点效果 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(58, 93, 231, 0.2);
+    transform: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 优化选择框样式 */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* 优化复选框样式 */
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    margin-right: 8px;
+}
+
+/* 添加表单字段动画效果 */
+.form-control {
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    transform: translateY(-2px);
+}
+
+/* 优化页面整体边距 */
+.dashboard-container {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-list .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-list .checkbox-label:hover {
+    background-color: var(--light-gray);
+}
+
+.checkbox-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 15px;
+}
+
+.welcome-header h1 {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.welcome-header p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-badge.inactive {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.role-tag {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}

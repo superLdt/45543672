@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-content">
+    <div class="content-section">
+        <div class="section-title">
+            <span>用户管理</span>
+            <a href="{{ url_for('user_management_bp.user_new') }}" class="btn"><i class="fas fa-plus"></i> 添加新用户</a>
+        </div>
+
+        <div class="search-bar">
+            <form method="GET" action="{{ url_for('user_management_bp.user_list') }}">
+                <input type="text" name="search" placeholder="搜索用户名、姓名或邮箱..." value="{{ search_query }}">
+                <button type="submit" class="btn"><i class="fas fa-search"></i> 搜索</button>
+                {% if search_query %}
+                <a href="{{ url_for('user_management_bp.user_list') }}" class="btn gray">重置</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- 数据表格容器 -->
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>邮箱</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.full_name or '-' }}</td>
+                        <td>{{ user.email or '-' }}</td>
+                        <td>
+                            {% for role in user.roles %}
+                            <span class="role-tag">{{ role.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="status-badge active">启用</span>
+                            {% else %}
+                            <span class="status-badge inactive">禁用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at }}</td>
+                        <td>
+                            <a href="{{ url_for('user_management_bp.user_edit', id=user.id) }}" class="action-btn view-btn"><i class="fas fa-edit"></i> 编辑</a>
+                            <form action="{{ url_for('user_management_bp.user_delete', id=user.id) }}" method="POST" class="inline-form">
+                                <button type="submit" class="action-btn delete-btn" onclick="return confirm('确定要删除此用户吗？')"><i class="fas fa-trash"></i> 删除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="no-data">暂无用户数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}
+

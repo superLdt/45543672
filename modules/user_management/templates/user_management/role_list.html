@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-header">
+        <h1>角色管理</h1>
+        <p>管理系统角色和权限分配</p>
+    </div>
+
+    <div class="content-section">
+        <div class="section-header">
+            <h2>角色列表</h2>
+        </div>
+
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>角色名称</th>
+                        <th>描述</th>
+                        <th>权限数量</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for role in roles %}
+                    <tr>
+                        <td>{{ role.id }}</td>
+                        <td>{{ role.name }}</td>
+                        <td>{{ role.description or '-' }}</td>
+                        <td>{{ role.permission_count }}</td>
+                        <td class="action-buttons">
+                            <a href="{{ url_for('user_management_bp.role_edit', id=role.id) }}" class="btn btn-sm btn-edit">编辑权限</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="no-data">暂无角色数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

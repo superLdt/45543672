@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面配置 - 智能运力系统</title>
+    <style>
+        .config-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .role-selector {
+            margin-bottom: 2rem;
+        }
+        
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .module-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f9f9f9;
+        }
+        
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .module-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+            color: #1a73e8;
+        }
+        
+        .permission-row {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        
+        .permission-label {
+            width: 80px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .checkbox-wrapper {
+            margin-left: 1rem;
+        }
+        
+        .btn-save {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        
+        .btn-save:hover {
+            background: #1557b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <h2>页面配置管理</h2>
+        <p>设置各角色能访问的系统模块，不能访问的模块将不会显示在侧边栏</p>
+        
+        <div class="role-selector">
+            <label for="roleSelect">选择角色：</label>
+            <select id="roleSelect" onchange="loadRolePermissions()">
+                <option value="">请选择角色</option>
+                <!-- 动态加载角色列表 -->
+            </select>
+        </div>
+        
+        <div id="moduleContainer" class="module-grid">
+            <!-- 动态加载模块权限 -->
+        </div>
+        
+        <button class="btn-save" onclick="savePermissions()" style="display: none;" id="saveBtn">
+            保存配置
+        </button>
+    </div>
+
+    <script>
+        let currentRoleId = null;
+        let allModules = [];
+
+        // 加载角色列表
+        function loadRoles() {
+            fetch('/api/roles')
+                .then(response => response.json())
+                .then(roles => {
+                    const select = document.getElementById('roleSelect');
+                    roles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.id;
+                        option.textContent = role.name;
+                        select.appendChild(option);
+                    });
+                });
+        }
+
+        // 加载角色权限
+        function loadRolePermissions() {
+            const roleId = document.getElementById('roleSelect').value;
+            if (!roleId) return;
+            
+            currentRoleId = roleId;
+            fetch(`/api/role-permissions/${roleId}`)
+                .then(response => response.json())
+                .then(permissions => {
+                    renderModulePermissions(permissions);
+                    document.getElementById('saveBtn').style.display = 'block';
+                });
+        }
+
+        // 渲染模块权限
+        function renderModulePermissions(modules) {
+            const container = document.getElementById('moduleContainer');
+            container.innerHTML = '';
+            
+            modules.forEach(module => {
+                const card = document.createElement('div');
+                card.className = 'module-card';
+                card.innerHTML = `
+                    <div class="module-header">
+                        <i class="${module.icon_class || 'fas fa-cube'} module-icon"></i>
+                        <h4>${module.display_name}</h4>
+                    </div>
+                    <div class="permission-row">
+                        <span class="permission-label">查看：</span>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" ${module.can_view ? 'checked' : ''} 
+                                   onchange="updatePermission(${module.id}, 'can_view', this.checked)">
+                        </div>
+                    </div>
+                    <div class="permission-row">
+                        <span class="permission-label">编辑：</span>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" ${module.can_edit ? 'checked' : ''} 
+                                   onchange="updatePermission(${module.id}, 'can_edit', this.checked)">
+                        </div>
+                    </div>
+                    <div class="permission-row">
+                        <span class="permission-label">删除：</span>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" ${module.can_delete ? 'checked' : ''} 
+                                   onchange="updatePermission(${module.id}, 'can_delete', this.checked)">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 保存权限配置
+        function savePermissions() {
+            const permissions = [];
+            const checkboxes = document.querySelectorAll('.module-card input[type="checkbox"]');
+            
+            // 收集权限数据
+            document.querySelectorAll('.module-card').forEach((card, index) => {
+                const moduleId = allModules[index].id;
+                const canView = card.querySelector('input[type="checkbox"]:nth-of-type(1)').checked;
+                const canEdit = card.querySelector('input[type="checkbox"]:nth-of-type(2)').checked;
+                const canDelete = card.querySelector('input[type="checkbox"]:nth-of-type(3)').checked;
+                
+                permissions.push({
+                    module_id: moduleId,
+                    can_view: canView,
+                    can_edit: canEdit,
+                    can_delete: canDelete
+                });
+            });
+
+            fetch('/api/update-permissions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    role_id: currentRoleId,
+                    permissions: permissions
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('权限配置保存成功！');
+                } else {
+                    alert('保存失败：' + result.message);
+                }
+            });
+        }
+
+        // 页面加载时初始化
+        loadRoles();
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基础数据 - 安徽邮政智能运力系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid #f1f3f4;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h1 {
+            color: #1a73e8;
+            font-size: 1.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            color: #202124;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border-left-color: #1a73e8;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #1a73e8;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+
+        .user-details {
+            line-height: 1.3;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #202124;
+        }
+
+        .user-role {
+            font-size: 0.85rem;
+            color: #5f6368;
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid #dadce0;
+            color: #5f6368;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #f8f9fa;
+        }
+
+        .module-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e4e7ed;
+        }
+        .function-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .function-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4a6cf7;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #3a5de7;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-truck"></i> 智能运力系统</h1>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i> 控制面板
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link active">
+                    <i class="fas fa-database"></i> 基础数据
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('planning_bp.index') }}" class="nav-link">
+                    <i class="fas fa-map-marked-alt"></i> 规划管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i> 调度管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('cost_analysis_bp.index') }}" class="nav-link">
+                    <i class="fas fa-chart-line"></i> 成本分析
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link">
+                    <i class="fas fa-file-invoice-dollar"></i> 财务对账
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('user_management_bp.user_list') }}" class="nav-link">
+                    <i class="fas fa-users-cog"></i> 用户管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('system_bp.index') }}" class="nav-link">
+                    <i class="fas fa-cog"></i> 系统设置
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar">U</div>
+                <div class="user-details">
+                    <div class="user-name">管理员</div>
+                    <div class="user-role">系统管理员</div>
+                </div>
+            </div>
+            <button class="logout-btn">退出登录</button>
+        </div>
+
+        <div class="module-header">
+            <h2>基础数据模块</h2>
+            <p>系统核心数据管理与维护中心</p>
+        </div>
+
+        <div class="function-cards">
+            <div class="function-card">
+                <h3>车辆信息管理</h3>
+                <p>维护运输车辆基本信息、技术参数和状态数据</p>
+                <a href="{{ url_for('basic_data_bp.vehicle_information') }}" class="btn">进入管理</a>
+            </div>
+
+            <div class="function-card">
+                <h3>路线基础数据</h3>
+                <p>管理邮路路线、站点信息和道路网络数据</p>
+                <a href="{{ url_for('basic_data_bp.route_information') }}" class="btn">查看数据</a>
+            </div>
+
+            <div class="function-card">
+                <h3>单位管理</h3>
+                <p>维护单位基本信息、银行账户和联系方式等数据</p>
+                <a href="{{ url_for('basic_data_bp.company_list') }}" class="btn">进入管理</a>
+            </div>
+
+            <div class="function-card">
+                <h3>数据维护更新</h3>
+                <p>定期更新系统基础数据，确保信息准确性</p>
+                <a href="{{ url_for('basic_data_bp.data_maintenance') }}" class="btn">维护数据</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

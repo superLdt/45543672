@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="content-section">
+    <div class="section-title">
+        <h2>{{ title }}</h2>
+    </div>
+
+    <div class="role-selection">
+        <label for="role-select">选择角色:</label>
+        <select id="role-select" class="form-control">
+            <!-- 角色选项将通过JavaScript动态加载 -->
+        </select>
+    </div>
+
+    <div class="permission-table mt-4">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>模块名称</th>
+                    <th>查看权限</th>
+                    <th>编辑权限</th>
+                    <th>删除权限</th>
+                </tr>
+            </thead>
+            <tbody id="permissions-body">
+                <!-- 权限表格内容将通过JavaScript动态加载 -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-3">
+        <button id="save-permissions" class="btn btn-primary">保存权限配置</button>
+        <div id="save-status" class="ml-3"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 获取所有角色并填充下拉列表
+fetch('/api/roles')
+    .then(response => response.json())
+    .then(roles => {
+        const roleSelect = document.getElementById('role-select');
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.id;
+            option.textContent = role.name;
+            roleSelect.appendChild(option);
+        });
+        // 加载第一个角色的权限
+        if (roles.length > 0) {
+            loadPermissions(roles[0].id);
+        }
+    });
+
+// 当选择不同角色时加载对应的权限
+document.getElementById('role-select').addEventListener('change', function() {
+    const roleId = this.value;
+    loadPermissions(roleId);
+});
+
+// 加载指定角色的权限
+function loadPermissions(roleId) {
+    fetch(`/api/role-permissions/${roleId}`)
+        .then(response => response.json())
+        .then(permissions => {
+            const tableBody = document.getElementById('permissions-body');
+            tableBody.innerHTML = '';
+
+            permissions.forEach(perm => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${perm.display_name}</td>
+                    <td><input type="checkbox" class="permission-checkbox" data-module-id="${perm.id}" data-permission="view" ${perm.can_view ? 'checked' : ''}></td>
+                    <td><input type="checkbox" class="permission-checkbox" data-module-id="${perm.id}" data-permission="edit" ${perm.can_edit ? 'checked' : ''}></td>
+                    <td><input type="checkbox" class="permission-checkbox" data-module-id="${perm.id}" data-permission="delete" ${perm.can_delete ? 'checked' : ''}></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        });
+}
+
+// 保存权限配置
+document.getElementById('save-permissions').addEventListener('click', function() {
+    const roleId = document.getElementById('role-select').value;
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    const permissions = [];
+
+    checkboxes.forEach(checkbox => {
+        const moduleId = checkbox.getAttribute('data-module-id');
+        const permissionType = checkbox.getAttribute('data-permission');
+        const isChecked = checkbox.checked;
+
+        // 找到对应的模块权限对象
+        let modulePerm = permissions.find(p => p.module_id == moduleId);
+        if (!modulePerm) {
+            modulePerm = { module_id: moduleId, can_view: false, can_edit: false, can_delete: false };
+            permissions.push(modulePerm);
+        }
+
+        // 设置相应的权限
+        if (permissionType === 'view') modulePerm.can_view = isChecked;
+        else if (permissionType === 'edit') modulePerm.can_edit = isChecked;
+        else if (permissionType === 'delete') modulePerm.can_delete = isChecked;
+    });
+
+    // 发送更新请求
+    fetch('/api/update-permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role_id: roleId, permissions: permissions })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusElement = document.getElementById('save-status');
+        if (data.success) {
+            statusElement.textContent = '权限更新成功';
+            statusElement.style.color = 'green';
+        } else {
+            statusElement.textContent = '更新失败: ' + data.message;
+            statusElement.style.color = 'red';
+        }
+        // 3秒后清除状态消息
+        setTimeout(() => statusElement.textContent = '', 3000);
+    });
+}
+</script>
+{% endblock %}

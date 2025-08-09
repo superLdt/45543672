@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}飞书协同 - 财务对账{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-white sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="sidebar-header">
+                    <h4>财务对账</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.index') }}">
+                            首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_import') }}">
+                            数据接入
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.approval_process') }}">
+                            审核流程管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.exception_handling') }}">
+                            异常处理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('reconciliation_bp.feishu_collaboration') }}">
+                            飞书协同
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.settlement_documents') }}">
+                            结算单据管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_query') }}">
+                            数据存储与查询
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <!-- 用户信息区域 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">飞书协同</h1>
+                <div class="user-info">
+                    <span>欢迎, {{ user.full_name }} ({{ user.username }})</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary ms-2">退出登录</a>
+                </div>
+            </div>
+
+            <!-- 飞书审核单同步状态 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">飞书审核单同步状态</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>系统单据编号</th>
+                                    <th>飞书审批单号</th>
+                                    <th>同步状态</th>
+                                    <th>飞书审核结果</th>
+                                    <th>同步时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>REC-202311001</td>
+                                    <td>FP-2023110001</td>
+                                    <td><span class="badge bg-success">已同步</span></td>
+                                    <td><span class="badge bg-success">通过</span></td>
+                                    <td>2023-11-01 10:30</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看飞书审批</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>REC-202311003</td>
+                                    <td>FP-2023110002</td>
+                                    <td><span class="badge bg-success">已同步</span></td>
+                                    <td><span class="badge bg-warning">待审核</span></td>
+                                    <td>2023-11-01 14:45</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看飞书审批</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>REC-202311005</td>
+                                    <td>-</td>
+                                    <td><span class="badge bg-danger">同步失败</span></td>
+                                    <td>-</td>
+                                    <td>2023-11-01 16:20</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">重新同步</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 飞书消息通知设置 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">消息通知设置</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="notifyTodo" checked>
+                            <label class="form-check-label" for="notifyTodo">待办审核提醒</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="notifyApproved" checked>
+                            <label class="form-check-label" for="notifyApproved">审核通过通知</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="notifyRejected" checked>
+                            <label class="form-check-label" for="notifyRejected">审核驳回通知</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="notifyException">
+                            <label class="form-check-label" for="notifyException">异常单据通知</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存设置</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

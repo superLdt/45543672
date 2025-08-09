@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}数据存储与查询 - 财务对账{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-white sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="sidebar-header">
+                    <h4>财务对账</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.index') }}">
+                            首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_import') }}">
+                            数据接入
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.approval_process') }}">
+                            审核流程管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.exception_handling') }}">
+                            异常处理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.feishu_collaboration') }}">
+                            飞书协同
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.settlement_documents') }}">
+                            结算单据管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('reconciliation_bp.data_query') }}">
+                            数据存储与查询
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <!-- 用户信息区域 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">数据存储与查询</h1>
+                <div class="user-info">
+                    <span>欢迎, {{ user.full_name }} ({{ user.username }})</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary ms-2">退出登录</a>
+                </div>
+            </div>
+
+            <!-- 多维度查询条件 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">多维度查询</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="queryTimeRange" class="form-label">时间范围</label>
+                            <select class="form-select" id="queryTimeRange">
+                                <option value="today">今日</option>
+                                <option value="yesterday">昨日</option>
+                                <option value="this_week">本周</option>
+                                <option value="last_week">上周</option>
+                                <option value="this_month">本月</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="querySupplier" class="form-label">供应商</label>
+                            <select class="form-select" id="querySupplier">
+                                <option value="all">全部供应商</option>
+                                <option value="supplier1">供应商A</option>
+                                <option value="supplier2">供应商B</option>
+                                <option value="supplier3">供应商C</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="queryDocStatus" class="form-label">单据状态</label>
+                            <select class="form-select" id="queryDocStatus">
+                                <option value="all">全部状态</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已通过</option>
+                                <option value="rejected">已驳回</option>
+                                <option value="exception">异常</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="queryExceptionType" class="form-label">异常类型</label>
+                            <select class="form-select" id="queryExceptionType">
+                                <option value="all">全部类型</option>
+                                <option value="volume">容积异常</option>
+                                <option value="vehicle_type">车型异常</option>
+                                <option value="data_format">数据格式异常</option>
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary">重置</button>
+                            <button class="btn btn-primary">查询</button>
+                            <button class="btn btn-success">导出结果</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 查询结果表格 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">查询结果</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>单据编号</th>
+                                    <th>数据来源</th>
+                                    <th>存储时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>REC-202311001</td>
+                                    <td>供应商A</td>
+                                    <td>2023-11-01 09:30:15</td>
+                                    <td><span class="badge bg-success">已完成</span></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看详情</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>REC-202311002</td>
+                                    <td>供应商B</td>
+                                    <td>2023-11-01 10:15:30</td>
+                                    <td><span class="badge bg-success">已完成</span></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看详情</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>REC-202311003</td>
+                                    <td>供应商A</td>
+                                    <td>2023-11-01 14:22:45</td>
+                                    <td><span class="badge bg-danger">异常</span></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看详情</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据备份与恢复 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">数据备份与恢复</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-3 mb-4">
+                        <button class="btn btn-primary">创建数据备份</button>
+                        <button class="btn btn-warning">恢复最近备份</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>备份编号</th>
+                                    <th>备份时间</th>
+                                    <th>备份大小</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>BACKUP-20231031</td>
+                                    <td>2023-10-31 23:00:00</td>
+                                    <td>128.5 MB</td>
+                                    <td><span class="badge bg-success">正常</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-secondary">下载</button>
+                                        <button class="btn btn-sm btn-outline-secondary">恢复</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>BACKUP-20231025</td>
+                                    <td>2023-10-25 23:00:00</td>
+                                    <td>115.2 MB</td>
+                                    <td><span class="badge bg-success">正常</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-secondary">下载</button>
+                                        <button class="btn btn-sm btn-outline-secondary">恢复</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}结算单据管理 - 财务对账{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-white sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="sidebar-header">
+                    <h4>财务对账</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.index') }}">
+                            首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_import') }}">
+                            数据接入
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.approval_process') }}">
+                            审核流程管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.exception_handling') }}">
+                            异常处理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.feishu_collaboration') }}">
+                            飞书协同
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('reconciliation_bp.settlement_documents') }}">
+                            结算单据管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reconciliation_bp.data_query') }}">
+                            数据存储与查询
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <!-- 用户信息区域 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">结算单据管理</h1>
+                <div class="user-info">
+                    <span>欢迎, {{ user.full_name }} ({{ user.username }})</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary ms-2">退出登录</a>
+                </div>
+            </div>
+
+            <!-- 单据生成流程 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">单据生成流程</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">审核单</h5>
+                                <p class="card-text">基于审核通过的原始数据生成</p>
+                                <button class="btn btn-primary">生成审核单</button>
+                            </div>
+                        </div>
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">考核单</h5>
+                                <p class="card-text">关联审核单数据生成考核结果</p>
+                                <button class="btn btn-primary">生成考核单</button>
+                            </div>
+                        </div>
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">结算单</h5>
+                                <p class="card-text">基于考核结果生成最终结算金额</p>
+                                <button class="btn btn-primary">生成结算单</button>
+                            </div>
+                        </div>
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">汇总单</h5>
+                                <p class="card-text">按周期汇总多个结算单数据</p>
+                                <button class="btn btn-primary">生成汇总单</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 单据列表 -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">单据列表</h5>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" style="width: auto;">
+                            <option value="all">全部单据</option>
+                            <option value="approval">审核单</option>
+                            <option value="assessment">考核单</option>
+                            <option value="settlement">结算单</option>
+                            <option value="summary">汇总单</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary">导出</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>单据编号</th>
+                                    <th>单据类型</th>
+                                    <th>状态</th>
+                                    <th>生成时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>AP-202311001</td>
+                                    <td>审核单</td>
+                                    <td><span class="badge bg-success">已确认</span></td>
+                                    <td>2023-11-01 11:20</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看</a>
+                                        <button class="btn btn-sm btn-secondary">版本历史</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>AS-202311001</td>
+                                    <td>考核单</td>
+                                    <td><span class="badge bg-success">已确认</span></td>
+                                    <td>2023-11-01 14:30</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看</a>
+                                        <button class="btn btn-sm btn-secondary">版本历史</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>SE-202311001</td>
+                                    <td>结算单</td>
+                                    <td><span class="badge bg-warning">待确认</span></td>
+                                    <td>2023-11-01 16:45</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-info">查看</a>
+                                        <button class="btn btn-sm btn-secondary">版本历史</button>
+                                        <button class="btn btn-sm btn-primary">确认</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
