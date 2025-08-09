@@ -29,7 +29,8 @@ login_manager.login_view = 'login'  # 设置登录页面路由
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600
 
-DATABASE = 'database.db'
+# 从配置文件导入数据库路径
+from config import DATABASE
 
 
 # 日志配置
@@ -47,17 +48,19 @@ def load_user(user_id):
     return None
 
 def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
-    return db
+    db_manager = getattr(g, '_db_manager', None)
+    if db_manager is None:
+        db_manager = g._db_manager = DatabaseManager()
+        if not db_manager.connect():
+            raise Exception('数据库连接失败')
+        db_manager.conn.row_factory = sqlite3.Row
+    return db_manager.conn
 
 @app.teardown_appcontext
 def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+    db_manager = getattr(g, '_db_manager', None)
+    if db_manager is not None:
+        db_manager.disconnect()
 
 # 路由定义
 @app.route('/')
@@ -68,10 +71,15 @@ def index():
 # 修复权限查询函数，使用正确的表名
 import sqlite3
 
+from db_manager import DatabaseManager
+
 def get_user_modules(user_id):
     """获取用户有权限访问的模块列表，支持父子模块结构"""
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
+    db_manager = DatabaseManager()
+    if not db_manager.connect():
+        print("数据库连接失败")
+        return []
+    cursor = db_manager.cursor
     try:
         # 获取用户角色
         cursor.execute('''
@@ -133,7 +141,7 @@ def get_user_modules(user_id):
         print(f"获取用户模块权限时出错: {e}")
         return []
     finally:
-        conn.close()
+        db_manager.disconnect()
 
 # 修复角色查询API
 @app.route('/api/roles')
@@ -141,8 +149,10 @@ def get_user_modules(user_id):
 def get_roles():
     """获取所有角色列表"""
     try:
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return jsonify({'error': '数据库连接失败'}), 500
+        cursor = db_manager.cursor
         cursor.execute('SELECT id, name, description FROM Role ORDER BY id')
         roles = []
         for row in cursor.fetchall():
@@ -151,7 +161,7 @@ def get_roles():
                 'name': row[1],
                 'description': row[2]
             })
-        conn.close()
+        db_manager.disconnect()
         return jsonify(roles)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -162,8 +172,10 @@ def get_roles():
 def get_role_permissions(role_id):
     """获取角色的模块权限配置"""
     try:
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return jsonify({'error': '数据库连接失败'}), 500
+        cursor = db_manager.cursor
         cursor.execute('''
             SELECT m.id, m.name, m.display_name, 
                    COALESCE(rmp.can_view, 0) as can_view,
@@ -187,7 +199,7 @@ def get_role_permissions(role_id):
                 'can_delete': bool(row[5]),
                 'icon_class': row[6]
             })
-        conn.close()
+        db_manager.disconnect()
         return jsonify(permissions)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -518,31 +530,20 @@ def _assign_role_to_user(cursor, user_id, role_id):
 try:
     # 延迟导入蓝图以避免循环依赖
     from modules.system import system_bp
-<<<<<<< HEAD
-=======
-    # 延迟导入以避免循环依赖
->>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
     from modules.reconciliation import reconciliation_bp
     from modules.scheduling import scheduling_bp
     from modules.planning import planning_bp
     from modules.cost_analysis import cost_analysis_bp
     from modules.basic_data import basic_data_bp
-<<<<<<< HEAD
     from modules.user_management import user_management_bp
     
-=======
-
->>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
     app.register_blueprint(system_bp, url_prefix='/system')
     app.register_blueprint(reconciliation_bp, url_prefix='/reconciliation')
     app.register_blueprint(scheduling_bp, url_prefix='/scheduling')
     app.register_blueprint(planning_bp, url_prefix='/planning')      
     app.register_blueprint(cost_analysis_bp, url_prefix='/cost_analysis')
     app.register_blueprint(basic_data_bp, url_prefix='/basic_data')
-<<<<<<< HEAD
     app.register_blueprint(user_management_bp, url_prefix='/users')
-=======
->>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
 except ImportError as e:
     print(f'蓝图模块导入失败: {str(e)}', file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
@@ -568,13 +569,8 @@ if __name__ == '__main__':
         app.logger.info(f'应用启动，访问地址: http://127.0.0.1:{port}')
         print(f'7. 启动服务器 on http://0.0.0.0:{port}')
         # 延迟导入用户管理蓝图避免循环依赖
-<<<<<<< HEAD
         
         
-=======
-        from modules.user_management import user_management_bp
-        app.register_blueprint(user_management_bp, url_prefix='/users')
->>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
         app.run(host='0.0.0.0', port=port, debug=True)
         print('8. 服务器启动成功')
     except Exception as e:

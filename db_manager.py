@@ -1,8 +1,9 @@
 import sqlite3
 import os
+from config import DATABASE  # 从config.py导入数据库路径配置
 
 class DatabaseManager:
-    def __init__(self, db_path='database.db'):
+    def __init__(self, db_path=DATABASE):
         self.db_path = db_path
         self.conn = None
         self.cursor = None
