@@ -518,20 +518,31 @@ def _assign_role_to_user(cursor, user_id, role_id):
 try:
     # 延迟导入蓝图以避免循环依赖
     from modules.system import system_bp
+<<<<<<< HEAD
+=======
+    # 延迟导入以避免循环依赖
+>>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
     from modules.reconciliation import reconciliation_bp
     from modules.scheduling import scheduling_bp
     from modules.planning import planning_bp
     from modules.cost_analysis import cost_analysis_bp
     from modules.basic_data import basic_data_bp
+<<<<<<< HEAD
     from modules.user_management import user_management_bp
     
+=======
+
+>>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
     app.register_blueprint(system_bp, url_prefix='/system')
     app.register_blueprint(reconciliation_bp, url_prefix='/reconciliation')
     app.register_blueprint(scheduling_bp, url_prefix='/scheduling')
     app.register_blueprint(planning_bp, url_prefix='/planning')      
     app.register_blueprint(cost_analysis_bp, url_prefix='/cost_analysis')
     app.register_blueprint(basic_data_bp, url_prefix='/basic_data')
+<<<<<<< HEAD
     app.register_blueprint(user_management_bp, url_prefix='/users')
+=======
+>>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
 except ImportError as e:
     print(f'蓝图模块导入失败: {str(e)}', file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
@@ -557,8 +568,13 @@ if __name__ == '__main__':
         app.logger.info(f'应用启动，访问地址: http://127.0.0.1:{port}')
         print(f'7. 启动服务器 on http://0.0.0.0:{port}')
         # 延迟导入用户管理蓝图避免循环依赖
+<<<<<<< HEAD
         
         
+=======
+        from modules.user_management import user_management_bp
+        app.register_blueprint(user_management_bp, url_prefix='/users')
+>>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
         app.run(host='0.0.0.0', port=port, debug=True)
         print('8. 服务器启动成功')
     except Exception as e:
