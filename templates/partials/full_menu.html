@@ -1,36 +1,36 @@
 <!-- partials/full_menu.html -->
 <li class="nav-item">
-  <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('basic_data_bp.') }}">
+  <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('basic_data_bp.') }}">
       <i class="fas fa-database"></i> 基础数据
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('planning_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('planning_bp.') }}">
+  <a href="{{ url_for('planning_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('planning_bp.') }}">
       <i class="fas fa-map-marked-alt"></i> 规划管理
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('scheduling_bp.') }}">
+  <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('scheduling_bp.') }}">
       <i class="fas fa-calendar-alt"></i> 调度管理
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('cost_analysis_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('cost_analysis_bp.') }}">
+  <a href="{{ url_for('cost_analysis_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('cost_analysis_bp.') }}">
       <i class="fas fa-chart-line"></i> 成本分析
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('reconciliation_bp.') }}">
+  <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('reconciliation_bp.') }}">
       <i class="fas fa-file-invoice-dollar"></i> 财务对账
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('user_management_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('user_management_bp.') }}">
+  <a href="{{ url_for('user_management_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('user_management_bp.') }}">
       <i class="fas fa-users"></i> 用户管理
   </a>
 </li>
 <li class="nav-item">
-  <a href="{{ url_for('system_bp.index') }}" class="nav-link {{ 'active' if request.endpoint.startswith('system_bp.') }}">
+  <a href="{{ url_for('system_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('system_bp.') }}">
       <i class="fas fa-cog"></i> 系统设置
   </a>
 </li>

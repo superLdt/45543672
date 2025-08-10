@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, make_response, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, make_response, send_file, jsonify
 import pandas as pd
+from flask_login import login_required
 from io import BytesIO
 import logging
+from flask_login import current_user
 from urllib.parse import quote
 import os
 import datetime
@@ -11,22 +13,27 @@ from io import BytesIO
 basic_data_bp = Blueprint('basic_data_bp', __name__, template_folder='templates')
 
 @basic_data_bp.route('/')
+@login_required
 def index():
-    return render_template('basic_data/index.html')
+    return render_template('basic_data/index.html', user=current_user)
 
 @basic_data_bp.route('/vehicle_info')
+@login_required
 def vehicle_information():
     return render_template('basic_data/vehicle_info.html', title='车辆信息管理')
 
 @basic_data_bp.route('/route_info')
+@login_required
 def route_information():
     return render_template('basic_data/route_info.html', title='路线基础数据')
 
 @basic_data_bp.route('/maintenance')
+@login_required
 def data_maintenance():
     return render_template('basic_data/maintenance.html', title='数据维护更新')
 
 @basic_data_bp.route('/company_list')
+@login_required
 def company_list():
     from app import get_db
     conn = get_db()
@@ -34,6 +41,7 @@ def company_list():
     return render_template('basic_data/company_list.html', companies=companies)
 
 @basic_data_bp.route('/company_new', methods=['GET', 'POST'])
+@login_required
 def company_new():
     if request.method == 'POST':
         name = request.form['name']
@@ -54,6 +62,7 @@ def company_new():
     return render_template('basic_data/company_edit.html', company=None)
 
 @basic_data_bp.route('/company_edit/<int:id>', methods=['GET', 'POST'])
+@login_required
 def company_edit(id):
     from app import get_db
     conn = get_db()
@@ -78,6 +87,7 @@ def company_edit(id):
     return render_template('basic_data/company_edit.html', company=company)
 
 @basic_data_bp.route('/company_delete/<int:id>', methods=['POST'])
+@login_required
 def company_delete(id):
     from app import get_db
     conn = get_db()
@@ -85,7 +95,21 @@ def company_delete(id):
     conn.commit()
     return redirect(url_for('basic_data_bp.company_list'))
 
+@basic_data_bp.route('/debug/user')
+@login_required
+def debug_user():
+    user_data = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'full_name': current_user.full_name,
+        'roles': current_user.roles if hasattr(current_user, 'roles') else []
+    }
+    response = jsonify(user_data)
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
 @basic_data_bp.route('/company_export')
+@login_required
 def company_export():
     # 添加请求处理日志
     logging.debug(f"收到Excel导出请求: {datetime.datetime.now()}")
@@ -146,6 +170,7 @@ def company_export():
         conn.close()  # 确保数据库连接关闭
 
 # 添加简单文本下载测试端点
+
 @basic_data_bp.route('/test_download')
 def test_download():
     """简单文本文件下载测试端点，用于验证基本下载功能"""

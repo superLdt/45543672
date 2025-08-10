@@ -207,11 +207,7 @@
                     <div class="user-name">{{ user.full_name if user and user.full_name else '未知用户' }}</div>
                     <div class="user-role">
                         {% if user and user.roles %}
-                            {% set role_names = [] %}
-                            {% for role in user.roles %}
-                                {% set _ = role_names.append(role.name) %}
-                            {% endfor %}
-                            {{ role_names | join(', ') }}
+                            {{ user.roles | join(', ') }}
                         {% else %}
                             普通用户
                         {% endif %}

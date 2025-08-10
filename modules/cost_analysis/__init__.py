@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template
+from flask_login import login_required, current_user
 
 cost_analysis_bp = Blueprint('cost_analysis_bp', __name__, template_folder='templates')
 
 @cost_analysis_bp.route('/')
+@login_required
 def index():
-    return render_template('cost_analysis/index.html')
+    return render_template('cost_analysis/index.html', user=current_user)
 
 @cost_analysis_bp.route('/mail_route')
 def mail_route_cost():

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-content">
+    <div class="content-section">
+        <div class="section-title">
+            <span>错误提示</span>
+        </div>
+
+        <div class="error-container">
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>{{ message or '发生未知错误，请联系管理员' }}</p>
+            </div>
+            <div class="error-actions">
+                <a href="{{ url_for('dashboard') }}" class="btn">返回首页</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .error-message {
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: #f8d7da;
+        color: #721c24;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .error-message i {
+        font-size: 24px;
+    }
+    .error-actions {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}

@@ -140,7 +140,15 @@
         .logout-btn:hover {
             background-color: #f8f9fa;
         }
+    </style>
+</head>
+<body>
+    {% extends 'base.html' %}
 
+    {% block title %}安徽XX智能运力系统 - 控制面板{% endblock %}
+
+    {% block extra_css %}
+    <style>
         .dashboard-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -198,36 +206,30 @@
             align-items: center;
         }
 
-        .btn {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #1557b0;
-        }
-
+        /* 表格样式优化 */
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
         }
 
-        th, td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid #f1f3f4;
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
         }
 
         th {
-            color: #5f6368;
+            padding: 12px 15px;
+            text-align: left;
             font-weight: 500;
-            font-size: 0.9rem;
+            color: #202124;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f4;
+            color: #5f6368;
         }
 
         tr:hover {
@@ -235,189 +237,131 @@
         }
 
         .action-btn {
-            padding: 0.25rem 0.5rem;
-            margin: 0 0.25rem;
+            padding: 6px 10px;
+            margin-right: 5px;
             border-radius: 4px;
+            font-size: 0.8rem;
+            border: 1px solid #dadce0;
+            background-color: white;
             cursor: pointer;
-            font-size: 0.85rem;
+            transition: all 0.3s;
         }
 
         .view-btn {
-            background-color: #e8f0fe;
             color: #1a73e8;
-            border: 1px solid #d2e3fc;
+            border-color: #1a73e8;
         }
 
         .edit-btn {
-            background-color: #e6f4ea;
-            color: #137333;
-            border: 1px solid #b7f0c7;
+            color: #fbbc04;
+            border-color: #fbbc04;
         }
 
         .delete-btn {
-            background-color: #fce8e6;
             color: #d93025;
-            border: 1px solid #fad2cf;
+            border-color: #d93025;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
-    <!-- 替换原有的侧边栏代码 -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h1><i class="fas fa-truck"></i> 智能运力系统</h1>
-        </div>
-        <ul class="nav-menu">
-            <!-- 动态加载用户有权限的模块 -->
-            {% if user_modules %}
-                {% for module in user_modules %}
-                    <li class="nav-item">
-                        <a href="{{ url_for(module.route_name) if module.route_name else '#' }}" class="nav-link {% if request.endpoint == module.route_name %}active{% endif %}">
-                            <i class="{{ module.icon_class }}"></i> {{ module.display_name }}
-                        </a>
-                        {% if module.children and module.children|length > 0 %}
-                            <ul class="sub-nav-menu">
-                                {% for child in module.children %}
-                                    <li class="nav-item">
-                                        <a href="{{ url_for(child.route_name) }}" class="nav-link nav-link-child {% if request.endpoint == child.route_name %}active{% endif %}">
-                                            <i class="{{ child.icon_class }}"></i> {{ child.display_name }}
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </li>
-                {% endfor %}
-            {% else %}
-                <!-- 默认显示控制面板 -->
-                <li class="nav-item">
-                    <a href="{{ url_for('dashboard') }}" class="nav-link active">
-                        <i class="fas fa-tachometer-alt"></i> 控制面板
-                    </a>
-                </li>
-            {% endif %}
-        </ul>
-    </div>
+    {% endblock %}
 
-    <div class="main-content">
-        <div class="header">
-            <div class="user-info">
-               <div class="user-avatar">
-    {# 多层判断确保安全 #}
-    {{ user.full_name[0] if (user and user.full_name) else (user.username[0] if (user and user.username) else 'U') }}
-</div>
-<div class="user-details">
-    <div class="user-name">
-        {{ user.full_name if (user and user.full_name) else (user.username if (user and user.username) else '未登录') }}
-    </div>
-    <div class="user-role">超级管理员</div>
-</div>
-            </div>
-            <button class="logout-btn" onclick="window.location.href='/logout'">
-                <i class="fas fa-sign-out-alt"></i> 退出登录
-            </button>
-        </div>
-
+    {% block content %}
         <div class="dashboard-stats">
             <div class="stat-card">
-                <div class="stat-title">总调度任务</div>
-                <div class="stat-value">128</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 12% 较上月
-                </div>
+                <div class="stat-title">今日运输任务</div>
+                <div class="stat-value">24</div>
+                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 12% 较昨日</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">待处理任务</div>
-                <div class="stat-value">16</div>
-                <div class="stat-change negative">
-                    <i class="fas fa-arrow-up"></i> 4% 较上月
-                </div>
+                <div class="stat-title">待完成任务</div>
+                <div class="stat-value">8</div>
+                <div class="stat-change negative"><i class="fas fa-arrow-down"></i> 4% 较昨日</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">完成率</div>
-                <div class="stat-value">92.3%</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 3.2% 较上月
-                </div>
+                <div class="stat-title">本月完成率</div>
+                <div class="stat-value">92%</div>
+                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 5% 较上月</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">本月成本</div>
-                <div class="stat-value">¥286,450</div>
-                <div class="stat-change negative">
-                    <i class="fas fa-arrow-up"></i> 5.7% 较上月
-                </div>
+                <div class="stat-title">客户满意度</div>
+                <div class="stat-value">96%</div>
+                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 2% 较上月</div>
             </div>
         </div>
 
         <div class="content-section">
             <div class="section-title">
-                <span>最近调度任务</span>
-                <button class="btn"><i class="fas fa-plus"></i> 新建任务</button>
+                <span>近期运输任务</span>
+                <a href="#" class="btn btn-sm btn-primary">查看全部</a>
             </div>
+            <button class="btn"><i class="fas fa-plus"></i> 新建任务</button>
             <table>
-                <thead>
-                    <tr>
-                        <th>任务ID</th>
-                        <th>任务名称</th>
-                        <th>调度日期</th>
-                        <th>状态</th>
-                        <th>负责人</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>ST-202308001</td>
-                        <td>北区日常配送</td>
-                        <td>2023-08-15</td>
-                        <td><span style="color: #137333;">已完成</span></td>
-                        <td>张三</td>
-                        <td>
-                            <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ST-202308002</td>
-                        <td>南区紧急调拨</td>
-                        <td>2023-08-16</td>
-                        <td><span style="color: #fbbc04;">进行中</span></td>
-                        <td>李四</td>
-                        <td>
-                            <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ST-202308003</td>
-                        <td>东区补货计划</td>
-                        <td>2023-08-17</td>
-                        <td><span style="color: #fbbc04;">进行中</span></td>
-                        <td>王五</td>
-                        <td>
-                            <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ST-202308004</td>
-                        <td>西区季度盘点</td>
-                        <td>2023-08-18</td>
-                        <td><span style="color: #5f6368;">未开始</span></td>
-                        <td>赵六</td>
-                        <td>
-                            <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                </tbody>
+            <thead>
+                <tr>
+                    <th>任务ID</th>
+                    <th>任务名称</th>
+                    <th>调度日期</th>
+                    <th>状态</th>
+                    <th>负责人</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ST-202308001</td>
+                    <td>北区日常配送</td>
+                    <td>2023-08-15</td>
+                    <td><span style="color: #137333;">已完成</span></td>
+                    <td>张三</td>
+                    <td>
+                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
+                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>ST-202308002</td>
+                    <td>南区紧急调拨</td>
+                    <td>2023-08-16</td>
+                    <td><span style="color: #fbbc04;">进行中</span></td>
+                    <td>李四</td>
+                    <td>
+                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
+                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>ST-202308003</td>
+                    <td>东区补货计划</td>
+                    <td>2023-08-17</td>
+                    <td><span style="color: #fbbc04;">进行中</span></td>
+                    <td>王五</td>
+                    <td>
+                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
+                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>ST-202308004</td>
+                    <td>西区季度盘点</td>
+                    <td>2023-08-18</td>
+                    <td><span style="color: #5f6368;">未开始</span></td>
+                    <td>赵六</td>
+                    <td>
+                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
+                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
+                    </td>
+                </tr>
+            </tbody>
             </table>
         </div>
-    </div>
+        
+    {% endblock %}
 </body>
-</html>"["}]}}
+</html>

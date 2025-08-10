@@ -106,7 +106,7 @@
 
 ### 7. role_module_permissions (角色-模块权限关联表)
 - `id`: 主键，记录ID
-- `role_id`: 角色ID
+# 已移除: role_id (现在通过UserRole关联表管理)
 - `module_id`: 模块ID
 - `can_view`: 查看权限
 - `can_edit`: 编辑权限

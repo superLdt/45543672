@@ -42,8 +42,11 @@
                         <td>{{ user.email or '-' }}</td>
                         <td>
                             {% for role in user.roles %}
-                            <span class="role-tag">{{ role.name }}</span>
+                            <span class="role-tag" style="display:inline-block; padding:2px 8px; margin:2px; background:#e0f2fe; border-radius:4px; color:#0369a1; border:1px solid #bae6fd;">
+                                {{ role.name }}
+                            </span>
                             {% endfor %}
+                            {% if not user.roles %}-{% endif %}
                         </td>
                         <td>
                             {% if user.is_active %}
@@ -57,6 +60,9 @@
                             <a href="{{ url_for('user_management_bp.user_edit', id=user.id) }}" class="action-btn view-btn"><i class="fas fa-edit"></i> 编辑</a>
                             <form action="{{ url_for('user_management_bp.user_delete', id=user.id) }}" method="POST" class="inline-form">
                                 <button type="submit" class="action-btn delete-btn" onclick="return confirm('确定要删除此用户吗？')"><i class="fas fa-trash"></i> 删除</button>
+                            </form>
+                            <form action="{{ url_for('user_management_bp.user_reset_password', id=user.id) }}" method="POST" class="inline-form">
+                                <button type="submit" class="action-btn reset-btn" onclick="return confirm('确定要重置此用户密码为admin123吗？')"><i class="fas fa-key"></i> 重置密码</button>
                             </form>
                         </td>
                     </tr>
@@ -75,4 +81,3 @@
 {% block extra_js %}
 
 {% endblock %}
-

@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
+from flask_login import current_user, login_required
 import sqlite3
 import hashlib
 from datetime import datetime
@@ -23,10 +24,8 @@ user_management_bp = Blueprint('user_management_bp', __name__, url_prefix='/user
 def permission_required(permission_name):
     def decorator(f):
         @wraps(f)
+        @login_required
         def decorated_function(*args, **kwargs):
-            # 检查用户是否登录
-            if 'user_id' not in session:
-                return redirect(url_for('login'))
             
             # 获取用户权限
             conn = get_db()
@@ -35,18 +34,18 @@ def permission_required(permission_name):
                 JOIN RolePermission rp ON p.id = rp.permission_id
                 JOIN UserRole ur ON rp.role_id = ur.role_id
                 WHERE ur.user_id = ?
-            ''', (session['user_id'],)).fetchall()
+            ''', (current_user.id,)).fetchall()
 
             
             # 检查用户是否有超级管理员角色
-            is_super_admin = any(role['name'] == '超级管理员' for role in get_user_roles(session['user_id']))
+            is_super_admin = '超级管理员' in current_user.roles
             
             # 检查权限
             permission_names = [p['name'] for p in permissions]
             if permission_name in permission_names or is_super_admin:
                 return f(*args, **kwargs)
             else:
-                return render_template('under_development.html'), 403
+                return render_template('error.html', message='权限不足，无法访问此功能'), 403
         return decorated_function
     return decorator
 
@@ -92,24 +91,34 @@ def user_list():
         ''', (user['id'],)).fetchall()
         users_with_roles.append({** user, 'roles': roles})
     
-
-    # 获取当前登录用户信息
-    current_user = conn.execute('SELECT * FROM User WHERE id = ?', (session['user_id'],)).fetchone()
-    return render_template('user_management/user_list.html', users=users_with_roles, search_query=search_query, user=current_user)
+    # 获取当前登录用户信息及角色名称列表
+    current_user_info = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'full_name': current_user.full_name,
+        'roles': current_user.roles
+    }
+    return render_template('user_management/user_list.html', users=users_with_roles, search_query=search_query, user=current_user_info)
 
 # 创建新用户
 @user_management_bp.route('/users/new', methods=['GET', 'POST'])
 @permission_required('user_manage')
 def user_new():
+    conn = get_db()
     if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password']
+        password = request.form['new_password']
         confirm_password = request.form['confirm_password']
         
         # 验证密码匹配
         if password != confirm_password:
             roles = conn.execute('SELECT * FROM Role').fetchall()
             return render_template('user_management/user_edit.html', error='两次输入的密码不一致', roles=roles)
+        
+        # 验证密码长度
+        if len(password) < 8:
+            roles = conn.execute('SELECT * FROM Role').fetchall()
+            return render_template('user_management/user_edit.html', error='密码长度不能少于8位', roles=roles)
         
         full_name = request.form['full_name']
         email = request.form['email']
@@ -169,23 +178,228 @@ def user_new():
 
     # GET请求 - 显示表单
     conn = get_db()
-    roles = conn.execute('SELECT * FROM Role').fetchall()
+    # 获取所有角色
+    all_roles = conn.execute('SELECT * FROM Role').fetchall()
     companies = conn.execute('SELECT * FROM Company').fetchall()
-    current_user = conn.execute('SELECT * FROM User WHERE id = ?', (session['user_id'],)).fetchone()
+    current_user_info = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'full_name': current_user.full_name,
+        'roles': current_user.roles
+    }
 
-    return render_template('user_management/user_edit.html', roles=roles, companies=companies, user=None)
+    return render_template('user_management/user_edit.html', 
+                         roles=all_roles, 
+                         companies=companies, 
+                         editing_user=None, 
+                         user=current_user_info)
 
 # 编辑用户
 @user_management_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
 @permission_required('user_manage')
 def user_edit(id):
+    """
+    编辑用户信息的视图函数
+    支持GET请求加载用户数据和表单，POST请求处理更新逻辑
+    """
+    # 统一获取数据库连接（避免多次创建连接）
+    conn = get_db()
+    try:
+        # 1. 查询被编辑的用户信息
+        user = conn.execute(
+            'SELECT * FROM User WHERE id = ?', 
+            (id,)
+        ).fetchone()
+
+        # 打印用户信息（调试用）
+        if user:
+            current_app.logger.info(f"加载用户信息: ID={user['id']}, 用户名={user['username']}, 状态={user['is_active']}")
+        else:
+            current_app.logger.warning(f"用户不存在: ID={id}")
+
+        # 2. 预加载角色和公司数据（GET/POST都需要用到）
+        roles = conn.execute('SELECT * FROM Role').fetchall()
+        companies = conn.execute('SELECT * FROM Company').fetchall()
+
+        # 3. 处理用户不存在的情况
+        if not user:
+            return render_template(
+                'user_management/user_edit.html',
+                user=None,
+                roles=roles,
+                companies=companies,
+                error="用户不存在或已被删除"
+            )
+
+        # 4. 处理POST请求（更新用户信息）
+        if request.method == 'POST':
+            return _handle_post_request(conn, user, id, roles, companies)
+
+        # 5. 处理GET请求（渲染编辑表单）
+        return _handle_get_request(conn, user, roles, companies)
+
+    except sqlite3.Error as e:
+        # 数据库异常处理
+        current_app.logger.error(f"数据库操作错误: {str(e)}")
+        return render_template(
+            'user_management/user_edit.html',
+            user=user,
+            roles=roles,
+            companies=companies,
+            error=f"数据加载失败: {str(e)}"
+        )
+    finally:
+        # 确保连接关闭（无论成功/失败）
+        conn.close()
+
+
+def _handle_post_request(conn, user, user_id, roles, companies):
+    """处理POST请求：解析表单数据并更新用户信息"""
+    try:
+        # 解析表单数据
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()
+        company_id_str = request.form.get('company_id', '')
+        is_active = 1 if request.form.get('is_active') else 0  # 处理激活状态
+        role_ids = request.form.getlist('roles')  # 多选角色
+        new_password = request.form.get('new_password', '').strip()
+
+        # 处理公司ID（转换为整数或None）
+        try:
+            company_id = int(company_id_str) if company_id_str else None
+        except ValueError:
+            company_id = None
+            current_app.logger.warning("无效的公司ID，已设为None")
+
+        # 构建更新字段和SQL语句
+        update_fields = [full_name, email, company_id, is_active, datetime.now(), user_id]
+        base_query = '''
+            UPDATE User 
+            SET full_name = ?, email = ?, company_id = ?, is_active = ?, updated_at = ?
+            WHERE id = ?
+        '''
+
+        # 若提供新密码，追加密码更新逻辑
+        if new_password:
+            # 密码复杂度验证（示例：至少8位）
+            if len(new_password) < 8:
+                return render_template(
+                    'user_management/user_edit.html',
+                    user=user,
+                    roles=roles,
+                    companies=companies,
+                    error="密码长度不能少于8位"
+                )
+            # 安全哈希处理（替代原sha256，自带盐值）
+            hashed_password = generate_password_hash(new_password)
+            # 调整SQL和字段列表（插入密码字段）
+            base_query = '''
+                UPDATE User 
+                SET full_name = ?, email = ?, company_id = ?, is_active = ?, 
+                    password = ?, updated_at = ?
+                WHERE id = ?
+            '''
+            update_fields.insert(4, hashed_password)  # 插入密码到字段列表
+
+        # 执行用户信息更新
+        conn.execute(base_query, tuple(update_fields))
+
+        # 同步用户角色（先删除旧关联，再添加新关联）
+        conn.execute('DELETE FROM UserRole WHERE user_id = ?', (user_id,))
+        for role_id in role_ids:
+            # 验证角色ID有效性（避免无效数据）
+            if role_id and any(str(role['id']) == role_id for role in roles):
+                conn.execute(
+                    'INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)',
+                    (user_id, role_id)
+                )
+
+        # 提交事务
+        conn.commit()
+        current_app.logger.info(f"用户更新成功: ID={user_id}")
+        return redirect(url_for('user_management_bp.user_list'))
+
+    except sqlite3.Error as e:
+        # 数据库错误回滚事务
+        conn.rollback()
+        current_app.logger.error(f"用户更新失败: {str(e)}")
+        return render_template(
+            'user_management/user_edit.html',
+            user=user,
+            roles=roles,
+            companies=companies,
+            error=f"更新失败: {str(e)}"
+        )
+
+
+def _handle_get_request(conn, user, roles, companies):
+    """处理GET请求：加载用户当前角色并渲染表单"""
+    # 获取被编辑用户的角色ID列表（用于模板勾选）
+    edited_user_roles = conn.execute(
+        'SELECT role_id FROM UserRole WHERE user_id = ?',
+        (user['id'],)
+    ).fetchall()
+    edited_user_role_ids = [str(r['role_id']) for r in edited_user_roles]  # 转为字符串便于模板比对
+
+    # 获取当前登录用户的角色信息（用于权限控制等扩展场景）
+    current_user_roles = conn.execute(
+        '''
+        SELECT r.id, r.name FROM Role r
+        JOIN UserRole ur ON r.id = ur.role_id
+        WHERE ur.user_id = ?
+        ''',
+        (current_user.id,)
+    ).fetchall()
+
+    # 构造当前用户信息字典（传递给模板）
+    current_user_info = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'full_name': current_user.full_name or '未设置',
+        'roles': [r['name'] for r in current_user_roles]
+    }
+
+    # 渲染编辑表单
+    return render_template(
+        'user_management/user_edit.html',
+        editing_user=user,
+        roles=roles,
+        companies=companies,
+        user_roles=edited_user_role_ids,  # 被编辑用户的角色ID（用于勾选）
+        user=current_user_info
+    )
+    # 打印下id
+    print(f"编辑用户ID: {id}")      
+    # 打印下request.form
+    print(f"request.form: {request.form}")      
+    # 打印下request.form.getlist('roles')
+    print(f"request.form.getlist('roles'): {request.form.getlist('roles')}")    
+
+
+
+
+
     conn = get_db()
     user = conn.execute('SELECT * FROM User WHERE id = ?', (id,)).fetchone()
-    
-    if user is None:
+    #打印下user的所有信息
+    # 打印用户所有信息
+    if user:
+        print(f"用户ID: {user['id']}")  # 若为元组则用索引，如 user[0]
+        print(f"用户名: {user['username']}")
+        print(f"姓名: {user['full_name']}")
+        print(f"邮箱: {user['email']}")
+        print(f"所属公司ID: {user['company_id']}")
+        print(f"是否激活: {user['is_active']}")
+        print(f"创建时间: {user['created_at']}")
+        print(f"更新时间: {user['updated_at']}")
+    else:
+        print("未找到该用户")
 
-        return render_template('user_management/user_edit.html', roles=roles, companies=companies, user=None)
+
+    if user is None:
+        return redirect(url_for('user_management_bp.user_list'))
     
+    conn = get_db()
     if request.method == 'POST':
         full_name = request.form['full_name']
         email = request.form['email']
@@ -241,12 +455,35 @@ def user_edit(id):
             pass
 
     
-    # GET请求 - 显示表单
-    user_roles = [r['role_id'] for r in conn.execute('SELECT role_id FROM UserRole WHERE user_id = ?', (id,)).fetchall()]
-    roles = conn.execute('SELECT * FROM Role').fetchall()
-    companies = conn.execute('SELECT * FROM Company').fetchall()
+    try:
+        # 确保数据库连接
+        conn = get_db()
+        
+        # 获取编辑用户的角色信息
+        user_roles = [r['role_id'] for r in conn.execute(
+            'SELECT role_id FROM UserRole WHERE user_id = ?', 
+            (id,)).fetchall()]
+            
+        # 获取所有角色和公司
+        roles = conn.execute('SELECT * FROM Role').fetchall()
+        companies = conn.execute('SELECT * FROM Company').fetchall()
+        
+       
+            
+        return render_template('user_management/user_edit.html',
+                            user=user,
+                            roles=roles,
+                            user_roles=user_roles,
+                            companies=companies,
+                            current_user=current_user)
+                            
+    except Exception as e:
+        current_app.logger.error(f"用户编辑错误: {str(e)}")
+        return render_template('error.html', message="加载用户信息失败"), 500
+    finally:
+        pass  # 连接由Flask管理
 
-    return render_template('user_management/user_edit.html', user=user, roles=roles, user_roles=user_roles, companies=companies)
+    # 移除try-except块外的重复返回语句
 
 # 删除用户
 @user_management_bp.route('/users/<int:id>/delete', methods=['POST'])
@@ -256,6 +493,22 @@ def user_delete(id):
     conn.execute('DELETE FROM User WHERE id = ?', (id,))
     conn.commit()
 
+    return redirect(url_for('user_management_bp.user_list'))
+
+# 重置用户密码
+@user_management_bp.route('/users/<int:id>/reset-password', methods=['POST'])
+@permission_required('user_manage')
+def user_reset_password(id):
+    from werkzeug.security import generate_password_hash
+    conn = get_db()
+    # 检查用户是否存在
+    user = conn.execute('SELECT id FROM User WHERE id = ?', (id,)).fetchone()
+    if not user:
+        return redirect(url_for('user_management_bp.user_list'))
+    # 重置密码为admin123
+    hashed_password = generate_password_hash('admin123')
+    conn.execute('UPDATE User SET password = ? WHERE id = ?', (hashed_password, id))
+    conn.commit()
     return redirect(url_for('user_management_bp.user_list'))
 
 # 角色列表

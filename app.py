@@ -15,12 +15,14 @@ import jinja2
 from flask_login import LoginManager, UserMixin, login_required, current_user,login_user,logout_user    
 
 class User(UserMixin):
-    def __init__(self, user_id, username, full_name):
+    def __init__(self, user_id, username, full_name, roles=None):
         self.id = user_id
         self.username = username
         self.full_name = full_name
+        self.roles = roles or []
+from config import SECRET_KEY
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key')  # 实际部署时使用环境变量
+app.secret_key = SECRET_KEY
 
 # 初始化登录管理器
 login_manager = LoginManager()
@@ -44,7 +46,14 @@ def load_user(user_id):
     db = get_db()
     user = db.execute('SELECT id, username, full_name FROM User WHERE id = ? AND is_active = 1', (user_id,)).fetchone()
     if user:
-        return User(user['id'], user['username'], user['full_name'])
+        # 获取用户角色
+        roles = db.execute('''
+            SELECT r.name FROM Role r
+            JOIN UserRole ur ON r.id = ur.role_id
+            WHERE ur.user_id = ?
+        ''', (user_id,)).fetchall()
+        role_names = [role['name'] for role in roles]
+        return User(user['id'], user['username'], user['full_name'], role_names)
     return None
 
 def get_db():
@@ -107,7 +116,8 @@ def get_user_modules(user_id):
                 SELECT m.id, m.name, m.display_name, m.route_name, m.icon_class, m.parent_id
                 FROM modules m
                 JOIN role_module_permissions rmp ON m.id = rmp.module_id
-                JOIN User u ON u.role_id = rmp.role_id
+                JOIN User u ON u.id = ur.user_id
+                JOIN UserRole ur ON ur.role_id = rmp.role_id
                 WHERE u.id = ? AND rmp.can_view = 1 AND m.is_active = 1
                 ORDER BY m.sort_order
             ''', (user_id,))
@@ -231,12 +241,21 @@ def login():
             cursor.close()
         
         if user and check_password_hash(user['password'], password):
-            # 创建用户对象
-            user_obj = User(user['id'], username, user['full_name'])
+            # 获取用户角色
+            roles = db.execute('''
+                SELECT r.name FROM Role r
+                JOIN UserRole ur ON r.id = ur.role_id
+                WHERE ur.user_id = ?
+            ''', (user['id'],)).fetchall()
+            role_names = [role['name'] for role in roles]
+            # 创建用户对象并添加角色信息
+            user_obj = User(user['id'], username, user['full_name'], role_names)
             # 使用Flask-Login进行登录
-            login_user(user_obj)
+            login_user(user_obj, remember=True)
             # 同步设置session['user_id']以兼容权限检查
             session['user_id'] = user['id']
+            session['user_roles'] = role_names
+            print(f"用户 {username} 登录成功，角色: {role_names}")  # 调试日志
             return redirect(url_for('dashboard'))
         
         return '用户名或密码错误'
@@ -248,14 +267,45 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+@app.route('/debug/user')
+@login_required
+def debug_user():
+    return jsonify({
+        'id': current_user.id,
+        'username': current_user.username,
+        'full_name': current_user.full_name,
+        'roles': current_user.roles
+    })
+
+@app.route('/debug/user_roles')
+@login_required
+def debug_user_roles():
+    db = get_db()
+    user_roles = db.execute('''
+        SELECT ur.user_id, u.username, ur.role_id, r.name as role_name
+        FROM UserRole ur
+        JOIN User u ON ur.user_id = u.id
+        JOIN Role r ON ur.role_id = r.id
+        ORDER BY ur.user_id
+    ''').fetchall()
+    result = []
+    for row in user_roles:
+        result.append({
+            'user_id': row['user_id'],
+            'username': row['username'],
+            'role_id': row['role_id'],
+            'role_name': row['role_name']
+        })
+    return jsonify(result)
+
 @app.route('/under_development')
 def under_development():
-    return render_template('under_development.html')
+    return render_template('error.html', message='功能开发中')
 
 # 错误处理
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('under_development.html'), 404
+    return render_template('error.html', message='页面不存在 (404)'), 404
 
 @app.errorhandler(500)
 def internal_server_error(e):
@@ -267,7 +317,7 @@ def permission_denied(e):
 
 @app.errorhandler(jinja2.TemplateNotFound)
 def handle_template_not_found(e):
-    return render_template('under_development.html'), 404
+    return render_template('error.html', message='模板未找到'), 404
 
 # 数据库初始化
 def init_db():
@@ -350,6 +400,21 @@ def init_db():
             PRIMARY KEY (role_id, permission_id),
             FOREIGN KEY (role_id) REFERENCES Role (id) ON DELETE CASCADE,
             FOREIGN KEY (permission_id) REFERENCES Permission (id) ON DELETE CASCADE
+        )
+        ''')
+
+        # 创建模块表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS modules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            display_name TEXT NOT NULL,
+            route_name TEXT,
+            icon_class TEXT,
+            sort_order INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            parent_id INTEGER,
+            FOREIGN KEY (parent_id) REFERENCES modules (id) ON DELETE SET NULL
         )
         ''')
 

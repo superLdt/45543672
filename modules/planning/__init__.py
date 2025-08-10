@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template
+from flask_login import login_required, current_user
 
 planning_bp = Blueprint('planning_bp', __name__, template_folder='templates')
 
 @planning_bp.route('/')
+@login_required
 def index():
-    return render_template('planning/index.html')
+    return render_template('planning/index.html', user=current_user)
 
 @planning_bp.route('/routes')
 def route_planning():
