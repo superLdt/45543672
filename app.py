@@ -38,6 +38,12 @@ from config import DATABASE
 # 日志配置
 app.logger.setLevel(logging.DEBUG)
 
+# 使用db_manager统一管理数据库初始化
+from db_manager import DatabaseManager
+
+# 在应用启动时初始化数据库
+with app.app_context():
+    DatabaseManager.init_database()
 
 
 # 数据库操作函数
@@ -321,274 +327,18 @@ def handle_template_not_found(e):
 
 # 数据库初始化
 def init_db():
-    """初始化数据库，创建所有必要的表结构"""
+    """统一的数据库初始化入口，使用DatabaseManager"""
     try:
-        db = get_db()
-        cursor = db.cursor()
-        db.execute('BEGIN TRANSACTION')
-
-        # 创建用户表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS User (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            full_name TEXT,
-            email TEXT,
-            phone TEXT,
-            company_id INTEGER,
-            is_active BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (company_id) REFERENCES Company (id)
-        )
-        ''')
-
-        # 创建单位表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Company (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            bank_name TEXT,
-            account_number TEXT,
-            address TEXT,
-            contact_person TEXT,
-            contact_phone TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-
-        # 创建角色表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Role (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-
-        # 创建权限表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Permission (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            module TEXT NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-
-        # 创建用户角色关联表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS UserRole (
-            user_id INTEGER NOT NULL,
-            role_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, role_id),
-            FOREIGN KEY (user_id) REFERENCES User (id) ON DELETE CASCADE,
-            FOREIGN KEY (role_id) REFERENCES Role (id) ON DELETE CASCADE
-        )
-        ''')
-
-        # 创建角色权限关联表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS RolePermission (
-            role_id INTEGER NOT NULL,
-            permission_id INTEGER NOT NULL,
-            PRIMARY KEY (role_id, permission_id),
-            FOREIGN KEY (role_id) REFERENCES Role (id) ON DELETE CASCADE,
-            FOREIGN KEY (permission_id) REFERENCES Permission (id) ON DELETE CASCADE
-        )
-        ''')
-
-        # 创建模块表
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS modules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            display_name TEXT NOT NULL,
-            route_name TEXT,
-            icon_class TEXT,
-            sort_order INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT 1,
-            parent_id INTEGER,
-            FOREIGN KEY (parent_id) REFERENCES modules (id) ON DELETE SET NULL
-        )
-        ''')
-
-        # 添加索引提升查询性能
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_username ON User(username)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_role_name ON Role(name)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_permission_module ON Permission(module)')
-
-        db.commit()
-        app.logger.info('数据库表结构初始化成功')
-
+        from db_manager import DatabaseManager
+        db_manager = DatabaseManager()
+        db_manager.initialize_all_tables()
+        app.logger.info('数据库初始化完成')
     except Exception as e:
-        db.rollback()
         app.logger.error(f'数据库初始化失败: {str(e)}')
         raise
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        # 不在这里关闭db，因为teardown_appcontext会处理
-
-    # 插入默认数据
-    try:
-        insert_default_data()
-    except Exception as e:
-        app.logger.error(f'默认数据插入失败: {str(e)}')
 
 
-def insert_default_data():
-    """插入默认角色、权限和管理员用户"""
-    db = None
-    cursor = None
-    try:
-        db = get_db()
-        cursor = db.cursor()
-        db.execute('BEGIN TRANSACTION')
-        app.logger.info('开始插入默认数据...')
 
-        _insert_roles(cursor)
-        _insert_permissions(cursor)
-        _insert_default_modules(cursor)
-        admin_user_id = _insert_admin_user(cursor)
-
-        if admin_user_id:
-            admin_role_id = _get_role_id(cursor, '超级管理员')
-            if admin_role_id:
-                _assign_all_permissions_to_role(cursor, admin_role_id)
-                _assign_role_to_user(cursor, admin_user_id, admin_role_id)
-
-        db.commit()
-        app.logger.info('默认数据插入成功')
-    except Exception as e:
-        if db:
-            db.rollback()
-        app.logger.error(f'默认数据插入失败: {str(e)}', exc_info=True)
-        raise
-    finally:
-        if cursor:
-            try:
-                cursor.close()
-            except Exception as e:
-                app.logger.warning(f'关闭游标时出错: {str(e)}')
-
-
-def _insert_roles(cursor):
-    """插入默认角色"""
-    roles = [
-        ('超级管理员', '系统最高权限管理员'),
-        ('区域调度员', '负责区域内调度管理'),
-        ('对账人员', '负责财务对账工作'),
-        ('供应商', '外部供应商账户')
-    ]
-    cursor.executemany('INSERT OR IGNORE INTO Role (name, description) VALUES (?, ?)', roles)
-    inserted = cursor.rowcount
-    app.logger.debug(f'插入了 {inserted} 个新角色')
-    return inserted
-
-
-def _insert_permissions(cursor):
-    """插入默认权限"""
-    permissions = [
-        ('user_manage', 'user_management', '用户管理权限'),
-        ('role_manage', 'user_management', '角色管理权限'),
-        ('permission_manage', 'system', '权限管理权限'),
-        ('basic_data_view', 'basic_data', '基础数据查看权限'),
-        ('basic_data_edit', 'basic_data', '基础数据编辑权限'),
-        ('planning_view', 'planning', '规划数据查看权限'),
-        ('planning_edit', 'planning', '规划数据编辑权限'),
-        ('cost_view', 'cost_analysis', '成本数据查看权限'),
-        ('cost_manage', 'cost_analysis', '成本数据管理权限'),
-        ('schedule_view', 'scheduling', '调度数据查看权限'),
-        ('schedule_manage', 'scheduling', '调度数据管理权限'),
-        ('reconciliation_view', 'reconciliation', '对账数据查看权限'),
-        ('reconciliation_manage', 'reconciliation', '对账数据管理权限')
-    ]
-    cursor.executemany('INSERT OR IGNORE INTO Permission (name, module, description) VALUES (?, ?, ?)', permissions)
-    inserted = cursor.rowcount
-    app.logger.debug(f'插入了 {inserted} 个新权限')
-    return inserted
-
-def _insert_default_modules(cursor):
-    """插入默认模块"""
-    modules = [
-        ('dashboard', '控制面板', 'dashboard', 'fas fa-tachometer-alt', 1, 1, None),
-        ('system_settings', '系统设置', 'system_bp.system_settings', 'fas fa-cog', 90, 1, None),
-        ('user_management', '用户管理', 'system_bp.manage_users', 'fas fa-users', 95, 1, None),
-        ('role_permissions', '角色权限配置', 'system_bp.role_permissions', 'fas fa-shield-alt', 99, 1, 10)  # 假设系统设置模块ID为10
-    ]
-    cursor.executemany('''
-        INSERT OR IGNORE INTO modules 
-        (name, display_name, route_name, icon_class, sort_order, is_active, parent_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', modules)
-    inserted = cursor.rowcount
-    app.logger.debug(f'插入了 {inserted} 个新模块')
-    return inserted
-
-
-def _insert_admin_user(cursor):
-    """插入默认管理员用户并返回用户ID"""
-    admin_username = 'admin'
-    admin_password = 'admin123'
-    admin_fullname = '系统管理员'
-    admin_email = 'admin@example.com'
-
-    hashed_password = generate_password_hash(admin_password, method='pbkdf2:sha256')
-    cursor.execute('''
-    INSERT OR IGNORE INTO User (username, password, full_name, email, is_active)
-    VALUES (?, ?, ?, ?, ?)
-    ''', (admin_username, hashed_password, admin_fullname, admin_email, True))
-
-    if cursor.rowcount > 0:
-        app.logger.info(f'默认管理员用户 {admin_username} 创建成功')
-        cursor.execute('SELECT id FROM User WHERE username = ?', (admin_username,))
-        return cursor.fetchone()[0]
-    else:
-        app.logger.info(f'默认管理员用户 {admin_username} 已存在')
-        cursor.execute('SELECT id FROM User WHERE username = ?', (admin_username,))
-        result = cursor.fetchone()
-        return result[0] if result else None
-
-
-def _get_role_id(cursor, role_name):
-    """根据角色名称获取角色ID"""
-    cursor.execute('SELECT id FROM Role WHERE name = ?', (role_name,))
-    result = cursor.fetchone()
-    if not result:
-        app.logger.error(f'角色 {role_name} 不存在')
-        return None
-    return result[0]
-
-
-def _assign_all_permissions_to_role(cursor, role_id):
-    """为角色分配所有权限"""
-    cursor.execute('SELECT id FROM Permission')
-    permission_ids = [row[0] for row in cursor.fetchall()]
-    if not permission_ids:
-        app.logger.warning('未找到任何权限，无法分配')
-        return 0
-
-    role_permissions = [(role_id, pid) for pid in permission_ids]
-    cursor.executemany('INSERT OR IGNORE INTO RolePermission (role_id, permission_id) VALUES (?, ?)', role_permissions)
-    assigned = cursor.rowcount
-    app.logger.debug(f'为角色 {role_id} 分配了 {assigned} 个权限')
-    return assigned
-
-
-def _assign_role_to_user(cursor, user_id, role_id):
-    """为用户分配角色"""
-    cursor.execute('INSERT OR IGNORE INTO UserRole (user_id, role_id) VALUES (?, ?)', (user_id, role_id))
-    if cursor.rowcount > 0:
-        app.logger.debug(f'为用户 {user_id} 分配角色 {role_id} 成功')
-        return True
-    app.logger.debug(f'用户 {user_id} 已拥有角色 {role_id}')
-    return False
 
 
 # 导入并注册蓝图（如果存在）

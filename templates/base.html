@@ -172,27 +172,79 @@
                 </a>
             </li>
             
-            <!-- 供应商和外包供应商只显示财务对账 -->
-            {% set supplier_roles = ['供应商', '外包供应商'] %}
-            {% set is_supplier = false %}
-            {% if user and user.roles %}
-                {% for role in user.roles %}
-                    {% if role.name in supplier_roles %}
-                        {% set is_supplier = true %}
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-
-            {% if is_supplier %}
-                {# 供应商只看财务对账 #}
+            <!-- 超级管理员：显示全部菜单 -->
+            {% if user and user.roles and '超级管理员' in user.roles %}
+                {% include 'partials/full_menu.html' %}
+            
+            <!-- 区域调度员：控制面板、基础数据、规划管理、调度管理、财务对账 -->
+            {% elif user and user.roles and '区域调度员' in user.roles %}
                 <li class="nav-item">
-                    <a href="{{ url_for('reconciliation_bp.index') }}"
-                    class="nav-link {{ 'active' if request.endpoint.startswith('reconciliation_bp.') }}">
+                    <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('basic_data_bp.') }}">
+                        <i class="fas fa-database"></i> 基础数据
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('planning_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('planning_bp.') }}">
+                        <i class="fas fa-map-marked-alt"></i> 规划管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('scheduling_bp.') }}">
+                        <i class="fas fa-calendar-alt"></i> 调度管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('reconciliation_bp.') }}">
                         <i class="fas fa-file-invoice-dollar"></i> 财务对账
                     </a>
                 </li>
+            
+            <!-- 对账人员：控制面板、基础数据、财务对账、成本分析 -->
+            {% elif user and user.roles and '对账人员' in user.roles %}
+                <li class="nav-item">
+                    <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('basic_data_bp.') }}">
+                        <i class="fas fa-database"></i> 基础数据
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('reconciliation_bp.') }}">
+                        <i class="fas fa-file-invoice-dollar"></i> 财务对账
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('cost_analysis_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('cost_analysis_bp.') }}">
+                        <i class="fas fa-chart-line"></i> 成本分析
+                    </a>
+                </li>
+            
+            <!-- 供应商：控制面板、调度管理、财务对账 -->
+            {% elif user and user.roles and '供应商' in user.roles %}
+                <li class="nav-item">
+                    <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('scheduling_bp.') }}">
+                        <i class="fas fa-calendar-alt"></i> 调度管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('reconciliation_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('reconciliation_bp.') }}">
+                        <i class="fas fa-file-invoice-dollar"></i> 财务对账
+                    </a>
+                </li>
+            
+            <!-- 车间地调：控制面板、基础数据、调度管理 -->
+            {% elif user and user.roles and '车间地调' in user.roles %}
+                <li class="nav-item">
+                    <a href="{{ url_for('basic_data_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('basic_data_bp.') }}">
+                        <i class="fas fa-database"></i> 基础数据
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('scheduling_bp.index') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('scheduling_bp.') }}">
+                        <i class="fas fa-calendar-alt"></i> 调度管理
+                    </a>
+                </li>
+            
+            <!-- 默认显示完整菜单（兼容旧逻辑） -->
             {% else %}
-                {# 其它用户看到完整菜单 #}
                 {% include 'partials/full_menu.html' %}
             {% endif %}
         </ul>

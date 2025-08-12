@@ -54,9 +54,23 @@
         <a href="{{ url_for('scheduling_bp.task_assignment') }}" class="btn">进入</a>
     </div>
     <div class="function-card">
-        <h3><i class="fas fa-eye"></i> 实时监控</h3>
-        <p>实时监控运输过程，确保货物安全准时送达。</p>
-        <a href="{{ url_for('scheduling_bp.realtime_monitoring') }}" class="btn">进入</a>
+        <h3><i class="fas fa-user-cog"></i> 人工派车</h3>
+        <p>人工调度车辆，灵活处理特殊运输需求和紧急情况。</p>
+        <a href="{{ url_for('scheduling_bp.manual_dispatch') }}" class="btn">进入</a>
     </div>
+</div>
+
+<div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+    <h5><i class="fas fa-info-circle"></i> 权限说明</h5>
+    <ul style="margin-top: 10px; margin-bottom: 0;">
+        {% set user_roles = current_user.roles if current_user.roles else [] %}
+        {% if '超级管理员' in user_roles or '区域调度员' in user_roles %}
+        <li><strong>您当前角色：</strong>{{ user_roles | join(', ') }} - 可直接进行人工派车操作</li>
+        {% elif '车间地调' in user_roles %}
+        <li><strong>您当前角色：</strong>车间地调 - 可提交车辆需求申请，由调度中心统一安排</li>
+        {% else %}
+        <li><strong>您当前角色：</strong>{{ user_roles | join(', ') if user_roles else '未分配角色' }} - 无人工派车权限</li>
+        {% endif %}
+    </ul>
 </div>
 {% endblock %}

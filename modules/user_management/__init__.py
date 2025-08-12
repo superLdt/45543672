@@ -113,12 +113,14 @@ def user_new():
         # 验证密码匹配
         if password != confirm_password:
             roles = conn.execute('SELECT * FROM Role').fetchall()
-            return render_template('user_management/user_edit.html', error='两次输入的密码不一致', roles=roles)
+            companies = conn.execute('SELECT * FROM Company').fetchall()
+            return render_template('user_management/user_edit.html', error='两次输入的密码不一致', roles=roles, companies=companies, user_roles=[])
         
         # 验证密码长度
         if len(password) < 8:
             roles = conn.execute('SELECT * FROM Role').fetchall()
-            return render_template('user_management/user_edit.html', error='密码长度不能少于8位', roles=roles)
+            companies = conn.execute('SELECT * FROM Company').fetchall()
+            return render_template('user_management/user_edit.html', error='密码长度不能少于8位', roles=roles, companies=companies, user_roles=[])
         
         full_name = request.form['full_name']
         email = request.form['email']
@@ -127,16 +129,13 @@ def user_new():
             company_id = int(company_id_str) if company_id_str else None
         except ValueError:
             company_id = None  # 处理非整数输入
-        role_ids = request.form.getlist('roles')
-        # 验证并转换角色ID为整数
-        valid_role_ids = []
-        for role_id_str in role_ids:
+        role_id_str = request.form.get('role')
+        role_id = None
+        if role_id_str:
             try:
                 role_id = int(role_id_str)
-                valid_role_ids.append(role_id)
             except ValueError:
-                pass  # 忽略无效的角色ID
-        role_ids = valid_role_ids
+                role_id = None
         
         # 哈希密码
         # 在第125行附近，替换现有的密码哈希代码
@@ -153,7 +152,8 @@ def user_new():
             existing_user = conn.execute('SELECT id FROM User WHERE username = ?', (username,)).fetchone()
             if existing_user:
                 roles = conn.execute('SELECT * FROM Role').fetchall()
-                return render_template('user_management/user_edit.html', error='用户名已存在', roles=roles)
+                companies = conn.execute('SELECT * FROM Company').fetchall()
+                return render_template('user_management/user_edit.html', error='用户名已存在', roles=roles, companies=companies, user_roles=[])
             
             # 创建用户
             conn.execute('''
@@ -164,15 +164,16 @@ def user_new():
             # 获取新创建的用户
             user = conn.execute('SELECT id FROM User WHERE username = ?', (username,)).fetchone()
             
-            # 分配角色
-            for role_id in role_ids:
+            # 分配角色（单个角色）
+            if role_id:
                 conn.execute('INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)', (user['id'], role_id))
                 
             conn.commit()
             return redirect(url_for('user_management_bp.user_list'))
         except sqlite3.IntegrityError:
             roles = conn.execute('SELECT * FROM Role').fetchall()
-            return render_template('user_management/user_edit.html', error="用户名已存在", roles=roles)
+            companies = conn.execute('SELECT * FROM Company').fetchall()
+            return render_template('user_management/user_edit.html', error="用户名已存在", roles=roles, companies=companies, user_roles=[])
         finally:
               pass  # 由Flask自动管理连接关闭
 
@@ -192,7 +193,8 @@ def user_new():
                          roles=all_roles, 
                          companies=companies, 
                          editing_user=None, 
-                         user=current_user_info)
+                         user=current_user_info,
+                         user_roles=[])
 
 # 编辑用户
 @user_management_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
@@ -261,7 +263,13 @@ def _handle_post_request(conn, user, user_id, roles, companies):
         email = request.form.get('email', '').strip()
         company_id_str = request.form.get('company_id', '')
         is_active = 1 if request.form.get('is_active') else 0  # 处理激活状态
-        role_ids = request.form.getlist('roles')  # 多选角色
+        role_id_str = request.form.get('role')  # 单选角色
+        role_id = None
+        if role_id_str:
+            try:
+                role_id = int(role_id_str)
+            except ValueError:
+                role_id = None
         new_password = request.form.get('new_password', '').strip()
 
         # 处理公司ID（转换为整数或None）
@@ -304,15 +312,13 @@ def _handle_post_request(conn, user, user_id, roles, companies):
         # 执行用户信息更新
         conn.execute(base_query, tuple(update_fields))
 
-        # 同步用户角色（先删除旧关联，再添加新关联）
+        # 同步用户角色（先删除旧关联，再添加新角色）
         conn.execute('DELETE FROM UserRole WHERE user_id = ?', (user_id,))
-        for role_id in role_ids:
-            # 验证角色ID有效性（避免无效数据）
-            if role_id and any(str(role['id']) == role_id for role in roles):
-                conn.execute(
-                    'INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)',
-                    (user_id, role_id)
-                )
+        if role_id and any(str(r['id']) == str(role_id) for r in roles):
+            conn.execute(
+                'INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)',
+                (user_id, role_id)
+            )
 
         # 提交事务
         conn.commit()
@@ -334,12 +340,12 @@ def _handle_post_request(conn, user, user_id, roles, companies):
 
 def _handle_get_request(conn, user, roles, companies):
     """处理GET请求：加载用户当前角色并渲染表单"""
-    # 获取被编辑用户的角色ID列表（用于模板勾选）
-    edited_user_roles = conn.execute(
+    # 获取被编辑用户的角色ID（用于模板勾选）
+    edited_user_role = conn.execute(
         'SELECT role_id FROM UserRole WHERE user_id = ?',
         (user['id'],)
-    ).fetchall()
-    edited_user_role_ids = [str(r['role_id']) for r in edited_user_roles]  # 转为字符串便于模板比对
+    ).fetchone()
+    edited_user_role_ids = [str(edited_user_role['role_id'])] if edited_user_role else []
 
     # 获取当前登录用户的角色信息（用于权限控制等扩展场景）
     current_user_roles = conn.execute(
@@ -372,8 +378,7 @@ def _handle_get_request(conn, user, roles, companies):
     print(f"编辑用户ID: {id}")      
     # 打印下request.form
     print(f"request.form: {request.form}")      
-    # 打印下request.form.getlist('roles')
-    print(f"request.form.getlist('roles'): {request.form.getlist('roles')}")    
+   
 
 
 
@@ -381,19 +386,8 @@ def _handle_get_request(conn, user, roles, companies):
 
     conn = get_db()
     user = conn.execute('SELECT * FROM User WHERE id = ?', (id,)).fetchone()
-    #打印下user的所有信息
-    # 打印用户所有信息
-    if user:
-        print(f"用户ID: {user['id']}")  # 若为元组则用索引，如 user[0]
-        print(f"用户名: {user['username']}")
-        print(f"姓名: {user['full_name']}")
-        print(f"邮箱: {user['email']}")
-        print(f"所属公司ID: {user['company_id']}")
-        print(f"是否激活: {user['is_active']}")
-        print(f"创建时间: {user['created_at']}")
-        print(f"更新时间: {user['updated_at']}")
-    else:
-        print("未找到该用户")
+    if user is None:
+        return redirect(url_for('user_management_bp.user_list'))
 
 
     if user is None:
@@ -409,7 +403,15 @@ def _handle_get_request(conn, user, roles, companies):
         except ValueError:
             company_id = None  # 处理非整数输入
         is_active = 1 if request.form.get('is_active') else 0
-        role_ids = request.form.getlist('roles')
+        role_id_str = request.form.get('role')
+        
+        # 验证角色ID
+        try:
+            role_id = int(role_id_str) if role_id_str else None
+            if role_id is None:
+                return render_template('user_management/user_edit.html', user=user, error='请选择一个角色')
+        except ValueError:
+            return render_template('user_management/user_edit.html', user=user, error='角色ID无效')
         
         # 如果提供了新密码，则更新密码
         new_password = request.form.get('new_password')
@@ -443,9 +445,8 @@ def _handle_get_request(conn, user, roles, companies):
             # 移除现有角色
             conn.execute('DELETE FROM UserRole WHERE user_id = ?', (id,))
             
-            # 分配新角色
-            for role_id in role_ids:
-                conn.execute('INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)', (id, role_id))
+            # 分配新角色（单个角色）
+            conn.execute('INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)', (id, role_id))
                 
             conn.commit()
             return redirect(url_for('user_management_bp.user_list'))
@@ -460,9 +461,10 @@ def _handle_get_request(conn, user, roles, companies):
         conn = get_db()
         
         # 获取编辑用户的角色信息
-        user_roles = [r['role_id'] for r in conn.execute(
+        user_role = conn.execute(
             'SELECT role_id FROM UserRole WHERE user_id = ?', 
-            (id,)).fetchall()]
+            (id,)).fetchone()
+        user_roles = [user_role['role_id']] if user_role else []
             
         # 获取所有角色和公司
         roles = conn.execute('SELECT * FROM Role').fetchall()

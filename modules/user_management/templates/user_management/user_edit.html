@@ -119,6 +119,14 @@
                         {% endfor %}
                     </select>
                 </div>
+                
+                <div class="form-group">
+                    <label>状态</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="is_active" name="is_active" value="1" {% if editing_user and editing_user.is_active %}checked{% endif %}>
+                        <label for="is_active">启用账户</label>
+                    </div>
+                </div>
 
                 <div class="form-group">
                     <label>角色 *</label>
@@ -126,7 +134,7 @@
                         {% if roles %}
                         {% for role in roles %}
                         <div class="role-option">
-                            <input type="checkbox" id="role_{{ role.id }}" name="roles" value="{{ role.id }}" {% if editing_user and role.id in editing_user.roles|map(attribute='id') %}checked{% endif %}>
+                            <input type="radio" id="role_{{ role.id }}" name="role" value="{{ role.id }}" {% if user_roles and role.id|string in user_roles %}checked{% endif %}>
                             <label for="role_{{ role.id }}">{{ role.name }}</label>
                         </div>
                         {% endfor %}

@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime
 from config import DATABASE  # 从config.py导入数据库路径配置
 
 class DatabaseManager:
@@ -79,6 +80,656 @@ class DatabaseManager:
         except Exception as e:
             print(f'检查用户表失败: {str(e)}')
             return False
+
+    def create_manual_dispatch_tables(self):
+        """创建人工派车相关表"""
+        if not self.cursor:
+            print('数据库未连接')
+            return False
+
+        try:
+            # 创建派车任务表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS manual_dispatch_tasks (
+                task_id TEXT PRIMARY KEY,
+                required_date TEXT NOT NULL,
+                start_bureau TEXT NOT NULL,
+                route_direction TEXT NOT NULL,
+                carrier_company TEXT NOT NULL,
+                route_name TEXT NOT NULL,
+                transport_type TEXT CHECK(transport_type IN ('单程', '往返')) NOT NULL,
+                requirement_type TEXT CHECK(requirement_type IN ('正班', '加班')) NOT NULL,
+                volume INTEGER NOT NULL,
+                weight REAL NOT NULL,
+                special_requirements TEXT,
+                status TEXT DEFAULT '待派车' NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+
+            # 创建车辆信息表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS vehicles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id TEXT,
+                manifest_number TEXT,
+                manifest_serial TEXT,
+                dispatch_number TEXT,
+                license_plate TEXT NOT NULL,
+                carriage_number TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+            )
+            ''')
+
+            # 创建派车状态历史表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS dispatch_status_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id TEXT NOT NULL,
+                status_change TEXT NOT NULL,
+                operator TEXT NOT NULL,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                note TEXT,
+                FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+            )
+            ''')
+
+            # 创建索引
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_tasks_date ON manual_dispatch_tasks(required_date)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON manual_dispatch_tasks(status)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_history_task ON dispatch_status_history(task_id)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicles_task ON vehicles(task_id)')
+
+            self.conn.commit()
+            print('人工派车相关表创建成功')
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f'创建表失败: {str(e)}')
+            return False
+
+    def insert_sample_dispatch_data(self):
+        """插入示例派车数据"""
+        if not self.cursor:
+            return False
+
+        try:
+            # 检查是否已有数据
+            self.cursor.execute('SELECT COUNT(*) FROM manual_dispatch_tasks')
+            if self.cursor.fetchone()[0] > 0:
+                print('派车任务表中已有数据，跳过插入示例数据')
+                return True
+
+            # 插入示例任务
+            sample_tasks = [
+                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输'),
+                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高'),
+                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None)
+            ]
+
+            self.cursor.executemany('''
+            INSERT INTO manual_dispatch_tasks 
+            (task_id, required_date, start_bureau, route_direction, carrier_company, route_name, 
+             transport_type, requirement_type, volume, weight, special_requirements)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', sample_tasks)
+
+            # 插入示例状态历史
+            sample_history = [
+                ('T2024001', '创建任务', '系统管理员', '新建派车任务'),
+                ('T2024002', '创建任务', '调度员张三', '新建加班任务'),
+                ('T2024003', '创建任务', '调度员李四', '新建正班任务')
+            ]
+
+            self.cursor.executemany('''
+            INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
+            VALUES (?, ?, ?, ?)
+            ''', sample_history)
+
+            # 插入示例车辆信息
+            sample_vehicles = [
+                ('T2024001', 'MN2024001', 'MS2024001', 'DP2024001', '京A12345', '1'),
+                ('T2024002', 'MN2024002', 'MS2024002', 'DP2024002', '沪B67890', '2')
+            ]
+
+            self.cursor.executemany('''
+            INSERT INTO vehicles (task_id, manifest_number, manifest_serial, dispatch_number, license_plate, carriage_number)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', sample_vehicles)
+
+            self.conn.commit()
+            print('示例数据插入成功')
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f'插入示例数据失败: {str(e)}')
+            return False
+
+    # 人工派车业务方法
+    def create_dispatch_task(self, task_data):
+        """创建派车任务"""
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接'}
+
+        try:
+            task_id = f"T{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            self.cursor.execute('''
+            INSERT INTO manual_dispatch_tasks 
+            (task_id, required_date, start_bureau, route_direction, carrier_company, route_name,
+             transport_type, requirement_type, volume, weight, special_requirements)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                task_id,
+                task_data['required_date'],
+                task_data['start_bureau'],
+                task_data['route_direction'],
+                task_data['carrier_company'],
+                task_data['route_name'],
+                task_data['transport_type'],
+                task_data['requirement_type'],
+                task_data['volume'],
+                task_data['weight'],
+                task_data.get('special_requirements')
+            ))
+
+            # 记录状态历史
+            self.cursor.execute('''
+            INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
+            VALUES (?, ?, ?, ?)
+            ''', (task_id, '创建任务', task_data.get('operator', '系统'), '新建派车任务'))
+
+            self.conn.commit()
+            return {'success': True, 'task_id': task_id}
+            
+        except Exception as e:
+            self.conn.rollback()
+            return {'success': False, 'error': str(e)}
+
+    def get_dispatch_tasks(self, status=None, date_from=None, date_to=None):
+        """获取派车任务列表"""
+        if not self.cursor:
+            return []
+
+        try:
+            query = '''
+            SELECT t.*, COUNT(v.id) as vehicle_count
+            FROM manual_dispatch_tasks t
+            LEFT JOIN vehicles v ON t.task_id = v.task_id
+            WHERE 1=1
+            '''
+            params = []
+
+            if status:
+                query += ' AND t.status = ?'
+                params.append(status)
+
+            if date_from:
+                query += ' AND t.required_date >= ?'
+                params.append(date_from)
+
+            if date_to:
+                query += ' AND t.required_date <= ?'
+                params.append(date_to)
+
+            query += ' GROUP BY t.task_id ORDER BY t.required_date ASC'
+
+            self.cursor.execute(query, params)
+            
+            columns = [description[0] for description in self.cursor.description]
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+        except Exception as e:
+            print(f'获取任务列表失败: {str(e)}')
+            return []
+
+    def update_task_status(self, task_id, new_status, operator, note=None):
+        """更新任务状态"""
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接'}
+
+        try:
+            self.cursor.execute('''
+            UPDATE manual_dispatch_tasks 
+            SET status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE task_id = ?
+            ''', (new_status, task_id))
+
+            self.cursor.execute('''
+            INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
+            VALUES (?, ?, ?, ?)
+            ''', (task_id, new_status, operator, note or f'状态更新为{new_status}'))
+
+            self.conn.commit()
+            return {'success': True}
+            
+        except Exception as e:
+            self.conn.rollback()
+            return {'success': False, 'error': str(e)}
+
+    def assign_vehicle(self, task_id, vehicle_data):
+        """分配车辆到任务"""
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接'}
+
+        try:
+            self.cursor.execute('''
+            INSERT INTO vehicles (task_id, manifest_number, manifest_serial, dispatch_number, license_plate, carriage_number)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                task_id,
+                vehicle_data['manifest_number'],
+                vehicle_data['manifest_serial'],
+                vehicle_data['dispatch_number'],
+                vehicle_data['license_plate'],
+                vehicle_data.get('carriage_number')
+            ))
+
+            self.conn.commit()
+            return {'success': True}
+            
+        except Exception as e:
+            self.conn.rollback()
+            return {'success': False, 'error': str(e)}
+
+    def get_dispatch_task_detail(self, task_id):
+        """获取派车任务详情"""
+        if not self.cursor:
+            return None
+
+        try:
+            self.cursor.execute('''
+            SELECT * FROM manual_dispatch_tasks WHERE task_id = ?
+            ''', (task_id,))
+            
+            row = self.cursor.fetchone()
+            if row:
+                columns = [description[0] for description in self.cursor.description]
+                return dict(zip(columns, row))
+            return None
+            
+        except Exception as e:
+            print(f'获取任务详情失败: {str(e)}')
+            return None
+
+    def get_task_status_history(self, task_id):
+        """获取任务状态变更历史"""
+        if not self.cursor:
+            return []
+
+        try:
+            self.cursor.execute('''
+            SELECT * FROM dispatch_status_history 
+            WHERE task_id = ? 
+            ORDER BY timestamp ASC
+            ''', (task_id,))
+            
+            columns = [description[0] for description in self.cursor.description]
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+        except Exception as e:
+            print(f'获取状态历史失败: {str(e)}')
+            return []
+
+    @staticmethod
+    def init_database():
+        """静态方法：初始化数据库，创建所有缺失的表"""
+        try:
+            db_manager = DatabaseManager()
+            if db_manager.connect():
+                # 创建人工派车相关表
+                db_manager.create_manual_dispatch_tables()
+                print("✅ 数据库初始化完成")
+                db_manager.disconnect()
+                return True
+            else:
+                print("❌ 数据库连接失败")
+                return False
+        except Exception as e:
+            print(f"❌ 数据库初始化失败: {e}")
+            return False
+
+    def initialize_all_tables(self):
+        """
+        初始化所有数据库表
+        包括用户管理、公司管理、人工派车等所有表
+        """
+        if not self.connect():
+            return False
+        
+        try:
+            # 创建用户管理相关表
+            self.create_user_tables()
+            print("✅ 用户管理相关表创建成功")
+            
+            # 创建人工派车相关表
+            self.create_manual_dispatch_tables()
+            print("✅ 人工派车相关表创建成功")
+            
+            # 插入默认数据
+            self.insert_default_data()
+            
+            return True
+        except Exception as e:
+            print(f"❌ 初始化表失败: {str(e)}")
+            self.conn.rollback()
+            return False
+        finally:
+            self.disconnect()
+
+    def create_user_tables(self):
+        """创建用户管理相关表"""
+        if not self.cursor:
+            print('数据库未连接')
+            return False
+
+        try:
+            # 创建单位表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Company (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                bank_name TEXT,
+                account_number TEXT,
+                address TEXT,
+                contact_person TEXT,
+                contact_phone TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+
+            # 创建用户表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS User (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
+                full_name TEXT,
+                email TEXT,
+                phone TEXT,
+                company_id INTEGER,
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (company_id) REFERENCES Company (id)
+            )
+            ''')
+
+            # 创建角色表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Role (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+
+            # 创建权限表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Permission (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                module TEXT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+
+            # 创建用户角色关联表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS UserRole (
+                user_id INTEGER NOT NULL,
+                role_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, role_id),
+                FOREIGN KEY (user_id) REFERENCES User (id) ON DELETE CASCADE,
+                FOREIGN KEY (role_id) REFERENCES Role (id) ON DELETE CASCADE
+            )
+            ''')
+
+            # 创建角色权限关联表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS RolePermission (
+                role_id INTEGER NOT NULL,
+                permission_id INTEGER NOT NULL,
+                PRIMARY KEY (role_id, permission_id),
+                FOREIGN KEY (role_id) REFERENCES Role (id) ON DELETE CASCADE,
+                FOREIGN KEY (permission_id) REFERENCES Permission (id) ON DELETE CASCADE
+            )
+            ''')
+
+            # 创建模块表
+            self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS modules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                display_name TEXT NOT NULL,
+                route_name TEXT,
+                icon_class TEXT,
+                sort_order INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT 1,
+                parent_id INTEGER,
+                FOREIGN KEY (parent_id) REFERENCES modules (id) ON DELETE SET NULL
+            )
+            ''')
+
+            # 添加索引提升查询性能
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_username ON User(username)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_role_name ON Role(name)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_permission_module ON Permission(module)')
+
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f'创建用户管理相关表失败: {str(e)}')
+            return False
+
+    def insert_default_data(self):
+        """插入默认角色、权限和管理员用户，并配置角色权限"""
+        if not self.cursor:
+            return False
+
+        try:
+            # 1. 插入默认角色（包含init_permissions.py中的车间地调角色）
+            roles = [
+                ('超级管理员', '系统最高权限管理员'),
+                ('区域调度员', '负责区域内调度管理'),
+                ('对账人员', '负责财务对账工作'),
+                ('供应商', '外部供应商账户'),
+                ('车间地调', '负责车间车辆需求与供应商车辆审批')
+            ]
+            self.cursor.executemany('INSERT OR IGNORE INTO Role (name, description) VALUES (?, ?)', roles)
+
+            # 2. 插入默认权限
+            permissions = [
+                ('user_manage', 'user_management', '用户管理权限'),
+                ('role_manage', 'user_management', '角色管理权限'),
+                ('permission_manage', 'system', '权限管理权限'),
+                ('basic_data_view', 'basic_data', '基础数据查看权限'),
+                ('basic_data_edit', 'basic_data', '基础数据编辑权限'),
+                ('planning_view', 'planning', '规划数据查看权限'),
+                ('planning_edit', 'planning', '规划数据编辑权限'),
+                ('cost_view', 'cost_analysis', '成本数据查看权限'),
+                ('cost_manage', 'cost_analysis', '成本数据管理权限'),
+                ('schedule_view', 'scheduling', '调度数据查看权限'),
+                ('schedule_manage', 'scheduling', '调度数据管理权限'),
+                ('reconciliation_view', 'reconciliation', '对账数据查看权限'),
+                ('reconciliation_manage', 'reconciliation', '对账数据管理权限')
+            ]
+            self.cursor.executemany('INSERT OR IGNORE INTO Permission (name, module, description) VALUES (?, ?, ?)', permissions)
+
+            # 3. 插入默认模块
+            modules = [
+                ('dashboard', '控制面板', 'dashboard', 'fas fa-tachometer-alt', 1, 1, None),
+                ('system_settings', '系统设置', 'system_bp.system_settings', 'fas fa-cog', 90, 1, None),
+                ('user_management', '用户管理', 'system_bp.manage_users', 'fas fa-users', 95, 1, None),
+                ('role_permissions', '角色权限配置', 'system_bp.role_permissions', 'fas fa-shield-alt', 99, 1, None)
+            ]
+            self.cursor.executemany('''
+                INSERT OR IGNORE INTO modules 
+                (name, display_name, route_name, icon_class, sort_order, is_active, parent_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', modules)
+
+            # 4. 插入默认管理员用户
+            admin_username = 'admin'
+            admin_password = 'admin123'
+            admin_fullname = '系统管理员'
+            admin_email = 'admin@example.com'
+
+            # 检查用户是否已存在
+            self.cursor.execute('SELECT id FROM User WHERE username = ?', (admin_username,))
+            if not self.cursor.fetchone():
+                self.cursor.execute('''
+                    INSERT INTO User (username, password, full_name, email, is_active)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (admin_username, admin_password, admin_fullname, admin_email, True))
+                
+                admin_user_id = self.cursor.lastrowid
+                
+                # 获取超级管理员角色ID
+                self.cursor.execute('SELECT id FROM Role WHERE name = ?', ('超级管理员',))
+                admin_role = self.cursor.fetchone()
+                
+                if admin_role:
+                    admin_role_id = admin_role[0]
+                    # 分配角色给用户
+                    self.cursor.execute('INSERT OR IGNORE INTO UserRole (user_id, role_id) VALUES (?, ?)', 
+                                 (admin_user_id, admin_role_id))
+                    
+                    # 为超级管理员分配所有权限
+                    self.cursor.execute('SELECT id FROM Permission')
+                    permission_ids = [row[0] for row in self.cursor.fetchall()]
+                    role_permissions = [(admin_role_id, pid) for pid in permission_ids]
+                    self.cursor.executemany('INSERT OR IGNORE INTO RolePermission (role_id, permission_id) VALUES (?, ?)', 
+                                     role_permissions)
+
+            # 5. 配置角色权限（整合init_permissions.py的功能）
+            self._configure_role_permissions()
+
+            self.conn.commit()
+            print("✅ 默认数据插入成功")
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"❌ 默认数据插入失败: {str(e)}")
+            return False
+
+    def _configure_role_permissions(self):
+        """配置角色权限（整合自init_permissions.py）"""
+        # 角色权限配置映射
+        ROLE_PERMISSIONS_CONFIG = {
+            '超级管理员': [
+                'user_manage', 'role_manage', 'permission_manage',
+                'basic_data_view', 'basic_data_edit',
+                'planning_view', 'planning_edit',
+                'cost_view', 'cost_manage',
+                'schedule_view', 'schedule_manage',
+                'reconciliation_view', 'reconciliation_manage'
+            ],
+            '区域调度员': [
+                'basic_data_view', 'planning_view', 
+                'schedule_view', 'reconciliation_view'
+            ],
+            '对账人员': [
+                'basic_data_view', 'cost_view', 'reconciliation_view'
+            ],
+            '供应商': [
+                'schedule_view', 'reconciliation_view'
+            ],
+            '车间地调': [
+                'basic_data_view', 'schedule_view'
+            ]
+        }
+
+        # 获取所有权限的ID映射
+        self.cursor.execute('SELECT id, name FROM Permission')
+        permission_map = {row[1]: row[0] for row in self.cursor.fetchall()}
+        
+        # 获取所有角色的ID映射
+        self.cursor.execute('SELECT id, name FROM Role')
+        role_map = {row[1]: row[0] for row in self.cursor.fetchall()}
+        
+        configured_count = 0
+        
+        for role_name, permission_names in ROLE_PERMISSIONS_CONFIG.items():
+            if role_name not in role_map:
+                continue
+                
+            role_id = role_map[role_name]
+            
+            for permission_name in permission_names:
+                if permission_name not in permission_map:
+                    continue
+                    
+                permission_id = permission_map[permission_name]
+                
+                self.cursor.execute('''
+                    INSERT OR IGNORE INTO RolePermission (role_id, permission_id)
+                    VALUES (?, ?)
+                ''', (role_id, permission_id))
+                
+                if self.cursor.rowcount > 0:
+                    configured_count += 1
+        
+        if configured_count > 0:
+            print(f"✅ 配置了 {configured_count} 个角色权限关系")
+        
+        return True
+
+    def check_and_fix_permissions(self):
+        """检查并修复权限配置（整合自init_permissions.py）"""
+        if not self.connect():
+            print("❌ 数据库连接失败，无法检查权限")
+            return False
+        
+        try:
+            # 检查角色权限是否完整
+            self.cursor.execute('''
+                SELECT r.name, COUNT(rp.permission_id) as permission_count
+                FROM Role r
+                LEFT JOIN RolePermission rp ON r.id = rp.role_id
+                GROUP BY r.id, r.name
+            ''')
+            
+            roles_with_permissions = self.cursor.fetchall()
+            
+            needs_fix = False
+            ROLE_PERMISSIONS_CONFIG = {
+                '超级管理员': 12, '区域调度员': 4, '对账人员': 3, 
+                '供应商': 2, '车间地调': 2
+            }
+            
+            for role_name, count in roles_with_permissions:
+                expected_count = ROLE_PERMISSIONS_CONFIG.get(role_name, 0)
+                if count != expected_count and expected_count > 0:
+                    print(f"⚠️ 角色 {role_name} 权限不完整: 现有 {count}, 期望 {expected_count}")
+                    needs_fix = True
+            
+            if needs_fix:
+                print("🔄 检测到权限配置问题，开始修复...")
+                self._configure_role_permissions()
+                self.conn.commit()
+                print("✅ 权限修复完成")
+            else:
+                print("✅ 权限配置检查完成，无需修复")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ 权限检查失败: {str(e)}")
+            return False
+        finally:
+            self.disconnect()
 
 # 使用示例
 if __name__ == '__main__':
