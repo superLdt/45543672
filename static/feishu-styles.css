@@ -1,0 +1,380 @@
+/*
+ * 飞书风格样式库 - Feishu Design System
+ * 适用于安徽XX智能运力系统
+ * 提供统一的飞书风格UI组件样式
+ */
+
+/* ========== 设计变量 ========== */
+:root {
+    /* 主色调 */
+    --feishu-primary: #3370ff;
+    --feishu-success: #00d6b9;
+    --feishu-warning: #ff8f1f;
+    --feishu-error: #f54a45;
+    
+    /* 文字颜色 */
+    --feishu-text-primary: #1f2329;
+    --feishu-text-secondary: #646a73;
+    --feishu-text-tertiary: #8f959e;
+    
+    /* 背景颜色 */
+    --feishu-bg: #f7f8fa;
+    --feishu-white: #ffffff;
+    --feishu-bg-secondary: #fafbfc;
+    
+    /* 边框颜色 */
+    --feishu-border: #e4e6eb;
+    --feishu-border-light: #f2f3f5;
+    
+    /* 阴影 */
+    --feishu-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --feishu-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --feishu-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+    
+    /* 圆角 */
+    --feishu-radius: 8px;
+    --feishu-radius-sm: 6px;
+    --feishu-radius-lg: 12px;
+    
+    /* 间距 */
+    --feishu-spacing-xs: 4px;
+    --feishu-spacing-sm: 8px;
+    --feishu-spacing-md: 16px;
+    --feishu-spacing-lg: 24px;
+    --feishu-spacing-xl: 32px;
+}
+
+/* ========== 基础组件 ========== */
+
+/* 飞书风格卡片 */
+.feishu-card {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    transition: all 0.2s ease;
+}
+
+.feishu-card:hover {
+    box-shadow: var(--feishu-shadow-lg);
+}
+
+/* 飞书风格按钮 */
+.feishu-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--feishu-radius);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.feishu-btn:hover {
+    transform: translateY(-1px);
+}
+
+.feishu-btn-primary {
+    background: var(--feishu-primary);
+    color: white;
+}
+
+.feishu-btn-primary:hover {
+    background: #2863f6;
+}
+
+.feishu-btn-secondary {
+    background: var(--feishu-white);
+    color: var(--feishu-text-secondary);
+    border: 1px solid var(--feishu-border);
+}
+
+.feishu-btn-secondary:hover {
+    background: var(--feishu-bg);
+}
+
+.feishu-btn-success {
+    background: var(--feishu-success);
+    color: white;
+}
+
+.feishu-btn-warning {
+    background: var(--feishu-warning);
+    color: white;
+}
+
+.feishu-btn-error {
+    background: var(--feishu-error);
+    color: white;
+}
+
+.feishu-btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.feishu-btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+/* 飞书风格表单控件 */
+.feishu-input,
+.feishu-select,
+.feishu-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--feishu-border);
+    border-radius: var(--feishu-radius);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: var(--feishu-white);
+}
+
+.feishu-input:focus,
+.feishu-select:focus,
+.feishu-textarea:focus {
+    outline: none;
+    border-color: var(--feishu-primary);
+    box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
+}
+
+/* 飞书风格表格 */
+.feishu-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.feishu-table th {
+    background: var(--feishu-bg);
+    color: var(--feishu-text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--feishu-border);
+}
+
+.feishu-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--feishu-border);
+    color: var(--feishu-text-primary);
+    font-size: 14px;
+}
+
+.feishu-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.feishu-table tbody tr:hover {
+    background: var(--feishu-bg);
+}
+
+.feishu-table tbody tr.active {
+    background: rgba(51, 112, 255, 0.05);
+    border-left: 3px solid var(--feishu-primary);
+}
+
+/* 飞书风格状态标签 */
+.feishu-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 4px;
+}
+
+.feishu-badge-pending {
+    background: #fff4e6;
+    color: #ff8f1f;
+}
+
+.feishu-badge-processing {
+    background: #e6f4ff;
+    color: #3370ff;
+}
+
+.feishu-badge-completed {
+    background: #e6fff9;
+    color: #00d6b9;
+}
+
+.feishu-badge-error {
+    background: #ffebe6;
+    color: #f54a45;
+}
+
+/* 飞书风格进度条 */
+.feishu-progress {
+    padding: var(--feishu-spacing-md);
+}
+
+.progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-md);
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-sm);
+    padding: var(--feishu-spacing-sm);
+    border-radius: var(--feishu-radius);
+    transition: all 0.2s ease;
+}
+
+.progress-step:hover {
+    background: var(--feishu-bg);
+}
+
+.progress-step.active {
+    background: rgba(51, 112, 255, 0.05);
+}
+
+/* 飞书风格筛选面板 */
+.filter-panel {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    overflow: hidden;
+}
+
+.filter-header {
+    background: linear-gradient(135deg, var(--feishu-primary), #5b8bff);
+    color: white;
+    padding: var(--feishu-spacing-lg);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.filter-body {
+    padding: var(--feishu-spacing-lg);
+}
+
+.filter-group {
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.filter-label {
+    display: block;
+    margin-bottom: var(--feishu-spacing-xs);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+}
+
+/* 布局系统 */
+.feishu-container {
+    display: flex;
+    gap: var(--feishu-spacing-md);
+    padding: var(--feishu-spacing-md);
+    background: var(--feishu-bg);
+}
+
+.feishu-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-md);
+}
+
+/* 响应式网格 */
+.feishu-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: calc(-1 * var(--feishu-spacing-sm) / 2);
+}
+
+.feishu-col {
+    flex: 1;
+    padding: calc(var(--feishu-spacing-sm) / 2);
+}
+
+.feishu-col-1 { flex: 0 0 8.333333%; }
+.feishu-col-2 { flex: 0 0 16.666667%; }
+.feishu-col-3 { flex: 0 0 25%; }
+.feishu-col-4 { flex: 0 0 33.333333%; }
+.feishu-col-5 { flex: 0 0 41.666667%; }
+.feishu-col-6 { flex: 0 0 50%; }
+.feishu-col-7 { flex: 0 0 58.333333%; }
+.feishu-col-8 { flex: 0 0 66.666667%; }
+.feishu-col-9 { flex: 0 0 75%; }
+.feishu-col-10 { flex: 0 0 83.333333%; }
+.feishu-col-11 { flex: 0 0 91.666667%; }
+.feishu-col-12 { flex: 0 0 100%; }
+
+/* 响应式断点 */
+@media (max-width: 768px) {
+    .feishu-col-sm-12 { flex: 0 0 100%; }
+    .feishu-col-sm-6 { flex: 0 0 50%; }
+    .feishu-col-sm-4 { flex: 0 0 33.333333%; }
+    
+    .feishu-container {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 992px) {
+    .feishu-col-md-6 { flex: 0 0 50%; }
+    .feishu-col-md-4 { flex: 0 0 33.333333%; }
+    .feishu-col-md-3 { flex: 0 0 25%; }
+}
+
+@media (max-width: 1200px) {
+    .feishu-col-lg-8 { flex: 0 0 66.666667%; }
+    .feishu-col-lg-6 { flex: 0 0 50%; }
+    .feishu-col-lg-4 { flex: 0 0 33.333333%; }
+}
+
+/* 页面标题 */
+.page-header {
+    margin: var(--feishu-spacing-md);
+    padding: var(--feishu-spacing-lg);
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--feishu-text-secondary);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* 工具类 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--feishu-spacing-xs); }
+.mb-2 { margin-bottom: var(--feishu-spacing-sm); }
+.mb-3 { margin-bottom: var(--feishu-spacing-md); }
+.mb-4 { margin-bottom: var(--feishu-spacing-lg); }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: var(--feishu-spacing-xs); }
+.mt-2 { margin-top: var(--feishu-spacing-sm); }
+.mt-3 { margin-top: var(--feishu-spacing-md); }
+.mt-4 { margin-top: var(--feishu-spacing-lg); }
+
+.p-0 { padding: 0; }
+.p-1 { padding: var(--feishu-spacing-xs); }
+.p-2 { padding: var(--feishu-spacing-sm); }
+.p-3 { padding: var(--feishu-spacing-md); }
+.p-4 { padding: var(--feishu-spacing-lg); }
+
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }

@@ -53,6 +53,12 @@ def manual_dispatch():
                              description='您没有权限访问人工派车功能。请联系系统管理员获取相应权限。',
                              code=403), 403
 
+@scheduling_bp.route('/task-management')
+@login_required
+def task_management():
+    """任务管理页面"""
+    return render_template('scheduling/task_management.html', title='任务管理', user=current_user)
+
 @scheduling_bp.route('/submit-requirement', methods=['POST'])
 @login_required
 def submit_requirement():

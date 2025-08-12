@@ -6,91 +6,289 @@
 
 {% block extra_css %}
 <style>
+    :root {
+        --feishu-primary: #3370ff;
+        --feishu-success: #00d6b9;
+        --feishu-warning: #ff8f1f;
+        --feishu-error: #f54a45;
+        --feishu-text-primary: #1f2329;
+        --feishu-text-secondary: #646a73;
+        --feishu-text-tertiary: #8f959e;
+        --feishu-border: #e4e6eb;
+        --feishu-bg: #f7f8fa;
+        --feishu-white: #ffffff;
+        --feishu-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+        --feishu-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --feishu-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --feishu-radius: 8px;
+        --feishu-radius-lg: 12px;
+    }
+
+    .dispatch-container {
+        padding: 24px;
+        background: var(--feishu-bg);
+        min-height: calc(100vh - 120px);
+    }
+
     .dispatch-header {
-        margin-bottom: 30px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #e4e7ed;
+        margin-bottom: 24px;
+        padding: 0;
+        border-bottom: none;
     }
+
+    .dispatch-header h2 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 24px;
+    }
+
+    .dispatch-header p {
+        color: var(--feishu-text-secondary);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* 飞书风格卡片 */
+    .feishu-card {
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        transition: all 0.2s ease;
+    }
+
+    .feishu-card:hover {
+        box-shadow: var(--feishu-shadow-lg);
+    }
+
     .dispatch-form {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 30px;
-        margin-bottom: 30px;
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        padding: 32px;
+        margin-bottom: 24px;
     }
+
+    .dispatch-form h4 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin-bottom: 24px;
+        font-size: 18px;
+    }
+
     .form-group {
         margin-bottom: 20px;
     }
+
     .form-label {
         display: block;
-        margin-bottom: 5px;
-        font-weight: 500;
-        color: #333;
-    }
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
         font-size: 14px;
     }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background: var(--feishu-white);
+    }
+
     .form-control:focus {
         outline: none;
-        border-color: #4a6cf7;
+        border-color: var(--feishu-primary);
+        box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
     }
+
+    .form-control::placeholder {
+        color: var(--feishu-text-tertiary);
+    }
+
     .btn-primary {
-        background-color: #4a6cf7;
+        background: linear-gradient(135deg, var(--feishu-primary), #5b8bff);
         color: white;
         padding: 12px 24px;
         border: none;
-        border-radius: 4px;
+        border-radius: var(--feishu-radius);
         cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(51, 112, 255, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2968ff, #4a78ff);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(51, 112, 255, 0.3);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(51, 112, 255, 0.2);
+    }
+
+    .dispatch-list {
+        margin-top: 24px;
+    }
+
+    .dispatch-list h4 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin-bottom: 16px;
+        font-size: 18px;
+    }
+
+    .dispatch-item {
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-sm);
+        border: 1px solid var(--feishu-border);
+        padding: 20px;
+        margin-bottom: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .dispatch-item:hover {
+        box-shadow: var(--feishu-shadow-md);
+    }
+
+    .dispatch-item h6 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
         font-size: 16px;
     }
-    .btn-primary:hover {
-        background-color: #3a5de7;
+
+    .dispatch-item p {
+        color: var(--feishu-text-secondary);
+        margin-bottom: 8px;
+        font-size: 14px;
     }
-    .dispatch-list {
-        margin-top: 30px;
+
+    .dispatch-item small {
+        color: var(--feishu-text-tertiary);
+        font-size: 13px;
     }
-    .dispatch-item {
-        background-color: white;
-        border: 1px solid #e4e7ed;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 15px;
-    }
+
     .dispatch-status {
         display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid transparent;
+    }
+
+    .status-pending {
+        background-color: rgba(255, 143, 31, 0.1);
+        color: #ff8f1f;
+        border-color: rgba(255, 143, 31, 0.3);
+    }
+
+    .status-assigned {
+        background-color: rgba(51, 112, 255, 0.1);
+        color: var(--feishu-primary);
+        border-color: rgba(51, 112, 255, 0.3);
+    }
+
+    .status-completed {
+        background-color: rgba(0, 214, 185, 0.1);
+        color: var(--feishu-success);
+        border-color: rgba(0, 214, 185, 0.3);
+    }
+
+    /* 卡片样式优化 */
+    .card {
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: var(--feishu-shadow-lg);
+    }
+
+    .card-header {
+        background: var(--feishu-white);
+        border-bottom: 1px solid var(--feishu-border);
+        padding: 16px 20px;
+        border-radius: var(--feishu-radius-lg) var(--feishu-radius-lg) 0 0;
+    }
+
+    .card-header h5 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .list-group-item {
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        box-shadow: var(--feishu-shadow-sm);
+    }
+
+    .badge {
+        font-size: 12px;
+        font-weight: 600;
         padding: 4px 8px;
         border-radius: 12px;
-        font-size: 12px;
-        font-weight: 500;
     }
-    .status-pending {
-        background-color: #fff3cd;
-        color: #856404;
+
+    .bg-success {
+        background-color: var(--feishu-success) !important;
     }
-    .status-assigned {
-        background-color: #d1ecf1;
-        color: #0c5460;
+
+    .bg-warning {
+        background-color: var(--feishu-warning) !important;
     }
-    .status-completed {
-        background-color: #d4edda;
-        color: #155724;
+
+    /* 响应式布局 */
+    @media (max-width: 768px) {
+        .dispatch-container {
+            padding: 16px;
+        }
+
+        .dispatch-form {
+            padding: 20px;
+        }
+
+        .dispatch-header h2 {
+            font-size: 20px;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dispatch-header">
-    <h2><i class="fas fa-user-cog"></i> 人工派车</h2>
-    <p>人工调度车辆，灵活处理特殊运输需求和紧急情况</p>
-</div>
+<div class="dispatch-container">
+    <div class="dispatch-header">
+        <h2><i class="fas fa-user-cog"></i> 人工派车</h2>
+        <p>人工调度车辆，灵活处理特殊运输需求和紧急情况</p>
+    </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="dispatch-form">
-            <h4>创建派车任务</h4>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="dispatch-form feishu-card">
+                <h4>创建派车任务</h4>
             <form id="dispatchForm">
                 <div class="form-group">
                     <label class="form-label">需求类型 *</label>
@@ -175,28 +373,37 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card">
+        <div class="card feishu-card">
             <div class="card-header">
-                <h5>可用车辆</h5>
+                <h5><i class="fas fa-truck"></i> 可用车辆</h5>
             </div>
             <div class="card-body">
                 <div class="list-group">
                     <div class="list-group-item">
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>皖A12345</strong><br>
-                                <small>载重: 10吨</small>
+                                <strong class="text-primary">皖A12345</strong>
+                                <div class="text-muted small">载重: 10吨 | 厢式货车</div>
                             </div>
                             <span class="badge bg-success">空闲</span>
                         </div>
                     </div>
                     <div class="list-group-item">
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>皖A67890</strong><br>
-                                <small>载重: 8吨</small>
+                                <strong class="text-primary">皖A67890</strong>
+                                <div class="text-muted small">载重: 8吨 | 冷藏车</div>
                             </div>
                             <span class="badge bg-warning">维修中</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-primary">皖B24680</strong>
+                                <div class="text-muted small">载重: 15吨 | 平板车</div>
+                            </div>
+                            <span class="badge bg-success">空闲</span>
                         </div>
                     </div>
                 </div>
@@ -206,32 +413,69 @@
 </div>
 
 <div class="dispatch-list">
-    <h4>派车记录</h4>
-    <div class="dispatch-item">
-        <div class="d-flex justify-content-between">
-            <div>
-                <h6>合肥 → 南京</h5>
-                <p class="mb-1">普通货物 | 5吨 | 要求: 2024-01-15 14:00</p>
-                <small class="text-muted">车辆: 皖A12345 | 司机: 张师傅</small>
-            </div>
-            <div>
-                <span class="dispatch-status status-assigned">已分配</span>
+    <h4><i class="fas fa-history"></i> 派车记录</h4>
+    <div class="dispatch-item feishu-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-route text-primary me-2"></i>
+                    <h6 class="mb-0">合肥 → 南京</h6>
+                    <span class="dispatch-status status-assigned ms-2">已分配</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                    <span class="text-muted small"><i class="fas fa-box me-1"></i>普通货物</span>
+                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>5吨</span>
+                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-15 14:00</span>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-truck me-1"></i>车辆: 皖A12345 | 
+                    <i class="fas fa-user me-1 ms-2"></i>司机: 张师傅
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="dispatch-item">
-        <div class="d-flex justify-content-between">
-            <div>
-                <h6>芜湖 → 上海</h5>
-                <p class="mb-1">生鲜 | 3吨 | 要求: 2024-01-15 18:00</p>
-                <small class="text-muted">车辆: 皖B67890 | 司机: 李师傅</small>
-            </div>
-            <div>
-                <span class="dispatch-status status-completed">已完成</span>
+    <div class="dispatch-item feishu-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-route text-success me-2"></i>
+                    <h6 class="mb-0">芜湖 → 上海</h6>
+                    <span class="dispatch-status status-completed ms-2">已完成</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                    <span class="text-muted small"><i class="fas fa-fish me-1"></i>生鲜</span>
+                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>3吨</span>
+                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-15 18:00</span>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-truck me-1"></i>车辆: 皖B67890 | 
+                    <i class="fas fa-user me-1 ms-2"></i>司机: 李师傅
+                </div>
             </div>
         </div>
     </div>
+    
+    <div class="dispatch-item feishu-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-route text-warning me-2"></i>
+                    <h6 class="mb-0">安庆 → 杭州</h6>
+                    <span class="dispatch-status status-pending ms-2">待分配</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                    <span class="text-muted small"><i class="fas fa-box me-1"></i>电子产品</span>
+                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>8吨</span>
+                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-16 09:00</span>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-exclamation-triangle me-1"></i>特殊要求: 需冷链运输
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <script>

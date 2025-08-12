@@ -103,6 +103,25 @@ class DatabaseManager:
                 weight REAL NOT NULL,
                 special_requirements TEXT,
                 status TEXT DEFAULT '待派车' NOT NULL,
+                
+                -- 双轨派车流程字段
+                dispatch_track TEXT CHECK(dispatch_track IN ('轨道A', '轨道B')) NOT NULL DEFAULT '轨道A',
+                initiator_role TEXT CHECK(initiator_role IN ('车间地调', '区域调度员', '超级管理员')) NOT NULL DEFAULT '车间地调',
+                initiator_user_id INTEGER NOT NULL DEFAULT 1,
+                initiator_department TEXT,
+                
+                -- 审核流程字段（仅轨道A需要）
+                audit_required BOOLEAN DEFAULT 1,
+                auditor_role TEXT,
+                auditor_user_id INTEGER,
+                audit_status TEXT CHECK(audit_status IN ('待审核', '已通过', '已拒绝')) DEFAULT '待审核',
+                audit_time TEXT,
+                audit_note TEXT,
+                
+                -- 当前处理人信息
+                current_handler_role TEXT,
+                current_handler_user_id INTEGER,
+                
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
@@ -163,19 +182,28 @@ class DatabaseManager:
                 print('派车任务表中已有数据，跳过插入示例数据')
                 return True
 
-            # 插入示例任务
+            # 插入示例任务（包含双轨派车字段）
             sample_tasks = [
-                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输'),
-                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高'),
-                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None)
+                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输', '待承运商响应', '2024-01-15 08:00:00', '2024-01-15 08:00:00', '轨道A', '车间地调', 1, '北京中心局', 1, '区域调度员', 2, '已通过', '2024-01-15 09:00:00', '审核通过，请尽快安排', '承运商', 4),
+                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高', '待承运商响应', '2024-01-16 08:00:00', '2024-01-16 08:00:00', '轨道B', '区域调度员', 2, '上海中心局', 0, None, None, '已通过', None, '区域调度直接派车', '承运商', 4),
+                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None, '待审核', '2024-01-17 08:00:00', '2024-01-17 08:00:00', '轨道A', '车间地调', 3, '广州中心局', 1, '区域调度员', 2, '待审核', None, None, '区域调度员', 2)
             ]
+
+            # 处理None值，使用Python的None代替SQL的NULL
+            processed_tasks = []
+            for task in sample_tasks:
+                processed_task = tuple(None if x is None else x for x in task)
+                processed_tasks.append(processed_task)
 
             self.cursor.executemany('''
             INSERT INTO manual_dispatch_tasks 
             (task_id, required_date, start_bureau, route_direction, carrier_company, route_name, 
-             transport_type, requirement_type, volume, weight, special_requirements)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', sample_tasks)
+             transport_type, requirement_type, volume, weight, special_requirements, status,
+             created_at, updated_at, dispatch_track, initiator_role, initiator_user_id, initiator_department, 
+             audit_required, auditor_role, auditor_user_id, audit_status, audit_time, audit_note,
+             current_handler_role, current_handler_user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', processed_tasks)
 
             # 插入示例状态历史
             sample_history = [
@@ -211,18 +239,33 @@ class DatabaseManager:
 
     # 人工派车业务方法
     def create_dispatch_task(self, task_data):
-        """创建派车任务"""
+        """创建派车任务（支持双轨派车流程）"""
         if not self.cursor:
             return {'success': False, 'error': '数据库未连接'}
 
         try:
             task_id = f"T{datetime.now().strftime('%Y%m%d%H%M%S')}"
             
+            # 确定流程轨道和审核需求
+            initiator_role = task_data.get('initiator_role', '车间地调')
+            dispatch_track = '轨道B' if initiator_role in ['区域调度员', '超级管理员'] else '轨道A'
+            audit_required = 0 if dispatch_track == '轨道B' else 1
+            
+            # 设置初始状态
+            if dispatch_track == '轨道A':
+                initial_status = '待审核'
+                current_handler_role = '区域调度员'
+            else:
+                initial_status = '待承运商响应'
+                current_handler_role = '承运商'
+            
             self.cursor.execute('''
             INSERT INTO manual_dispatch_tasks 
             (task_id, required_date, start_bureau, route_direction, carrier_company, route_name,
-             transport_type, requirement_type, volume, weight, special_requirements)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             transport_type, requirement_type, volume, weight, special_requirements,
+             dispatch_track, initiator_role, initiator_user_id, initiator_department,
+             audit_required, current_handler_role, current_handler_user_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 task_data['required_date'],
@@ -234,14 +277,22 @@ class DatabaseManager:
                 task_data['requirement_type'],
                 task_data['volume'],
                 task_data['weight'],
-                task_data.get('special_requirements')
+                task_data.get('special_requirements'),
+                dispatch_track,
+                initiator_role,
+                task_data.get('initiator_user_id', 1),
+                task_data.get('initiator_department', '未知部门'),
+                audit_required,
+                current_handler_role,
+                task_data.get('current_handler_user_id', 1),
+                initial_status
             ))
 
             # 记录状态历史
             self.cursor.execute('''
             INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
             VALUES (?, ?, ?, ?)
-            ''', (task_id, '创建任务', task_data.get('operator', '系统'), '新建派车任务'))
+            ''', (task_id, initial_status, task_data.get('operator', '系统'), f'创建{dispatch_track}派车任务'))
 
             self.conn.commit()
             return {'success': True, 'task_id': task_id}
@@ -393,6 +444,48 @@ class DatabaseManager:
             print(f"❌ 数据库初始化失败: {e}")
             return False
 
+    def update_manual_dispatch_tables(self):
+        """更新现有表结构，添加双轨派车所需字段"""
+        if not self.cursor:
+            print('数据库未连接')
+            return False
+
+        try:
+            # 检查现有表结构并添加缺失字段
+            self.cursor.execute("PRAGMA table_info(manual_dispatch_tasks)")
+            existing_columns = [row[1] for row in self.cursor.fetchall()]
+            
+            new_columns = [
+                ("dispatch_track", "TEXT CHECK(dispatch_track IN ('轨道A', '轨道B')) NOT NULL DEFAULT '轨道A'"),
+                ("initiator_role", "TEXT CHECK(initiator_role IN ('车间地调', '区域调度员', '超级管理员')) NOT NULL DEFAULT '车间地调'"),
+                ("initiator_user_id", "INTEGER NOT NULL DEFAULT 1"),
+                ("initiator_department", "TEXT"),
+                ("audit_required", "BOOLEAN DEFAULT 1"),
+                ("auditor_role", "TEXT"),
+                ("auditor_user_id", "INTEGER"),
+                ("audit_status", "TEXT CHECK(audit_status IN ('待审核', '已通过', '已拒绝')) DEFAULT '待审核'"),
+                ("audit_time", "TEXT"),
+                ("audit_note", "TEXT"),
+                ("current_handler_role", "TEXT"),
+                ("current_handler_user_id", "INTEGER")
+            ]
+            
+            for column_name, column_def in new_columns:
+                if column_name not in existing_columns:
+                    self.cursor.execute(f"ALTER TABLE manual_dispatch_tasks ADD COLUMN {column_name} {column_def}")
+                    print(f"✅ 添加字段: {column_name}")
+                else:
+                    print(f"⏭️ 字段已存在: {column_name}")
+            
+            self.conn.commit()
+            print("✅ 表结构更新完成")
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"❌ 更新表结构失败: {str(e)}")
+            return False
+
     def initialize_all_tables(self):
         """
         初始化所有数据库表
@@ -409,6 +502,10 @@ class DatabaseManager:
             # 创建人工派车相关表
             self.create_manual_dispatch_tables()
             print("✅ 人工派车相关表创建成功")
+            
+            # 更新现有表结构（添加双轨派车字段）
+            self.update_manual_dispatch_tables()
+            print("✅ 表结构更新完成")
             
             # 插入默认数据
             self.insert_default_data()

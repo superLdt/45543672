@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞书风格样式库使用示例</title>
+    <link rel="stylesheet" href="feishu-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body style="background: var(--feishu-bg); padding: 20px;">
+    <div class="container">
+        <h1 style="color: var(--feishu-text-primary); margin-bottom: 30px;">飞书风格样式库使用示例</h1>
+        
+        <!-- 卡片组件示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cube"></i> 卡片组件示例</h5>
+            </div>
+            <div class="card-body">
+                <p>这是一个标准的飞书风格卡片，具有圆角、阴影和边框效果。</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="feishu-card">
+                            <div class="card-body">
+                                <h6>嵌套卡片</h6>
+                                <p>可以嵌套使用</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feishu-card">
+                            <div class="card-body">
+                                <h6>嵌套卡片</h6>
+                                <p>响应式布局</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按钮组件示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-hand-pointer"></i> 按钮组件示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>主要按钮</h6>
+                    <button class="feishu-btn feishu-btn-primary">主要按钮</button>
+                    <button class="feishu-btn feishu-btn-primary feishu-btn-sm">小按钮</button>
+                    <button class="feishu-btn feishu-btn-primary feishu-btn-lg">大按钮</button>
+                </div>
+                <div class="mb-3">
+                    <h6>次要按钮</h6>
+                    <button class="feishu-btn feishu-btn-secondary">次要按钮</button>
+                    <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">小按钮</button>
+                </div>
+                <div class="mb-3">
+                    <h6>状态按钮</h6>
+                    <button class="feishu-btn feishu-btn-success">成功按钮</button>
+                    <button class="feishu-btn feishu-btn-warning">警告按钮</button>
+                    <button class="feishu-btn feishu-btn-error">错误按钮</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表单组件示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-edit"></i> 表单组件示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">输入框</label>
+                            <input type="text" class="feishu-input" placeholder="请输入内容">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">选择框</label>
+                            <select class="feishu-select">
+                                <option>选项1</option>
+                                <option>选项2</option>
+                                <option>选项3</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">文本域</label>
+                    <textarea class="feishu-textarea" rows="3" placeholder="请输入内容"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表格组件示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> 表格组件示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="feishu-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>示例项目</td>
+                                <td><span class="feishu-badge feishu-badge-success">已完成</span></td>
+                                <td>
+                                    <button class="feishu-btn feishu-btn-primary feishu-btn-sm">编辑</button>
+                                    <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>测试项目</td>
+                                <td><span class="feishu-badge feishu-badge-warning">进行中</span></td>
+                                <td>
+                                    <button class="feishu-btn feishu-btn-primary feishu-btn-sm">编辑</button>
+                                    <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">查看</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态标签示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-tags"></i> 状态标签示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="feishu-badge feishu-badge-primary">主要</span>
+                    <span class="feishu-badge feishu-badge-success">成功</span>
+                    <span class="feishu-badge feishu-badge-warning">警告</span>
+                    <span class="feishu-badge feishu-badge-error">错误</span>
+                    <span class="feishu-badge feishu-badge-info">信息</span>
+                </div>
+                <div class="mb-3">
+                    <span class="feishu-badge feishu-badge-pending">待处理</span>
+                    <span class="feishu-badge feishu-badge-processing">处理中</span>
+                    <span class="feishu-badge feishu-badge-completed">已完成</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 进度条示例 -->
+        <div class="feishu-card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks"></i> 进度条示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress-steps">
+                    <div class="progress-step completed">
+                        <div class="step-icon completed">1</div>
+                        <div class="step-content">
+                            <p class="step-title">步骤一</p>
+                            <p class="step-subtitle">已完成</p>
+                        </div>
+                    </div>
+                    <div class="progress-step active">
+                        <div class="step-icon active">2</div>
+                        <div class="step-content">
+                            <p class="step-title">步骤二</p>
+                            <p class="step-subtitle">进行中</p>
+                        </div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-icon pending">3</div>
+                        <div class="step-content">
+                            <p class="step-title">步骤三</p>
+                            <p class="step-subtitle">待处理</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分页组件示例 -->
+        <div class="feishu-card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> 分页组件示例</h5>
+            </div>
+            <div class="card-body">
+                <div class="feishu-pagination">
+                    <button class="feishu-page-btn feishu-page-btn-disabled">
+                        <i class="fas fa-chevron-left"></i>
+                        上一页
+                    </button>
+                    
+                    <div class="feishu-page-numbers">
+                        <button class="feishu-page-number feishu-page-number-active">1</button>
+                        <button class="feishu-page-number">2</button>
+                        <button class="feishu-page-number">3</button>
+                        <span class="feishu-page-ellipsis">...</span>
+                        <button class="feishu-page-number">10</button>
+                    </div>
+                    
+                    <button class="feishu-page-btn">
+                        下一页
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    
+                    <div class="feishu-page-info">
+                        <span>共 100 条记录</span>
+                        <span>第 1-10 条</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

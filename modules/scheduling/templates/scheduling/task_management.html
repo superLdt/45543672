@@ -1,0 +1,1118 @@
+{% extends 'base.html' %}
+
+{% block title %}
+任务管理 - 安徽XX智能运力系统
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --feishu-primary: #3370ff;
+        --feishu-success: #00d6b9;
+        --feishu-warning: #ff8f1f;
+        --feishu-error: #f54a45;
+        --feishu-text-primary: #1f2329;
+        --feishu-text-secondary: #646a73;
+        --feishu-text-tertiary: #8f959e;
+        --feishu-border: #e4e6eb;
+        --feishu-bg: #f7f8fa;
+        --feishu-white: #ffffff;
+        --feishu-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+        --feishu-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --feishu-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --feishu-radius: 8px;
+        --feishu-radius-lg: 12px;
+    }
+
+    .task-management-container {
+        display: flex;
+        height: calc(100vh - 120px);
+        gap: 16px;
+        padding: 16px;
+        background: var(--feishu-bg);
+    }
+    
+    /* 主内容区域 - 左右分布布局 */
+    .main-content-wrapper {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+    }
+    
+    .task-list-section {
+        flex: 2; /* 占2/3宽度 */
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-section {
+        flex: 1; /* 占1/3宽度 */
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* 飞书风格卡片 */
+    .feishu-card {
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        transition: all 0.2s ease;
+    }
+    
+    .feishu-card:hover {
+        box-shadow: var(--feishu-shadow-lg);
+    }
+    
+    /* 筛选区样式 */
+    .filter-panel {
+        width: 280px;
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        overflow: hidden;
+    }
+    
+    .filter-header {
+        background: linear-gradient(135deg, var(--feishu-primary), #5b8bff);
+        color: white;
+        padding: 20px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .filter-body {
+        padding: 20px;
+    }
+    
+    .filter-section {
+        margin-bottom: 24px;
+    }
+    
+    .filter-section h6 {
+        color: var(--feishu-text-primary);
+        font-weight: 600;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+    
+    /* 飞书风格表单控件 */
+    .feishu-select {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        font-size: 13px;
+        transition: all 0.2s ease;
+        background: var(--feishu-white);
+    }
+    
+    .feishu-select:focus {
+        outline: none;
+        border-color: var(--feishu-primary);
+        box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
+    }
+    
+    .feishu-input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+    
+    .feishu-input:focus {
+        outline: none;
+        border-color: var(--feishu-primary);
+        box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
+    }
+    
+    /* 筛选组 */
+    .filter-group {
+        margin-bottom: 0;
+        width: 100%;
+    }
+    
+    .filter-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+    }
+    
+    /* 修复网格布局显示问题 */
+    .filter-body .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-right: -0.5rem;
+        margin-left: -0.5rem;
+    }
+    
+    .filter-body .col-lg-4,
+    .filter-body .col-md-4,
+    .filter-body .col-sm-6 {
+        position: relative;
+        width: 100%;
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
+    
+    @media (min-width: 992px) {
+        .filter-body .col-lg-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+    }
+    
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        .filter-body .col-md-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .filter-body .col-sm-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+    
+    /* 3×3网格布局优化 */
+    .row.g-3 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+    
+    .filter-body {
+        padding: 20px 24px;
+    }
+    
+    /* 确保3列布局的强制样式 */
+    .filter-body .row > .col-lg-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+    
+    @media (max-width: 992px) {
+        .filter-body .row > .col-md-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .filter-body .row > .col-sm-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+    
+    .filter-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--feishu-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .filter-header h5 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+    }
+    
+    /* 飞书风格按钮 */
+    .feishu-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: var(--feishu-radius);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .feishu-btn-primary {
+        background: var(--feishu-primary);
+        color: white;
+    }
+    
+    .feishu-btn-primary:hover {
+        background: #2863f6;
+        transform: translateY(-1px);
+    }
+    
+    .feishu-btn-secondary {
+        background: var(--feishu-white);
+        color: var(--feishu-text-secondary);
+        border: 1px solid var(--feishu-border);
+    }
+    
+    .feishu-btn-secondary:hover {
+        background: var(--feishu-bg);
+    }
+    
+    /* 列表区样式 */
+    .list-panel {
+        flex: 1;
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        overflow: hidden;
+    }
+    
+    .list-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--feishu-border);
+        background: var(--feishu-white);
+    }
+    
+    .list-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+        margin: 0;
+    }
+    
+    .list-subtitle {
+        color: var(--feishu-text-secondary);
+        font-size: 14px;
+        margin-top: 4px;
+    }
+    
+    /* 飞书风格表格 */
+    .feishu-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .feishu-table th {
+        background: var(--feishu-bg);
+        color: var(--feishu-text-secondary);
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--feishu-border);
+    }
+    
+    .feishu-table td {
+        padding: 16px;
+        border-bottom: 1px solid var(--feishu-border);
+        color: var(--feishu-text-primary);
+        font-size: 14px;
+    }
+    
+    .feishu-table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .feishu-table tbody tr:hover {
+        background: var(--feishu-bg);
+    }
+    
+    .feishu-table tbody tr.active {
+        background: rgba(51, 112, 255, 0.05);
+        border-left: 3px solid var(--feishu-primary);
+    }
+    
+    /* 飞书风格状态标签 */
+    .feishu-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        gap: 4px;
+    }
+    
+    .feishu-badge-pending {
+        background: #fff4e6;
+        color: #ff8f1f;
+    }
+    
+    .feishu-badge-processing {
+        background: #e6f4ff;
+        color: #3370ff;
+    }
+    
+    .feishu-badge-completed {
+        background: #e6fff9;
+        color: #00d6b9;
+    }
+    
+    .feishu-badge-error {
+        background: #ffebe6;
+        color: #f54a45;
+    }
+    
+    /* 详情区样式 */
+    .detail-panel {
+        width: 400px;
+        background: var(--feishu-white);
+        border-radius: var(--feishu-radius-lg);
+        box-shadow: var(--feishu-shadow-md);
+        border: 1px solid var(--feishu-border);
+        overflow: hidden;
+    }
+    
+    .detail-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--feishu-border);
+        background: var(--feishu-white);
+    }
+    
+    .detail-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+        margin: 0;
+    }
+    
+    /* 飞书风格进度条 */
+    .feishu-progress {
+        padding: 20px;
+    }
+    
+    .progress-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .progress-step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: var(--feishu-radius);
+        transition: all 0.2s ease;
+    }
+    
+    .progress-step.completed {
+        background: rgba(0, 214, 185, 0.1);
+    }
+    
+    .progress-step.active {
+        background: rgba(51, 112, 255, 0.1);
+        border: 1px solid rgba(51, 112, 255, 0.2);
+    }
+    
+    .step-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .step-icon.completed {
+        background: var(--feishu-success);
+    }
+    
+    .step-icon.active {
+        background: var(--feishu-primary);
+    }
+    
+    .step-icon.pending {
+        background: var(--feishu-text-tertiary);
+    }
+    
+    .step-content {
+        flex: 1;
+    }
+    
+    .step-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+        margin: 0;
+    }
+    
+    .step-subtitle {
+        font-size: 12px;
+        color: var(--feishu-text-secondary);
+        margin: 0;
+    }
+    
+    /* 信息卡片 */
+    .info-card {
+        background: var(--feishu-bg);
+        border-radius: var(--feishu-radius);
+        padding: 16px;
+        margin: 16px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .info-label {
+        color: var(--feishu-text-secondary);
+    }
+    
+    .info-value {
+        color: var(--feishu-text-primary);
+        font-weight: 500;
+    }
+    
+    /* 飞书风格时间线 */
+    .feishu-timeline {
+        padding: 16px;
+    }
+    
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-left: 2px solid var(--feishu-border);
+        padding-left: 16px;
+        margin-left: 8px;
+    }
+    
+    .timeline-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--feishu-primary);
+        margin-left: -20px;
+        margin-top: 6px;
+    }
+    
+    .timeline-content {
+        flex: 1;
+    }
+    
+    .timeline-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--feishu-text-primary);
+        margin: 0;
+    }
+    
+    .timeline-subtitle {
+        font-size: 12px;
+        color: var(--feishu-text-secondary);
+        margin: 0;
+    }
+    
+    .timeline-desc {
+        font-size: 13px;
+        color: var(--feishu-text-secondary);
+        margin-top: 4px;
+    }
+    
+    /* 飞书风格分页 */
+    .feishu-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 16px;
+        flex-wrap: wrap;
+    }
+    
+    .feishu-page-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        background: var(--feishu-white);
+        color: var(--feishu-text-primary);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .feishu-page-btn:hover:not(.feishu-page-btn-disabled) {
+        border-color: var(--feishu-primary);
+        color: var(--feishu-primary);
+    }
+    
+    .feishu-page-btn-disabled {
+        color: var(--feishu-text-tertiary);
+        cursor: not-allowed;
+        background: var(--feishu-bg);
+    }
+    
+    .feishu-page-numbers {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .feishu-page-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--feishu-border);
+        border-radius: var(--feishu-radius);
+        background: var(--feishu-white);
+        color: var(--feishu-text-primary);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .feishu-page-number:hover {
+        border-color: var(--feishu-primary);
+        color: var(--feishu-primary);
+    }
+    
+    .feishu-page-number-active {
+        background: var(--feishu-primary);
+        color: white;
+        border-color: var(--feishu-primary);
+    }
+    
+    .feishu-page-ellipsis {
+        color: var(--feishu-text-tertiary);
+        font-size: 14px;
+        margin: 0 4px;
+    }
+    
+    .feishu-page-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        margin-left: auto;
+    }
+    
+    .feishu-page-info span {
+        font-size: 12px;
+        color: var(--feishu-text-secondary);
+    }
+    
+    /* 响应式布局 */
+    @media (max-width: 1200px) {
+        .main-content-wrapper {
+            flex-direction: column;
+        }
+        
+        .task-list-section {
+            flex: 1;
+            width: 100%;
+        }
+        
+        .detail-section {
+            flex: 1;
+            width: 100%;
+        }
+        
+        .detail-panel {
+            width: 100%;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .task-management-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .filter-panel {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        .main-content-wrapper {
+            flex-direction: column;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .task-management-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .filter-panel {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        .list-panel {
+            margin-bottom: 16px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100" style="padding-top: 16px;">
+        <div class="row h-100">
+            <!-- 左侧区域：筛选条件 + 运输列表（占2/3） -->
+            <div class="col-lg-8 col-md-12 h-100 d-flex flex-column">
+                <!-- 筛选条件区域 - 3×3网格布局 -->
+                <div class="feishu-card mb-3">
+                    <div class="filter-header">
+                        <h5><i class="fas fa-filter"></i> 筛选条件</h5>
+                        <div>
+                            <a href="{{ url_for('scheduling_bp.index') }}" class="feishu-btn feishu-btn-secondary feishu-btn-sm">
+                                <i class="fas fa-arrow-left"></i> 返回主页
+                            </a>
+                            <button class="feishu-btn feishu-btn-secondary feishu-btn-sm ms-2" id="toggleFilters">
+                                <i class="fas fa-eye"></i> 显示筛选条件
+                            </button>
+                            <button class="feishu-btn feishu-btn-secondary feishu-btn-sm ms-2">重置</button>
+                        </div>
+                    </div>
+                    <div class="filter-body" id="filterBody" style="display: none;">
+                        <div class="row g-3">
+                            <!-- 第一行：发起单位、轨道类型、任务状态 -->
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">发起单位</label>
+                                    <select class="feishu-select">
+                                        <option>全部单位</option>
+                                        <option>北京局</option>
+                                        <option>上海局</option>
+                                        <option>广州局</option>
+                                        <option>成都局</option>
+                                        <option>武汉局</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">轨道类型</label>
+                                    <select class="feishu-select">
+                                        <option>全部类型</option>
+                                        <option>地调派车</option>
+                                        <option>调度直派</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">任务状态</label>
+                                    <select class="feishu-select">
+                                        <option>全部状态</option>
+                                        <option>待处理</option>
+                                        <option>进行中</option>
+                                        <option>已完成</option>
+                                        <option>已取消</option>
+                                        <option>已暂停</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- 第二行：始发局、邮路、时间范围 -->
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">始发局</label>
+                                    <select class="feishu-select">
+                                        <option>全部始发局</option>
+                                        <option>北京</option>
+                                        <option>上海</option>
+                                        <option>广州</option>
+                                        <option>深圳</option>
+                                        <option>成都</option>
+                                        <option>武汉</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">邮路</label>
+                                    <select class="feishu-select">
+                                        <option>全部邮路</option>
+                                        <option>京广线</option>
+                                        <option>京沪线</option>
+                                        <option>沪昆线</option>
+                                        <option>陇海线</option>
+                                        <option>京九线</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">时间范围</label>
+                                    <input type="date" class="feishu-input" value="2024-01-15">
+                                </div>
+                            </div>
+                            <!-- 第三行：优先级、承运商、查询按钮 -->
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">优先级</label>
+                                    <select class="feishu-select">
+                                        <option>全部优先级</option>
+                                        <option>紧急</option>
+                                        <option>高</option>
+                                        <option>中</option>
+                                        <option>低</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">承运商</label>
+                                    <select class="feishu-select">
+                                        <option>全部承运商</option>
+                                        <option>中国邮政</option>
+                                        <option>顺丰速运</option>
+                                        <option>中通快递</option>
+                                        <option>圆通速递</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="filter-group mb-0">
+                                    <label class="filter-label">&nbsp;</label>
+                                    <button class="feishu-btn feishu-btn-primary w-100">
+                                        <i class="fas fa-search"></i> 查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    document.getElementById('toggleFilters').addEventListener('click', function() {
+                        const filterBody = document.getElementById('filterBody');
+                        const button = document.getElementById('toggleFilters');
+                        
+                        if (filterBody.style.display === 'none') {
+                            filterBody.style.display = 'block';
+                            button.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏筛选条件';
+                        } else {
+                            filterBody.style.display = 'none';
+                            button.innerHTML = '<i class="fas fa-eye"></i> 显示筛选条件';
+                        }
+                    });
+                </script>
+                
+                <!-- 主内容区域 - 左右分布 -->
+                <div class="main-content-wrapper">
+                    <!-- 左侧运输任务列表（占2/3） -->
+                    <div class="task-list-section">
+                        <div class="feishu-card flex-fill">
+                            <div class="list-header">
+                                <h5><i class="fas fa-list"></i> 运输任务列表</h5>
+                                <div>
+                                    <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">
+                                        <i class="fas fa-download"></i> 导出
+                                    </button>
+                                    <button class="feishu-btn feishu-btn-primary feishu-btn-sm ms-2">
+                                        <i class="fas fa-plus"></i> 新建
+                                    </button>
+                                </div>
+                            </div>
+        
+                            <div class="list-header">
+                                <h3 class="list-title">运输任务列表</h3>
+                                <p class="list-subtitle">共 23 条记录，当前显示 1-10 条</p>
+                            </div>
+                    
+                            <div class="table-responsive">
+                                <table class="feishu-table">
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>流程编号</th>
+                                            <th>始发局</th>
+                                            <th>邮路</th>
+                                            <th>轨道类型</th>
+                                            <th>当前节点</th>
+                                            <th>状态标识</th>
+                                            <th>优先级</th>
+                                            <th>发起时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 示例数据 - 每页固定10条 -->
+                                        <tr class="active">
+                                            <td>1</td>
+                                            <td>LC2308001</td>
+                                            <td>合肥中心局</td>
+                                            <td>京广线</td>
+                                            <td>轨道B</td>
+                                            <td>承运商响应</td>
+                                            <td><span class="feishu-badge feishu-badge-pending">⚠️ 待处理</span></td>
+                                            <td><span class="feishu-badge" style="background:#ffebe6;color:#f54a45;">高</span></td>
+                                            <td>08:30</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">处理</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>LC2308002</td>
+                                            <td>北京局</td>
+                                            <td>京沪线</td>
+                                            <td>轨道A</td>
+                                            <td>区域审核</td>
+                                            <td><span class="feishu-badge feishu-badge-completed">✅ 已完成</span></td>
+                                            <td><span class="feishu-badge" style="background:#fff4e6;color:#ff8f1f;">中</span></td>
+                                            <td>09:15</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-secondary" style="padding:4px 8px;font-size:12px;">查看</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>LC2308003</td>
+                                            <td>成都局</td>
+                                            <td>成渝线</td>
+                                            <td>轨道B</td>
+                                            <td>车间发车</td>
+                                            <td><span class="feishu-badge feishu-badge-processing">🕒 处理中</span></td>
+                                            <td><span class="feishu-badge" style="background:#e6fff9;color:#00d6b9;">低</span></td>
+                                            <td>10:00</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">发车</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td>
+                                            <td>LC2308004</td>
+                                            <td>上海局</td>
+                                            <td>沪昆线</td>
+                                            <td>轨道A</td>
+                                            <td>承运商响应</td>
+                                            <td><span class="feishu-badge feishu-badge-pending">⚠️ 待处理</span></td>
+                                            <td><span class="feishu-badge" style="background:#ffebe6;color:#f54a45;">高</span></td>
+                                            <td>08:45</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">处理</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>5</td>
+                                            <td>LC2308005</td>
+                                            <td>广州局</td>
+                                            <td>京广线</td>
+                                            <td>轨道C</td>
+                                            <td>区域审核</td>
+                                            <td><span class="feishu-badge feishu-badge-completed">✅ 已完成</span></td>
+                                            <td><span class="feishu-badge" style="background:#fff4e6;color:#ff8f1f;">中</span></td>
+                                            <td>09:30</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-secondary" style="padding:4px 8px;font-size:12px;">查看</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>6</td>
+                                            <td>LC2308006</td>
+                                            <td>武汉局</td>
+                                            <td>京广线</td>
+                                            <td>轨道A</td>
+                                            <td>车间发车</td>
+                                            <td><span class="feishu-badge feishu-badge-processing">🕒 处理中</span></td>
+                                            <td><span class="feishu-badge" style="background:#e6fff9;color:#00d6b9;">低</span></td>
+                                            <td>10:15</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">发车</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>7</td>
+                                            <td>LC2308007</td>
+                                            <td>西安局</td>
+                                            <td>陇海线</td>
+                                            <td>轨道B</td>
+                                            <td>承运商响应</td>
+                                            <td><span class="feishu-badge feishu-badge-pending">⚠️ 待处理</span></td>
+                                            <td><span class="feishu-badge" style="background:#ffebe6;color:#f54a45;">高</span></td>
+                                            <td>08:20</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">处理</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>8</td>
+                                            <td>LC2308008</td>
+                                            <td>沈阳局</td>
+                                            <td>京哈线</td>
+                                            <td>轨道A</td>
+                                            <td>区域审核</td>
+                                            <td><span class="feishu-badge feishu-badge-completed">✅ 已完成</span></td>
+                                            <td><span class="feishu-badge" style="background:#fff4e6;color:#ff8f1f;">中</span></td>
+                                            <td>09:00</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-secondary" style="padding:4px 8px;font-size:12px;">查看</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>9</td>
+                                            <td>LC2308009</td>
+                                            <td>济南局</td>
+                                            <td>胶济线</td>
+                                            <td>轨道B</td>
+                                            <td>车间发车</td>
+                                            <td><span class="feishu-badge feishu-badge-processing">🕒 处理中</span></td>
+                                            <td><span class="feishu-badge" style="background:#e6fff9;color:#00d6b9;">低</span></td>
+                                            <td>09:45</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">发车</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>10</td>
+                                            <td>LC2308010</td>
+                                            <td>郑州局</td>
+                                            <td>京广线</td>
+                                            <td>轨道C</td>
+                                            <td>承运商响应</td>
+                                            <td><span class="feishu-badge feishu-badge-pending">⚠️ 待处理</span></td>
+                                            <td><span class="feishu-badge" style="background:#ffebe6;color:#f54a45;">高</span></td>
+                                            <td>08:10</td>
+                                            <td>
+                                                <button class="feishu-btn feishu-btn-primary" style="padding:4px 8px;font-size:12px;">处理</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="list-header" style="border-top:1px solid var(--feishu-border);">
+                                <nav aria-label="Page navigation">
+                                    <div class="feishu-pagination">
+                                        <button class="feishu-page-btn feishu-page-btn-disabled">
+                                            <i class="fas fa-chevron-left"></i>
+                                            上一页
+                                        </button>
+                                        
+                                        <div class="feishu-page-numbers">
+                                            <button class="feishu-page-number feishu-page-number-active">1</button>
+                                            <button class="feishu-page-number">2</button>
+                                            <button class="feishu-page-number">3</button>
+                                            <span class="feishu-page-ellipsis">...</span>
+                                            <button class="feishu-page-number">3</button>
+                                        </div>
+                                        
+                                        <button class="feishu-page-btn">
+                                            下一页
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                        
+                                        <div class="feishu-page-info">
+                                            <span>共 23 条记录</span>
+                                            <span>第 1-10 条</span>
+                                        </div>
+                                    </div>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧流程详情（占1/3） -->
+    <div class="detail-panel">
+        <div class="detail-header">
+            <h5><i class="fas fa-file-alt"></i> 流程详情</h5>
+            <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">关闭</button>
+        </div>
+        
+        <!-- 流程进度 -->
+        <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+            <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">流程进度</h6>
+            <div class="progress-steps" style="gap:8px;">
+                <div class="progress-step completed" style="padding:8px;">
+                    <div class="step-icon completed" style="width:20px;height:20px;font-size:10px;">1</div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size:13px;">区域调度派车</p>
+                        <p class="step-subtitle" style="font-size:11px;">张经理 08:30</p>
+                    </div>
+                </div>
+                <div class="progress-step active" style="padding:8px;">
+                    <div class="step-icon active" style="width:20px;height:20px;font-size:10px;">2</div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size:13px;">承运商响应</p>
+                        <p class="step-subtitle" style="font-size:11px;">待处理</p>
+                    </div>
+                </div>
+                <div class="progress-step" style="padding:8px;">
+                    <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">3</div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size:13px;">车间发车</p>
+                        <p class="step-subtitle" style="font-size:11px;">待处理</p>
+                    </div>
+                </div>
+                <div class="progress-step" style="padding:8px;">
+                    <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">4</div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size:13px;">承运商确认</p>
+                        <p class="step-subtitle" style="font-size:11px;">待处理</p>
+                    </div>
+                </div>
+                <div class="progress-step" style="padding:8px;">
+                    <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">5</div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size:13px;">车间最终确认</p>
+                        <p class="step-subtitle" style="font-size:11px;">待处理</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 基础信息 -->
+        <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+            <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">基础信息</h6>
+            <div style="font-size:13px;line-height:1.6;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">流程编号</span><span style="font-weight:500;">LC2308001</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">轨道类型</span><span style="font-weight:500;">轨道B</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">发起车间</span><span style="font-weight:500;">合肥中心局</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">承运商</span><span style="font-weight:500;">中国邮政速递物流</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">货物信息</span><span style="font-weight:500;">5吨/35立方米</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--feishu-text-secondary);">发起时间</span><span style="font-weight:500;">2023-08-01 08:30</span></div>
+            </div>
+        </div>
+        
+        <!-- 操作记录 -->
+        <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+            <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">操作记录</h6>
+            <div class="feishu-timeline" style="padding:0;">
+                <div class="timeline-item" style="padding:8px 0;">
+                    <div class="timeline-dot" style="width:6px;height:6px;margin-left:-15px;"></div>
+                    <div class="timeline-content">
+                        <p class="timeline-title" style="font-size:13px;margin:0;">区域调度派车</p>
+                        <p class="timeline-subtitle" style="font-size:11px;margin:0;">张经理 08:30</p>
+                        <p class="timeline-desc" style="font-size:12px;margin-top:2px;">派车至合肥中心局，5吨车辆</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 当前操作 -->
+        <div class="detail-section" style="padding:12px 16px;">
+            <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">当前操作</h6>
+            <div style="display:flex;gap:8px;flex-direction:column;">
+                <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;">
+                    <i class="fas fa-check"></i> 确认响应
+                </button>
+                <button class="feishu-btn feishu-btn-secondary" style="padding:8px 12px;font-size:13px;">
+                    <i class="fas fa-comment"></i> 添加备注
+                </button>
+                <button class="feishu-btn feishu-btn-warning" style="padding:8px 12px;font-size:13px;">
+                    <i class="fas fa-exclamation-triangle"></i> 申请暂停
+                </button>
+            </div>
+        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
