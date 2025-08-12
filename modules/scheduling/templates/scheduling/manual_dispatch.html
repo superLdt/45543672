@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+
+{% block title %}
+人工派车 - 安徽XX智能运力系统
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dispatch-header {
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e4e7ed;
+    }
+    .dispatch-form {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: #4a6cf7;
+    }
+    .btn-primary {
+        background-color: #4a6cf7;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .btn-primary:hover {
+        background-color: #3a5de7;
+    }
+    .dispatch-list {
+        margin-top: 30px;
+    }
+    .dispatch-item {
+        background-color: white;
+        border: 1px solid #e4e7ed;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .dispatch-status {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-assigned {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    .status-completed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dispatch-header">
+    <h2><i class="fas fa-user-cog"></i> 人工派车</h2>
+    <p>人工调度车辆，灵活处理特殊运输需求和紧急情况</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="dispatch-form">
+            <h4>创建派车任务</h4>
+            <form id="dispatchForm">
+                <div class="form-group">
+                    <label class="form-label">需求类型 *</label>
+                    <select class="form-control" name="requirement_type" required>
+                        <option value="">请选择需求类型</option>
+                        <option value="加班">加班</option>
+                        <option value="正班">正班</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">始发局 *</label>
+                    <input type="text" class="form-control" name="start_location" placeholder="请输入始发局" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">邮路名称 *</label>
+                    <input type="text" class="form-control" name="end_location" placeholder="请输入邮路名称" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">委办承运公司 *</label>
+                    <select class="form-control" name="carrier_company" required>
+                        <option value="">请选择委办承运公司</option>
+                        <option value="中国邮政速递物流">中国邮政速递物流</option>
+                        <option value="顺丰速运">顺丰速运</option>
+                        <option value="圆通速递">圆通速递</option>
+                        <option value="中通快递">中通快递</option>
+                        <option value="申通快递">申通快递</option>
+                        <option value="韵达快递">韵达快递</option>
+                        <option value="百世快递">百世快递</option>
+                        <option value="德邦物流">德邦物流</option>
+                        <option value="京东物流">京东物流</option>
+                        <option value="菜鸟网络">菜鸟网络</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">运输类型 *</label>
+                    <select class="form-control" name="transport_type" required>
+                        <option value="">请选择运输类型</option>
+                        <option value="单程">单程</option>
+                        <option value="往返">往返</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">重量吨 *</label>
+                    <select class="form-control" name="weight" id="weightSelect" required>
+                        <option value="">请选择重量吨</option>
+                        <option value="5">5吨</option>
+                        <option value="8">8吨</option>
+                        <option value="12">12吨</option>
+                        <option value="20">20吨</option>
+                        <option value="30">30吨</option>
+                        <option value="40A">40吨A</option>
+                        <option value="40B">40吨B</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">容积 (立方米) *</label>
+                    <input type="number" class="form-control" name="volume" id="volumeInput" placeholder="请选择重量后输入容积" min="1" required>
+                    <small id="volumeHint" class="form-text text-muted">请先选择重量，容积必须大于等于对应最小值</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">要求用车时间 *</label>
+                    <input type="datetime-local" class="form-control" name="required_time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">特殊要求（可选）</label>
+                    <textarea class="form-control" name="special_requirements" rows="3" placeholder="请输入特殊要求（选填）"></textarea>
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-paper-plane"></i> 创建派车任务
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>可用车辆</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>皖A12345</strong><br>
+                                <small>载重: 10吨</small>
+                            </div>
+                            <span class="badge bg-success">空闲</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>皖A67890</strong><br>
+                                <small>载重: 8吨</small>
+                            </div>
+                            <span class="badge bg-warning">维修中</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dispatch-list">
+    <h4>派车记录</h4>
+    <div class="dispatch-item">
+        <div class="d-flex justify-content-between">
+            <div>
+                <h6>合肥 → 南京</h5>
+                <p class="mb-1">普通货物 | 5吨 | 要求: 2024-01-15 14:00</p>
+                <small class="text-muted">车辆: 皖A12345 | 司机: 张师傅</small>
+            </div>
+            <div>
+                <span class="dispatch-status status-assigned">已分配</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dispatch-item">
+        <div class="d-flex justify-content-between">
+            <div>
+                <h6>芜湖 → 上海</h5>
+                <p class="mb-1">生鲜 | 3吨 | 要求: 2024-01-15 18:00</p>
+                <small class="text-muted">车辆: 皖B67890 | 司机: 李师傅</small>
+            </div>
+            <div>
+                <span class="dispatch-status status-completed">已完成</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 重量和容积映射关系
+const weightVolumeMap = {
+    '5': { min: 35, next: 45 },
+    '8': { min: 45, next: 55 },
+    '12': { min: 55, next: 100 },
+    '20': { min: 100, next: 130 },
+    '30': { min: 130, next: 180 },
+    '40A': { min: 180, next: null },
+    '40B': { min: 180, next: null }
+};
+
+// 重量选择变化处理
+document.getElementById('weightSelect').addEventListener('change', function() {
+    const weight = this.value;
+    const volumeInput = document.getElementById('volumeInput');
+    const volumeHint = document.getElementById('volumeHint');
+    
+    if (weight && weightVolumeMap[weight]) {
+        const minVolume = weightVolumeMap[weight].min;
+        volumeInput.min = minVolume;
+        volumeInput.placeholder = `最小容积 ${minVolume} 立方米`;
+        volumeHint.textContent = `容积必须大于等于 ${minVolume} 立方米`;
+        volumeInput.disabled = false;
+        volumeInput.value = minVolume; // 默认填充最小值
+    } else {
+        volumeInput.min = 0;
+        volumeInput.placeholder = '请选择重量后输入容积';
+        volumeHint.textContent = '请先选择重量，容积必须大于等于对应最小值';
+        volumeInput.disabled = true;
+        volumeInput.value = '';
+    }
+});
+
+// 容积输入验证
+document.getElementById('volumeInput').addEventListener('input', function() {
+    const weight = document.getElementById('weightSelect').value;
+    const volume = parseInt(this.value);
+    
+    if (weight && weightVolumeMap[weight]) {
+        const minVolume = weightVolumeMap[weight].min;
+        const maxVolume = weightVolumeMap[weight].next;
+        
+        if (volume < minVolume) {
+            this.setCustomValidity(`容积必须大于等于 ${minVolume} 立方米`);
+        } else if (maxVolume && volume >= maxVolume) {
+            this.setCustomValidity(`容积必须小于 ${maxVolume} 立方米`);
+        } else {
+            this.setCustomValidity('');
+        }
+    }
+});
+
+// 表单提交处理
+document.getElementById('dispatchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // 容积验证
+    const weight = data.weight;
+    const volume = parseInt(data.volume);
+    
+    if (weight && weightVolumeMap[weight]) {
+        const minVolume = weightVolumeMap[weight].min;
+        const maxVolume = weightVolumeMap[weight].next;
+        
+        if (volume < minVolume) {
+            alert(`容积必须大于等于 ${minVolume} 立方米`);
+            return;
+        }
+        if (maxVolume && volume >= maxVolume) {
+            alert(`容积必须小于 ${maxVolume} 立方米`);
+            return;
+        }
+    }
+    
+    // 必填字段验证
+    const requiredFields = ['requirement_type', 'start_location', 'end_location', 
+                          'carrier_company', 'transport_type', 'weight', 'volume', 'required_time'];
+    
+    for (const field of requiredFields) {
+        if (!data[field]) {
+            alert(`请填写 ${field} 字段！`);
+            return;
+        }
+    }
+    
+    // 模拟提交成功
+    alert('派车任务创建成功！');
+    this.reset();
+    // 重置容积输入状态
+    document.getElementById('volumeInput').disabled = true;
+    document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
+});
+
+// 页面加载时禁用容积输入
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('volumeInput').disabled = true;
+});
+</script>
+{% endblock %}
