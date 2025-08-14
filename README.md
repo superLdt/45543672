@@ -10,6 +10,10 @@
   - 🔐 权限控制细化：明确各角色操作范围
   - 📊 数据库结构更新：统一角色命名和状态流转
   - 📋 文档同步更新：API_DESIGN.md、API_IMPLEMENTATION_GUIDE.md、DATABASE_DESIGN.md
+- **1.0.3.1** (2025-08-13)：代码清理与版本更新
+  - 🗑️ 删除测试文件和无关文档
+  - 📝 更新项目文档
+  - 🔄 同步代码到GitHub
 
 ## 项目概述
 智能运力系统是一个集成了多种功能模块的综合管理系统，旨在优化运输资源调度、成本分析和路线规划等业务流程。
@@ -175,109 +179,40 @@
 d:\智能运力系统\45543672_backup\
 ├── 📄 .gitignore                     # Git忽略文件配置
 ├── 📄 API_DESIGN.md                 # API接口设计文档（2025-01-15更新）
-├── 📄 API_IMPLEMENTATION_GUIDE.md   # API实现指南（2025-01-15更新）
-├── 📄 CHANGELOG.md                  # 版本更新日志
-├── 📄 DATABASE_DESIGN.md            # 数据库设计文档（2025-01-15更新）
-├── 📄 DATABASE_INIT_GUIDE.md       # 数据库初始化指南
-├── 📄 DATABASE_MIGRATION_GUIDE.md   # 数据库迁移指南
 ├── 📄 README.md                     # 项目说明文档（当前文件）
-├── 📄 analyze_database.py           # 数据库分析工具
+├── 📄 DATABASE_DESIGN.md            # 数据库设计文档（2025-01-15更新）
+├── 📄 DATABASE_MIGRATION_GUIDE.md   # 数据库迁移指南
 ├── 📄 app.py                        # 主应用入口文件
 ├── 📄 config.py                     # 配置文件
 ├── 📄 db_manager.py                 # 数据库管理器
 ├── 📄 requirements.txt              # Python依赖列表
-├── 📄 test_api_integration.py       # API集成测试
-├── 📄 test_new_dispatch_tables.py  # 新派车表测试
-├── 📄 test_permissions.py          # 权限测试脚本
-├── 📄 database.db                  # SQLite数据库文件（主数据库）
-├── 📄 开发日志.docx               # 开发过程记录
+├── 📄 transport.db                  # SQLite数据库文件
 
 ├── 📁 api/                         # API接口模块
 │   ├── __init__.py
 │   ├── decorators.py               # 权限装饰器
 │   ├── dispatch.py                 # 派车API路由（2025-01-15更新）
-│   └── utils.py                    # API工具函数
+│   ├── utils.py                    # API工具函数
+│   ├── audit.py                    # 审计日志API
+│   └── validators.py               # 数据验证工具
 
-├── 📁 modules/                     # 业务功能模块
-│   ├── basic_data/                 # 基础数据模块
+├── 📁 modules/                     # 功能模块
+│   ├── 📁 scheduling/              # 调度模块
 │   │   ├── __init__.py
-│   │   └── templates/
-│   ├── cost_analysis/               # 成本分析模块
-│   │   ├── __init__.py
-│   │   └── templates/
-│   ├── planning/                    # 规划模块
-│   │   ├── __init__.py
-│   │   └── templates/
-│   ├── reconciliation/              # 对账模块
-│   │   ├── __init__.py
-│   │   └── templates/
-│   ├── scheduling/                  # 调度模块
-│   │   ├── __init__.py
-│   │   └── templates/
-│   ├── system/                      # 系统管理模块
-│   │   ├── __init__.py
-│   │   └── templates/
-│   └── user_management/             # 用户管理模块
-│       ├── __init__.py
-│       └── templates/
+│   │   └── 📁 templates/           # 调度模块模板
+│   │       └── 📁 scheduling/
+│   │           ├── manual_dispatch.html
+│   │           └── vehicle_requirements.html
+│   └── 📁 user_management/         # 用户管理模块
+│       └── __init__.py
 
 ├── 📁 static/                      # 静态资源
-│   ├── FEISHU_STYLES_GUIDE.md      # 飞书样式指南
-│   ├── example-usage.html          # 使用示例
-│   ├── feishu-styles.css           # 飞书样式文件
-│   ├── script.js                   # JavaScript脚本
-│   └── styles.css                  # 样式文件
+│   ├── 📄 ajax-utils.js            # AJAX工具函数
+│   ├── 📄 dashboard-ajax.js        # 仪表盘AJAX功能
+│   └── 📄 feishu-styles.css        # 飞书样式表
 
 └── 📁 templates/                   # HTML模板
-    ├── base.html
-    ├── dashboard.html
-    ├── error.html
-    ├── login.html
-    ├── partials/
-    │   └── full_menu.html
-    └── under_development.html
+    ├── 📄 base.html                # 基础模板
+    ├── 📄 dashboard.html           # 仪表盘
+    └── 📄 dispatch_form.html       # 派车表单
 ```
-
-## 📅 2025年1月15日重要更新
-
-### 🔄 双轨派车系统重构
-基于实际业务需求，全面重构派车业务流程，统一角色体系和状态流转：
-
-#### ✅ 角色体系标准化
-- **车间地调**：负责轨道A任务发起和本角色任务管理
-- **区域调度员**：负责轨道A/B任务审核和直接派车
-- **超级管理员**：拥有系统全部权限
-- **供应商**：负责车辆分配、司机分配和任务响应确认
-
-#### 🛤️ 轨道流程优化
-**轨道A流程**：
-车间地调(发起) → 区域调度员(审核) → 供应商(响应) → 车间(发车) → 供应商(确认) → 车间(最终确认)
-
-**轨道B流程**：
-区域调度员(直接派车) → 供应商(响应) → 车间(发车) → 供应商(确认) → 车间(最终确认)
-
-#### 📝 文档同步更新
-- **API_DESIGN.md**：更新接口设计、权限矩阵、状态流转
-- **API_IMPLEMENTATION_GUIDE.md**：修正实现逻辑，移除司机角色
-- **DATABASE_DESIGN.md**：更新数据库表结构和角色权限定义
-- **api/dispatch.py**：修正权限装饰器和状态设置
-
-#### 🔐 权限控制细化
-新增权限控制矩阵，明确各角色操作范围：
-- 车间地调：仅轨道A任务创建和本角色任务管理
-- 区域调度员：轨道A/B任务审核和直接派车
-- 供应商：仅响应确认（不允许驳回），车辆分配和司机分配
-- 超级管理员：全权限管理
-
-#### 📊 数据库结构更新
-- 移除"运输处"和"车队派车"角色
-- 统一使用"供应商"角色
-- 更新状态字段值为：待提交、待区域调度员审核、待供应商响应、已响应、已发车、已到达、已完成
-
-### 🎯 变更影响范围
-本次更新涉及以下文件：
-- `API_DESIGN.md` - 接口设计规范
-- `API_IMPLEMENTATION_GUIDE.md` - 实现指南
-- `DATABASE_DESIGN.md` - 数据库设计
-- `api/dispatch.py` - API路由实现
-- 相关权限验证逻辑
