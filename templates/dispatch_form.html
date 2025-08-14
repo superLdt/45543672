@@ -1,0 +1,182 @@
+<!-- 人工派车表单 - 支持双轨派车 -->
+<div class="dispatch-form-container">
+    <h2>人工派车申请</h2>
+    
+    <form id="dispatch-form" method="POST" action="/api/dispatch/tasks">
+        <!-- 轨道类型 - 根据用户角色自动设置 -->
+        <input type="hidden" name="dispatch_track" id="dispatch-track" value="">
+        
+        <div class="form-group">
+            <label for="required_time">用车时间 *</label>
+            <input type="datetime-local" id="required_time" name="required_time" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="start_location">始发地点 *</label>
+            <input type="text" id="start_location" name="start_location" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="end_location">目的地点 *</label>
+            <input type="text" id="end_location" name="end_location" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="carrier_company">承运公司 *</label>
+            <select id="carrier_company" name="carrier_company" required>
+                <option value="">请选择承运公司</option>
+                <option value="中国邮政速递物流">中国邮政速递物流</option>
+                <option value="顺丰速运">顺丰速运</option>
+                <option value="京东物流">京东物流</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="transport_type">运输类型 *</label>
+            <select id="transport_type" name="transport_type" required>
+                <option value="单程">单程</option>
+                <option value="往返">往返</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="requirement_type">需求类型 *</label>
+            <select id="requirement_type" name="requirement_type" required>
+                <option value="正班">正班</option>
+                <option value="加班">加班</option>
+            </select>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="volume">容积 (m³) *</label>
+                <input type="number" id="volume" name="volume" min="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="weight">重量 (吨) *</label>
+                <input type="number" id="weight" name="weight" min="0.1" step="0.1" required>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="special_requirements">特殊要求</label>
+            <textarea id="special_requirements" name="special_requirements" rows="3" 
+                      placeholder="如有特殊要求请在此说明"></textarea>
+        </div>
+        
+        <!-- 轨道提示信息 -->
+        <div class="form-info" id="track-info">
+            <i class="fas fa-info-circle"></i>
+            <span id="track-message"></span>
+        </div>
+        
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-paper-plane"></i> 
+            <span id="submit-text">创建派车任务</span>
+        </button>
+    </form>
+</div>
+
+<script>
+// 根据用户角色设置轨道类型
+document.addEventListener('DOMContentLoaded', function() {
+    const userRole = '{{ session.get("user_role", "") }}';
+    const trackInput = document.getElementById('dispatch-track');
+    const trackMessage = document.getElementById('track-message');
+    const submitText = document.getElementById('submit-text');
+    
+    if (userRole === '车间地调') {
+        trackInput.value = '轨道A';
+        trackMessage.textContent = '您将创建轨道A任务，需等待区域调度员审核';
+        submitText.textContent = '提交车辆需求';
+    } else if (userRole === '区域调度员' || userRole === '超级管理员') {
+        trackInput.value = '轨道B';
+        trackMessage.textContent = '您将创建轨道B任务，直接派车给供应商';
+        submitText.textContent = '直接派车';
+    } else {
+        trackInput.value = '轨道A';
+        trackMessage.textContent = '请选择派车轨道';
+    }
+});
+
+// 表单提交处理
+document.getElementById('dispatch-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/dispatch/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('派车任务创建成功！', 'success');
+            this.reset();
+            // 刷新任务列表
+            loadLatestTasks();
+        } else {
+            showToast(result.error?.message || '创建失败', 'error');
+        }
+    } catch (error) {
+        showToast('网络错误，请稍后重试', 'error');
+    }
+});
+</script>
+
+<style>
+.dispatch-form-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-info {
+    background: #e8f0fe;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    color: #1a73e8;
+}
+
+.btn-primary {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background: #1557b0;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

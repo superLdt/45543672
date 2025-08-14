@@ -145,18 +145,38 @@
         font-size: 18px;
     }
 
+    .dispatch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+
     .dispatch-item {
         background: var(--feishu-white);
         border-radius: var(--feishu-radius-lg);
         box-shadow: var(--feishu-shadow-sm);
         border: 1px solid var(--feishu-border);
-        padding: 20px;
-        margin-bottom: 16px;
+        padding: 16px;
         transition: all 0.2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .dispatch-item:hover {
         box-shadow: var(--feishu-shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .dispatch-item-content {
+        flex: 1;
+    }
+
+    @media (max-width: 768px) {
+        .dispatch-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .dispatch-item h6 {
@@ -275,6 +295,39 @@
             font-size: 20px;
         }
     }
+
+    /* 任务卡片网格布局优化 */
+    .task-grid-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -15px;
+    }
+
+    .task-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 380px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .feishu-col-lg-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+        padding: 0 15px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .feishu-col-lg-4 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -286,9 +339,9 @@
     </div>
 
     <div class="row">
-        <div class="col-md-8">
-            <div class="dispatch-form feishu-card">
-                <h4>创建派车任务</h4>
+        <div class="col-md-12">
+                <div class="dispatch-form feishu-card">
+                    <h4>创建派车任务</h4>
             <form id="dispatchForm">
                 <div class="form-group">
                     <label class="form-label">需求类型 *</label>
@@ -345,7 +398,7 @@
                         <option value="20">20吨</option>
                         <option value="30">30吨</option>
                         <option value="40A">40吨A</option>
-                        <option value="40B">40吨B</option>
+                                <option value="40B">40吨B</option>
                     </select>
                 </div>
                 
@@ -371,124 +424,35 @@
             </form>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card feishu-card">
-            <div class="card-header">
-                <h5><i class="fas fa-truck"></i> 可用车辆</h5>
-            </div>
-            <div class="card-body">
-                <div class="list-group">
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-primary">皖A12345</strong>
-                                <div class="text-muted small">载重: 10吨 | 厢式货车</div>
-                            </div>
-                            <span class="badge bg-success">空闲</span>
-                        </div>
-                    </div>
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-primary">皖A67890</strong>
-                                <div class="text-muted small">载重: 8吨 | 冷藏车</div>
-                            </div>
-                            <span class="badge bg-warning">维修中</span>
-                        </div>
-                    </div>
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-primary">皖B24680</strong>
-                                <div class="text-muted small">载重: 15吨 | 平板车</div>
-                            </div>
-                            <span class="badge bg-success">空闲</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
-<div class="dispatch-list">
-    <h4><i class="fas fa-history"></i> 派车记录</h4>
-    <div class="dispatch-item feishu-card">
-        <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-route text-primary me-2"></i>
-                    <h6 class="mb-0">合肥 → 南京</h6>
-                    <span class="dispatch-status status-assigned ms-2">已分配</span>
-                </div>
-                <div class="d-flex flex-wrap gap-3 mb-2">
-                    <span class="text-muted small"><i class="fas fa-box me-1"></i>普通货物</span>
-                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>5吨</span>
-                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-15 14:00</span>
-                </div>
-                <div class="text-muted small">
-                    <i class="fas fa-truck me-1"></i>车辆: 皖A12345 | 
-                    <i class="fas fa-user me-1 ms-2"></i>司机: 张师傅
-                </div>
+    <div class="dispatch-list">
+        <h4><i class="fas fa-history"></i> 我的派车记录</h4>
+        <div id="loading-tasks" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
             </div>
+            <p class="text-muted mt-2">正在加载派车记录...</p>
         </div>
-    </div>
-    
-    <div class="dispatch-item feishu-card">
-        <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-route text-success me-2"></i>
-                    <h6 class="mb-0">芜湖 → 上海</h6>
-                    <span class="dispatch-status status-completed ms-2">已完成</span>
-                </div>
-                <div class="d-flex flex-wrap gap-3 mb-2">
-                    <span class="text-muted small"><i class="fas fa-fish me-1"></i>生鲜</span>
-                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>3吨</span>
-                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-15 18:00</span>
-                </div>
-                <div class="text-muted small">
-                    <i class="fas fa-truck me-1"></i>车辆: 皖B67890 | 
-                    <i class="fas fa-user me-1 ms-2"></i>司机: 李师傅
-                </div>
-            </div>
+        <div id="no-tasks" class="text-center py-4" style="display: none;">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <p class="text-muted">暂无派车记录</p>
         </div>
+        <div id="tasks-container" class="dispatch-grid"></div>
     </div>
-    
-    <div class="dispatch-item feishu-card">
-        <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-route text-warning me-2"></i>
-                    <h6 class="mb-0">安庆 → 杭州</h6>
-                    <span class="dispatch-status status-pending ms-2">待分配</span>
-                </div>
-                <div class="d-flex flex-wrap gap-3 mb-2">
-                    <span class="text-muted small"><i class="fas fa-box me-1"></i>电子产品</span>
-                    <span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>8吨</span>
-                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>要求: 2024-01-16 09:00</span>
-                </div>
-                <div class="text-muted small">
-                    <i class="fas fa-exclamation-triangle me-1"></i>特殊要求: 需冷链运输
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 </div>
 
 <script>
 // 重量和容积映射关系
-const weightVolumeMap = {
-    '5': { min: 35, next: 45 },
-    '8': { min: 45, next: 55 },
-    '12': { min: 55, next: 100 },
-    '20': { min: 100, next: 130 },
-    '30': { min: 130, next: 180 },
-    '40A': { min: 180, next: null },
-    '40B': { min: 180, next: null }
-};
+        const weightVolumeMap = {
+            '5': { min: 35, next: 45 },
+            '8': { min: 45, next: 55 },
+            '12': { min: 55, next: 100 },
+            '20': { min: 100, next: 130 },
+            '30': { min: 130, next: 150 },
+            '40A': { min: 150, next: 180 },
+            '40B': { min: 180, next: null }
+        };
 
 // 重量选择变化处理
 document.getElementById('weightSelect').addEventListener('change', function() {
@@ -567,17 +531,569 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
         }
     }
     
-    // 模拟提交成功
-    alert('派车任务创建成功！');
-    this.reset();
-    // 重置容积输入状态
-    document.getElementById('volumeInput').disabled = true;
-    document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
+    // 获取当前用户角色
+    const userRole = "{{ session.get('user_role', '') }}";
+    console.log('当前用户角色:', userRole, '类型:', typeof userRole);
+    
+    // 根据角色确定轨道类型
+    let dispatchTrack = '轨道A'; // 默认
+    if (userRole === '车间地调') {
+        dispatchTrack = '轨道A';
+        console.log('设置为轨道A - 车间地调');
+    } else if (userRole === '区域调度员' || userRole === '超级管理员') {
+        dispatchTrack = '轨道B';
+        console.log('设置为轨道B - 区域调度员/超级管理员');
+    } else {
+        console.log('未匹配角色，使用默认轨道A');
+    }
+    console.log('最终选择的轨道类型:', dispatchTrack);
+    
+    // 准备API数据 - 使用后端验证期望的字段名
+    const apiData = {
+        requirement_type: data.requirement_type,
+        start_location: data.start_location,
+        end_location: data.end_location,
+        carrier_company: data.carrier_company,
+        transport_type: data.transport_type,
+        weight: data.weight,
+        volume: parseInt(data.volume),
+        required_time: data.required_time,
+        special_requirements: data.special_requirements || '',
+        dispatch_track: dispatchTrack
+    };
+    
+    // 显示加载状态
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
+    submitBtn.disabled = true;
+    
+    // 使用AJAX工具创建任务
+    $ajax.post('/api/dispatch/tasks', apiData)
+        .then(result => {
+            if (result.success) {
+                showToast('派车任务创建成功！', 'success');
+                this.reset();
+                // 重置容积输入状态
+                document.getElementById('volumeInput').disabled = true;
+                document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
+                
+                // 刷新任务列表
+                loadDispatchTasks();
+            } else {
+                showToast('创建失败: ' + (result.error?.message || '未知错误'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.message && error.message.includes('401')) {
+                showToast('请先登录系统', 'error');
+                // 可以重定向到登录页面
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        })
+        .finally(() => {
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 创建派车任务';
+            submitBtn.disabled = false;
+        });
 });
 
-// 页面加载时禁用容积输入
+// 页面加载时禁用容积输入并检查登录状态
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('volumeInput').disabled = true;
+    
+    console.log('页面加载完成，开始检查登录状态...');
+    
+    // 无论是否登录，都尝试加载任务（API会处理权限问题）
+    loadDispatchTasks();
+    
+    // 添加定时器，防止无限加载
+    setTimeout(() => {
+        const loadingDiv = document.getElementById('loading-tasks');
+        if (loadingDiv && loadingDiv.style.display !== 'none') {
+            console.log('加载超时，隐藏加载状态');
+            loadingDiv.style.display = 'none';
+            const noTasksDiv = document.getElementById('no-tasks');
+            if (noTasksDiv) {
+                noTasksDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="text-muted">加载超时，请刷新页面重试</p>
+                    <button class="feishu-btn feishu-btn-secondary mt-2" onclick="location.reload()">
+                        刷新页面
+                    </button>
+                `;
+                noTasksDiv.style.display = 'block';
+            }
+        }
+    }, 10000); // 10秒超时
 });
+
+// 检查登录状态（简化版，直接尝试加载任务）
+async function checkLoginStatus() {
+    try {
+        // 直接尝试加载任务，如果成功则说明已登录
+        const result = await $ajax.get('/api/dispatch/tasks', { limit: 1, page: 1 });
+        return result.success === true;
+    } catch (error) {
+        return false;
+    }
+}
+
+// 加载派车任务列表
+async function loadDispatchTasks() {
+    const loadingDiv = document.getElementById('loading-tasks');
+    const noTasksDiv = document.getElementById('no-tasks');
+    
+    console.log('开始加载派车任务...');
+    
+    // 显示加载状态
+    if (loadingDiv) {
+        loadingDiv.style.display = 'block';
+        console.log('显示加载状态');
+    }
+    if (noTasksDiv) noTasksDiv.style.display = 'none';
+    
+    try {
+        console.log('正在调用API获取任务...');
+        const result = await $ajax.get('/api/dispatch/tasks', {
+            limit: 100,
+            page: 1
+        }).catch(error => {
+            console.error('API调用失败:', error);
+            throw error;
+        });
+        
+        console.log('API调用完成:', result);
+        
+        // 隐藏加载状态
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        
+        if (result && result.success && result.data) {
+            console.log('获取到任务数据:', result.data.list?.length || 0, '条');
+            if (result.data.list && result.data.list.length > 0) {
+                renderDispatchTasks(result.data.list);
+            } else {
+                console.log('没有任务数据');
+                if (noTasksDiv) {
+                    noTasksDiv.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">暂无派车记录</p>
+                        </div>
+                    `;
+                    noTasksDiv.style.display = 'block';
+                }
+            }
+        } else {
+            console.log('API返回数据格式不正确:', result);
+            if (noTasksDiv) {
+                noTasksDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <p class="text-muted">数据加载异常</p>
+                        <button class="feishu-btn feishu-btn-secondary" onclick="loadDispatchTasks()">
+                            <i class="fas fa-redo"></i> 重新加载
+                        </button>
+                    </div>
+                `;
+                noTasksDiv.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('加载任务列表失败:', error);
+        
+        // 隐藏加载状态
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        
+        // 检查HTTP状态码或错误信息
+        const errorMessage = error.message || '';
+        const statusCode = error.status || error.code || 0;
+        console.log('错误详情:', errorMessage, '状态码:', statusCode);
+        
+        // 更准确的错误检测
+        const isAuthError = statusCode === 401 || 
+                           errorMessage.includes('401') || 
+                           errorMessage.includes('未登录') || 
+                           errorMessage.includes('权限') ||
+                           errorMessage.includes('4002');
+        
+        const isNetworkError = errorMessage.includes('Network') || 
+                              errorMessage.includes('网络') ||
+                              errorMessage.includes('Failed to fetch');
+        
+        if (isAuthError) {
+            console.log('检测到未登录状态');
+            if (noTasksDiv) {
+                noTasksDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-sign-in-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-3">请先登录查看派车记录</p>
+                        <button class="feishu-btn feishu-btn-primary" onclick="window.location.href='/login'">
+                            <i class="fas fa-sign-in-alt"></i> 去登录
+                        </button>
+                    </div>
+                `;
+                noTasksDiv.style.display = 'block';
+            }
+        } else if (isNetworkError) {
+            console.log('检测到网络错误');
+            if (noTasksDiv) {
+                noTasksDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-wifi fa-3x text-warning mb-3"></i>
+                        <p class="text-muted mb-3">网络连接错误</p>
+                        <button class="feishu-btn feishu-btn-secondary" onclick="loadDispatchTasks()">
+                            <i class="fas fa-redo"></i> 重新加载
+                        </button>
+                    </div>
+                `;
+                noTasksDiv.style.display = 'block';
+            }
+        } else {
+            console.log('检测到其他错误');
+            if (noTasksDiv) {
+                noTasksDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <p class="text-muted mb-3">加载失败：${errorMessage}</p>
+                        <button class="feishu-btn feishu-btn-secondary" onclick="loadDispatchTasks()">
+                            <i class="fas fa-redo"></i> 重新加载
+                        </button>
+                    </div>
+                `;
+                noTasksDiv.style.display = 'block';
+            }
+        }
+    }
+}
+
+// 分页相关变量
+let currentPage = 1;
+const itemsPerPage = 9; // 3×3布局
+let allTasks = [];
+
+// 渲染任务列表（恢复为列表布局）
+function renderDispatchTasks(tasks) {
+    console.log('=== renderDispatchTasks 开始执行 ===');
+    console.log('接收到的任务数据:', tasks);
+    console.log('任务数量:', tasks ? tasks.length : 0);
+    
+    const container = document.getElementById('tasks-container');
+    const loadingDiv = document.getElementById('loading-tasks');
+    const noTasksDiv = document.getElementById('no-tasks');
+    
+    console.log('容器元素:', container);
+    console.log('加载元素:', loadingDiv);
+    console.log('空数据元素:', noTasksDiv);
+    
+    if (!container) {
+        console.error('❌ 找不到 .dispatch-list 容器');
+        return;
+    }
+    
+    // 隐藏加载状态
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+        console.log('✅ 已隐藏加载状态');
+    }
+    
+    // 清空现有任务项
+    const existingItems = container.querySelectorAll('.dispatch-item');
+    console.log('需要清理的现有任务项数量:', existingItems.length);
+    existingItems.forEach(item => item.remove());
+    
+    // 检查是否有任务
+    if (!tasks || tasks.length === 0) {
+        console.log('📭 没有任务数据，显示空提示');
+        if (noTasksDiv) {
+            noTasksDiv.style.display = 'block';
+            noTasksDiv.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无派车记录</p>
+                    <small class="text-muted">当前没有派车任务数据</small>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    console.log(`🎯 开始渲染 ${tasks.length} 个任务`);
+    
+    // 隐藏空数据提示
+    if (noTasksDiv) noTasksDiv.style.display = 'none';
+    
+    // 直接渲染所有任务为列表（不分页）
+    tasks.forEach((task, index) => {
+        console.log(`正在处理第 ${index + 1} 个任务:`, task);
+        const taskElement = createTaskElement(task);
+        if (taskElement) {
+            container.appendChild(taskElement);
+            console.log(`✅ 第 ${index + 1} 个任务已添加到容器`);
+        } else {
+            console.error(`❌ 第 ${index + 1} 个任务创建失败`);
+        }
+    });
+    
+    console.log('=== renderDispatchTasks 执行完成 ===');
+}
+
+// 渲染分页控件
+function renderPaginationControls() {
+    const container = document.querySelector('.dispatch-list');
+    const totalPages = Math.ceil(allTasks.length / itemsPerPage);
+    
+    const paginationContainer = document.createElement('div');
+    paginationContainer.className = 'pagination-container feishu-card mt-4 p-3';
+    paginationContainer.style.display = 'flex';
+    paginationContainer.style.justifyContent = 'center';
+    paginationContainer.style.alignItems = 'center';
+    paginationContainer.style.gap = '10px';
+    
+    // 上一页按钮
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'feishu-btn feishu-btn-secondary feishu-btn-sm';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> 上一页';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => changePage(currentPage - 1);
+    
+    // 页码显示
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'page-info';
+    pageInfo.style.margin = '0 15px';
+    pageInfo.style.fontSize = '14px';
+    pageInfo.style.color = 'var(--feishu-text-secondary)';
+    pageInfo.innerHTML = `第 ${currentPage} / ${totalPages} 页 (共 ${allTasks.length} 条记录)`;
+    
+    // 下一页按钮
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'feishu-btn feishu-btn-secondary feishu-btn-sm';
+    nextBtn.innerHTML = '下一页 <i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => changePage(currentPage + 1);
+    
+    paginationContainer.appendChild(prevBtn);
+    paginationContainer.appendChild(pageInfo);
+    paginationContainer.appendChild(nextBtn);
+    
+    container.appendChild(paginationContainer);
+}
+
+// 切换页面
+function changePage(newPage) {
+    const totalPages = Math.ceil(allTasks.length / itemsPerPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderPaginatedTasks();
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// 创建任务元素（恢复为列表布局样式）
+function createTaskElement(task) {
+    console.log('🎯 createTaskElement 被调用');
+    console.log('任务对象:', task);
+    
+    if (!task) {
+        console.error('❌ createTaskElement: 任务对象为空');
+        return null;
+    }
+    
+    const div = document.createElement('div');
+    div.className = 'dispatch-item feishu-card p-4 mb-3';
+    
+    console.log('📝 开始构建任务卡片...');
+    
+    // 状态样式映射 - 使用飞书风格状态标签（清晰命名版）
+    const statusMap = {
+        '待提交': { class: 'feishu-badge-pending', text: '待提交' },
+        '待调度员审核': { class: 'feishu-badge-pending', text: '待审核' },
+        '待供应商响应': { class: 'feishu-badge-pending', text: '待响应' },
+        '供应商已响应': { class: 'feishu-badge-processing', text: '已响应' },
+        '车间已核查': { class: 'feishu-badge-processing', text: '已核查' },
+        '供应商已确认': { class: 'feishu-badge-processing', text: '已确认' },
+        '任务结束': { class: 'feishu-badge-completed', text: '已结束' },
+        '已取消': { class: 'feishu-badge-error', text: '已取消' }
+    };
+    
+    const statusInfo = statusMap[task.status] || { class: 'feishu-badge-pending', text: task.status };
+    
+    // 获取始发局和线路信息用于显示
+    const weight = task.weight || task.cargo_weight || 0;
+    const volume = task.volume || task.cargo_volume || 0;
+    const transportType = task.transport_type || task.vehicle_type || '普通运输';
+    const requiredDate = task.required_date || task.expected_start_time || '';
+    const specialReq = task.special_requirements || '';
+    
+    console.log('📊 任务数据解析完成:', {
+        weight, volume, transportType, requiredDate, specialReq, status: task.status
+    });
+    
+    try {
+        div.innerHTML = `
+            <div class="feishu-row align-items-start">
+                <div class="feishu-col">
+                    <!-- 路线标题 -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="route-icon-wrapper me-3">
+                            <i class="fas fa-route" style="color: var(--feishu-primary); font-size: 20px;"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="route-display mb-2" style="font-size: 16px; font-weight: 600; color: var(--feishu-text-primary);">
+                                <span style="color: var(--feishu-text-secondary);">始发局：</span>
+                                <span style="color: var(--feishu-primary);">${task.start_bureau || '未知始发局'}</span>
+                            </div>
+                            <div class="route-display mb-1" style="font-size: 16px; font-weight: 600; color: var(--feishu-text-primary);">
+                                <span style="color: var(--feishu-text-secondary);">线路：</span>
+                                <span style="color: var(--feishu-primary);">${task.route_name || '未知线路'}</span>
+                            </div>
+                            <span class="${statusInfo.class} feishu-badge">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                                ${statusInfo.text}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- 任务信息网格 -->
+                    <div class="feishu-row mb-3">
+                        <div class="feishu-col-md-6">
+                            <div class="info-item">
+                                <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                    <i class="fas fa-truck me-2" style="color: var(--feishu-text-tertiary);"></i>运输类型
+                                </span>
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                    ${transportType}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feishu-col-md-6">
+                            <div class="info-item">
+                                <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                    <i class="fas fa-clock me-2" style="color: var(--feishu-text-tertiary);"></i>要求时间
+                                </span>
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                    ${formatDateTime(requiredDate)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="feishu-row mb-3">
+                        <div class="feishu-col-md-4">
+                            <div class="info-item">
+                                <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                    <i class="fas fa-weight-hanging me-2" style="color: var(--feishu-text-tertiary);"></i>重量
+                                </span>
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                    ${weight} 吨
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feishu-col-md-4">
+                            <div class="info-item">
+                                <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                    <i class="fas fa-box me-2" style="color: var(--feishu-text-tertiary);"></i>容积
+                                </span>
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                    ${volume} 立方米
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feishu-col-md-4">
+                            <div class="info-item">
+                                <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                    <i class="fas fa-hashtag me-2" style="color: var(--feishu-text-tertiary);"></i>任务编号
+                                </span>
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px; font-family: 'Courier New', monospace;">
+                                    ${task.task_id || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 特殊要求和承运商信息 -->
+                     ${specialReq || task.carrier_company ? `
+                     <div class="additional-info" style="border-top: 1px solid var(--feishu-border-light); padding-top: 12px;">
+                         ${specialReq ? `
+                             <div class="info-item mb-2">
+                                 <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                     <i class="fas fa-exclamation-triangle me-2" style="color: var(--feishu-warning);"></i>特殊要求
+                                 </span>
+                                 <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px; line-height: 1.5;">
+                                     ${specialReq}
+                                 </div>
+                             </div>
+                         ` : ''}
+                     </div>
+                     ` : ''}
+                     
+                     <!-- 操作按钮 -->
+                     <div class="action-buttons mt-3 pt-3" style="border-top: 1px solid var(--feishu-border-light);">
+                         <button class="feishu-btn feishu-btn-primary feishu-btn-sm" onclick="viewTaskDetails('${task.task_id}')">
+                             <i class="fas fa-eye me-1"></i> 查看详情
+                         </button>
+                     </div>
+                 </div>
+             </div>
+         `;
+         
+         console.log('✅ createTaskElement: 任务卡片构建成功');
+         return div;
+    } catch (error) {
+        console.error('❌ createTaskElement: 构建任务卡片失败', error);
+        return null;
+    }
+}
+
+// 查看任务详情
+function viewTaskDetails(taskId) {
+    console.log('查看任务详情:', taskId);
+    // 这里可以添加查看详情的逻辑
+    showToast('查看任务: ' + taskId, 'info');
+}
+
+// 推测此处代码为某个函数，补充函数定义与缺失部分
+function createTaskCard(task) {
+    const div = document.createElement('div');
+    div.innerHTML = `
+                    ${task.carrier_company ? `
+                        <div class="info-item">
+                            <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                                <i class="fas fa-building me-2" style="color: var(--feishu-primary);"></i>承运商
+                            </span>
+                            <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                ${task.carrier_company}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+// 格式化日期时间
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return '';
+    
+    try {
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateTimeStr;
+    }
+}
 </script>
 {% endblock %}

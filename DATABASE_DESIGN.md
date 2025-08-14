@@ -24,7 +24,7 @@
 | volume | INTEGER | 容积 | NOT NULL |
 | weight | REAL | 重量 | NOT NULL |
 | special_requirements | TEXT | 特殊要求 | 可选 |
-| status | TEXT | 任务状态 | DEFAULT '待派车' |
+| status | TEXT | 任务状态 | DEFAULT '待提交' CHECK(status IN ('待提交','待调度员审核','待供应商响应','供应商已响应','车间已核查','供应商已确认','任务结束','已取消')) |
 | created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
 | updated_at | TEXT | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
 | **双轨派车字段** | | | |
@@ -72,11 +72,14 @@
 |--------|------|------|------|
 | id | INTEGER | 用户ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | username | TEXT | 用户名 | UNIQUE NOT NULL |
+| password | TEXT | 密码哈希 | NOT NULL |
+| full_name | TEXT | 全名 | 可选 |
 | email | TEXT | 邮箱 | UNIQUE NOT NULL |
-| password_hash | TEXT | 密码哈希 | NOT NULL |
+| phone | TEXT | 电话号码 | 可选 |
 | company_id | INTEGER | 公司ID | FOREIGN KEY REFERENCES Company(id) |
 | is_active | BOOLEAN | 是否激活 | DEFAULT 1 |
-| created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| created_at | TIMESTAMP | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| updated_at | TIMESTAMP | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
 
 #### 4.2 Role - 角色表
 | 字段名 | 类型 | 说明 | 约束 |
@@ -84,84 +87,66 @@
 | id | INTEGER | 角色ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | name | TEXT | 角色名称 | UNIQUE NOT NULL |
 | description | TEXT | 角色描述 | 可选 |
-| created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| created_at | TIMESTAMP | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| updated_at | TIMESTAMP | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
 
 #### 4.3 UserRole - 用户角色关联表
 | 字段名 | 类型 | 说明 | 约束 |
 |--------|------|------|------|
-| id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | user_id | INTEGER | 用户ID | FOREIGN KEY REFERENCES User(id) |
 | role_id | INTEGER | 角色ID | FOREIGN KEY REFERENCES Role(id) |
-| assigned_at | TEXT | 分配时间 | DEFAULT CURRENT_TIMESTAMP |
 
 #### 4.4 Permission - 权限表
 | 字段名 | 类型 | 说明 | 约束 |
 |--------|------|------|------|
 | id | INTEGER | 权限ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | name | TEXT | 权限名称 | UNIQUE NOT NULL |
-| resource | TEXT | 资源标识 | NOT NULL |
-| action | TEXT | 操作类型 | NOT NULL |
+| module | TEXT | 模块标识 | NOT NULL |
 | description | TEXT | 权限描述 | 可选 |
+| created_at | TIMESTAMP | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
 
 #### 4.5 RolePermission - 角色权限关联表
 | 字段名 | 类型 | 说明 | 约束 |
 |--------|------|------|------|
-| id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | role_id | INTEGER | 角色ID | FOREIGN KEY REFERENCES Role(id) |
 | permission_id | INTEGER | 权限ID | FOREIGN KEY REFERENCES Permission(id) |
-| granted_at | TEXT | 授权时间 | DEFAULT CURRENT_TIMESTAMP |
 
-### 2. vehicles - 车辆信息表
-
-| 字段名 | 类型 | 说明 | 约束 |
-|--------|------|------|------|
-| id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
-| task_id | TEXT | 关联任务ID | FOREIGN KEY |
-| manifest_number | TEXT | 路单流水号 | - |
-| manifest_serial | TEXT | 路单流水号 | - |
-| dispatch_number | TEXT | 派车单号 | - |
-| license_plate | TEXT | 车牌号 | NOT NULL |
-| carriage_number | TEXT | 车厢号 | 可选 |
-| created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
-
-### 3. dispatch_status_history - 派车状态历史表
-
-| 字段名 | 类型 | 说明 | 约束 |
-|--------|------|------|------|
-| id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
-| task_id | TEXT | 关联任务ID | FOREIGN KEY |
-| status_change | TEXT | 状态变更 | NOT NULL |
-| operator | TEXT | 操作人 | NOT NULL |
-| timestamp | TEXT | 时间戳 | DEFAULT CURRENT_TIMESTAMP |
-| note | TEXT | 备注 | 可选 |
-
-## 双轨派车状态流转
+## 双轨派车状态流转（更新后清晰命名）
 
 ### 轨道A状态流转（车间地调发起）
 1. **待提交** - 车间地调创建需求，待提交审核
-2. **待区域调度员审核** - 已提交，等待区域调度员审核
+2. **待调度员审核** - 已提交，等待区域调度员审核
 3. **待供应商响应** - 审核通过，等待供应商响应
-4. **已响应** - 供应商确认接单，等待车间发车
-5. **已发车** - 车间确认发车，等待供应商确认
-6. **已到达** - 供应商确认到达，等待车间最终确认
-7. **已完成** - 车间最终确认，流程结束
+4. **供应商已响应** - 供应商确认接单，等待车间核查
+5. **车间已核查** - 车间确认发车，等待供应商确认
+6. **供应商已确认** - 供应商确认到达，等待任务结束
+7. **任务结束** - 流程完成
 
 ### 轨道B状态流转（区域调度/超级管理员直接派车）
-1. **待供应商响应** - 区域调度/超级管理员直接派车
-2. **已响应** - 供应商确认接单，等待车间发车
-3. **已发车** - 车间确认发车，等待供应商确认
-4. **已到达** - 供应商确认到达，等待车间最终确认
-5. **已完成** - 车间最终确认，流程结束
+1. **待供应商响应** - 区域调度/超级管理员直接派车，等待供应商响应
+2. **供应商已响应** - 供应商确认接单，等待车间核查
+3. **车间已核查** - 车间确认发车，等待供应商确认
+4. **供应商已确认** - 供应商确认到达，等待任务结束
+5. **任务结束** - 流程完成
 
-### 实际数据库状态字段
-基于实际数据库查询，状态字段支持以下值：
+### 实际数据库状态字段（更新后）
+基于清晰业务流程，状态字段支持以下值：
 - 待提交
-- 待区域调度员审核
+- 待调度员审核
 - 待供应商响应
-- 已响应
-- 已发车
-- 已到达
-- 已完成
+- 供应商已响应
+- 车间已核查
+- 供应商已确认
+- 任务结束
+- 已取消
+
+### 状态命名变更历史
+- **2024-08-13**: 统一状态命名为清晰业务特征命名
+  - 原"待区域调度员审核" → "待调度员审核"
+  - 原"待承运商响应" → "待供应商响应"
+  - 原"承运商已响应" → "供应商已响应"
+  - 原"承运商已确认" → "供应商已确认"
+  - 新增"已取消"状态用于任务取消场景
 
 ### 角色权限矩阵
 
@@ -231,16 +216,16 @@ result = db.create_dispatch_task(task_data)
 tasks = db.get_dispatch_tasks()
 tasks = db.get_dispatch_tasks(dispatch_track='轨道A')
 tasks = db.get_dispatch_tasks(initiator_role='车间地调')
-tasks = db.get_dispatch_tasks(audit_status='待审核')
+tasks = db.get_dispatch_tasks(status='待调度员审核')
 ```
 
 #### 更新任务状态（支持审核流程）
 ```python
 # 审核任务（轨道A）
-result = db.update_task_status(task_id, '已通过', '区域调度员', '审核通过，请尽快安排')
+result = db.update_task_status(task_id, '待供应商响应', '区域调度员', '审核通过，请尽快安排')
 
 # 更新当前处理人
-result = db.update_task_current_handler(task_id, '承运商', 4)
+result = db.update_task_current_handler(task_id, '供应商', 4)
 ```
 
 #### 分配车辆
@@ -271,7 +256,7 @@ history = db.get_task_status_history(task_id)
 ### 基础测试
 运行测试脚本验证功能：
 ```bash
-python test_new_dispatch_tables.py
+# 数据库已初始化完成，可直接使用
 ```
 
 测试内容包括：
@@ -308,6 +293,14 @@ python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.
 - `DATABASE_MIGRATION_GUIDE.md` - 数据库迁移指南
 
 ## 版本更新记录
+
+### v2.1 - 状态命名统一更新（2024-08-13）
+- ✅ 统一状态命名为清晰业务特征命名
+- ✅ 更新manual_dispatch_tasks表status字段约束
+- ✅ 新增"已取消"状态支持任务取消场景
+- ✅ 同步更新API设计文档状态命名
+- ✅ 同步更新前端状态映射配置
+- ✅ 同步更新后端状态流转规则
 
 ### v2.0 - 双轨派车功能
 - ✅ 新增11个双轨派车相关字段

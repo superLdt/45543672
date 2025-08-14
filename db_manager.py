@@ -102,7 +102,7 @@ class DatabaseManager:
                 volume INTEGER NOT NULL,
                 weight REAL NOT NULL,
                 special_requirements TEXT,
-                status TEXT DEFAULT '待派车' NOT NULL,
+                status TEXT DEFAULT '待提交' NOT NULL CHECK(status IN ('待提交','待调度员审核','待供应商响应','供应商已响应','车间已核查','供应商已确认','任务结束','已取消')),
                 
                 -- 双轨派车流程字段
                 dispatch_track TEXT CHECK(dispatch_track IN ('轨道A', '轨道B')) NOT NULL DEFAULT '轨道A',
@@ -182,11 +182,11 @@ class DatabaseManager:
                 print('派车任务表中已有数据，跳过插入示例数据')
                 return True
 
-            # 插入示例任务（包含双轨派车字段）
+            # 插入示例任务（包含双轨派车字段，使用新的清晰命名）
             sample_tasks = [
-                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输', '待承运商响应', '2024-01-15 08:00:00', '2024-01-15 08:00:00', '轨道A', '车间地调', 1, '北京中心局', 1, '区域调度员', 2, '已通过', '2024-01-15 09:00:00', '审核通过，请尽快安排', '承运商', 4),
-                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高', '待承运商响应', '2024-01-16 08:00:00', '2024-01-16 08:00:00', '轨道B', '区域调度员', 2, '上海中心局', 0, None, None, '已通过', None, '区域调度直接派车', '承运商', 4),
-                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None, '待审核', '2024-01-17 08:00:00', '2024-01-17 08:00:00', '轨道A', '车间地调', 3, '广州中心局', 1, '区域调度员', 2, '待审核', None, None, '区域调度员', 2)
+                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输', '待供应商响应', '2024-01-15 08:00:00', '2024-01-15 08:00:00', '轨道A', '车间地调', 1, '北京中心局', 1, '区域调度员', 2, '已通过', '2024-01-15 09:00:00', '审核通过，请尽快安排', '供应商', 4),
+                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高', '待供应商响应', '2024-01-16 08:00:00', '2024-01-16 08:00:00', '轨道B', '区域调度员', 2, '上海中心局', 0, None, None, '已通过', None, '区域调度直接派车', '供应商', 4),
+                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None, '待调度员审核', '2024-01-17 08:00:00', '2024-01-17 08:00:00', '轨道A', '车间地调', 3, '广州中心局', 1, '区域调度员', 2, '待审核', None, None, '区域调度员', 2)
             ]
 
             # 处理None值，使用Python的None代替SQL的NULL
@@ -251,13 +251,13 @@ class DatabaseManager:
             dispatch_track = '轨道B' if initiator_role in ['区域调度员', '超级管理员'] else '轨道A'
             audit_required = 0 if dispatch_track == '轨道B' else 1
             
-            # 设置初始状态
+            # 设置初始状态（使用新的清晰命名）
             if dispatch_track == '轨道A':
-                initial_status = '待审核'
+                initial_status = '待调度员审核'
                 current_handler_role = '区域调度员'
             else:
-                initial_status = '待承运商响应'
-                current_handler_role = '承运商'
+                initial_status = '待供应商响应'
+                current_handler_role = '供应商'
             
             self.cursor.execute('''
             INSERT INTO manual_dispatch_tasks 
@@ -507,6 +507,10 @@ class DatabaseManager:
             self.update_manual_dispatch_tables()
             print("✅ 表结构更新完成")
             
+            # 验证和更新状态字段
+            self.validate_and_update_status_fields()
+            print("✅ 状态字段验证完成")
+            
             # 插入默认数据
             self.insert_default_data()
             
@@ -517,6 +521,60 @@ class DatabaseManager:
             return False
         finally:
             self.disconnect()
+
+    def validate_and_update_status_fields(self):
+        """验证和更新状态字段，确保使用新的清晰命名"""
+        if not self.cursor:
+            print('数据库未连接')
+            return False
+
+        try:
+            # 检查状态字段约束
+            self.cursor.execute("PRAGMA table_info(manual_dispatch_tasks)")
+            columns = self.cursor.fetchall()
+            
+            status_column = next((col for col in columns if col[1] == 'status'), None)
+            if status_column:
+                print(f"✅ 状态字段类型: {status_column[2]}")
+                
+                # 检查是否有CHECK约束
+                if 'CHECK' not in str(status_column[2]).upper():
+                    print("⚠️ 状态字段缺少CHECK约束")
+                else:
+                    print("✅ 状态字段包含CHECK约束")
+            
+            # 验证当前数据中的状态值
+            self.cursor.execute("SELECT DISTINCT status FROM manual_dispatch_tasks")
+            current_statuses = [row[0] for row in self.cursor.fetchall()]
+            valid_statuses = ['待提交', '待调度员审核', '待供应商响应', '供应商已响应', '车间已核查', '供应商已确认', '任务结束', '已取消']
+            
+            invalid_statuses = [status for status in current_statuses if status and status not in valid_statuses]
+            if invalid_statuses:
+                print(f"⚠️ 发现无效状态值: {invalid_statuses}")
+                # 更新无效状态为最接近的有效状态
+                status_mapping = {
+                    '待区域调度员审核': '待调度员审核',
+                    '待承运商响应': '待供应商响应',
+                    '已响应': '供应商已响应',
+                    '已发车': '车间已核查',
+                    '已到达': '供应商已确认',
+                    '已完成': '任务结束'
+                }
+                
+                for old_status, new_status in status_mapping.items():
+                    if old_status in invalid_statuses:
+                        self.cursor.execute("UPDATE manual_dispatch_tasks SET status = ? WHERE status = ?", (new_status, old_status))
+                        print(f"✅ 更新状态: {old_status} → {new_status}")
+            else:
+                print("✅ 所有状态值均有效")
+            
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"❌ 验证状态字段失败: {str(e)}")
+            return False
 
     def create_user_tables(self):
         """创建用户管理相关表"""

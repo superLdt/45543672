@@ -171,7 +171,7 @@
                                 <option value="12" data-min-volume="55">12吨</option>
                                 <option value="20" data-min-volume="100">20吨</option>
                                 <option value="30" data-min-volume="130">30吨</option>
-                                <option value="40A" data-min-volume="180">40吨A</option>
+                                <option value="40A" data-min-volume="150">40吨A</option>
                                 <option value="40B" data-min-volume="180">40吨B</option>
                             </select>
                         </div>
@@ -263,15 +263,15 @@
 
 <script>
 // 重量和容积映射关系
-const weightVolumeMap = {
-    '5': { min: 35, next: 45 },
-    '8': { min: 45, next: 55 },
-    '12': { min: 55, next: 100 },
-    '20': { min: 100, next: 130 },
-    '30': { min: 130, next: 180 },
-    '40A': { min: 180, next: null },
-    '40B': { min: 180, next: null }
-};
+        const weightVolumeMap = {
+            '5': { min: 35, next: 45 },
+            '8': { min: 45, next: 55 },
+            '12': { min: 55, next: 100 },
+            '20': { min: 100, next: 130 },
+            '30': { min: 130, next: 150 },
+            '40A': { min: 150, next: 180 },
+            '40B': { min: 180, next: null }
+        };
 
 // 重量选择变化处理
 document.getElementById('weightSelect').addEventListener('change', function() {

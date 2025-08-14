@@ -161,18 +161,27 @@
             border-radius: 8px;
             padding: 1.25rem;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .stat-title {
             color: #5f6368;
             font-size: 0.9rem;
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .stat-value {
             font-size: 1.8rem;
             font-weight: 500;
             color: #202124;
+            transition: all 0.3s ease;
         }
 
         .stat-change {
@@ -180,6 +189,7 @@
             margin-top: 0.5rem;
             display: flex;
             align-items: center;
+            gap: 0.25rem;
         }
 
         .positive {
@@ -199,11 +209,31 @@
 
         .section-title {
             font-size: 1.25rem;
+            font-weight: 500;
             color: #202124;
             margin-bottom: 1rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid #dadce0;
+            color: #5f6368;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .refresh-btn:hover {
+            background-color: #f8f9fa;
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         /* 表格样式优化 */
@@ -265,103 +295,135 @@
         .action-btn:hover {
             opacity: 0.8;
         }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .quick-btn:hover {
+            background: #1557b0;
+        }
+
+        .quick-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
     </style>
     {% endblock %}
 
     {% block content %}
         <div class="dashboard-stats">
-            <div class="stat-card">
-                <div class="stat-title">今日运输任务</div>
-                <div class="stat-value">24</div>
-                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 12% 较昨日</div>
+            <div class="stat-card" id="total-tasks">
+                <div class="stat-title">
+                    <i class="fas fa-tasks"></i>
+                    总任务数
+                </div>
+                <div class="stat-value">--</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>实时数据</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">待完成任务</div>
-                <div class="stat-value">8</div>
-                <div class="stat-change negative"><i class="fas fa-arrow-down"></i> 4% 较昨日</div>
+            <div class="stat-card" id="pending-tasks">
+                <div class="stat-title">
+                    <i class="fas fa-clock"></i>
+                    待处理任务
+                </div>
+                <div class="stat-value">--</div>
+                <div class="stat-change">
+                    <i class="fas fa-sync"></i>
+                    <span>实时更新</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">本月完成率</div>
-                <div class="stat-value">92%</div>
-                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 5% 较上月</div>
+            <div class="stat-card" id="completed-tasks">
+                <div class="stat-title">
+                    <i class="fas fa-check-circle"></i>
+                    已完成任务
+                </div>
+                <div class="stat-value">--</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-chart-line"></i>
+                    <span>累计完成</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">客户满意度</div>
-                <div class="stat-value">96%</div>
-                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> 2% 较上月</div>
+            <div class="stat-card" id="total-revenue">
+                <div class="stat-title">
+                    <i class="fas fa-yen-sign"></i>
+                    总收入
+                </div>
+                <div class="stat-value">--</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>本月统计</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="loadDashboardStats()" id="refresh-stats-btn">
+                <i class="fas fa-sync"></i> 刷新数据
+            </button>
+            <button class="quick-btn" onclick="quickCreateTask()">
+                <i class="fas fa-plus"></i> 快速创建任务
+            </button>
+        </div>
+
+        <div class="content-section">
+            <div class="section-title">
+                <span><i class="fas fa-list"></i> 最新任务</span>
+                <button class="refresh-btn" onclick="loadLatestTasks()" id="refresh-tasks-btn">
+                    <i class="fas fa-sync"></i> 刷新
+                </button>
+            </div>
+            <div id="latest-tasks-list">
+                <div class="loading">正在加载任务数据...</div>
             </div>
         </div>
 
         <div class="content-section">
             <div class="section-title">
-                <span>近期运输任务</span>
-                <a href="#" class="btn btn-sm btn-primary">查看全部</a>
+                <span><i class="fas fa-exclamation-triangle"></i> 待处理申请</span>
+                <button class="refresh-btn" onclick="loadPendingApplications()" id="refresh-applications-btn">
+                    <i class="fas fa-sync"></i> 刷新
+                </button>
             </div>
-            <button class="btn"><i class="fas fa-plus"></i> 新建任务</button>
-            <table>
-            <thead>
-                <tr>
-                    <th>任务ID</th>
-                    <th>任务名称</th>
-                    <th>调度日期</th>
-                    <th>状态</th>
-                    <th>负责人</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>ST-202308001</td>
-                    <td>北区日常配送</td>
-                    <td>2023-08-15</td>
-                    <td><span style="color: #137333;">已完成</span></td>
-                    <td>张三</td>
-                    <td>
-                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>ST-202308002</td>
-                    <td>南区紧急调拨</td>
-                    <td>2023-08-16</td>
-                    <td><span style="color: #fbbc04;">进行中</span></td>
-                    <td>李四</td>
-                    <td>
-                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>ST-202308003</td>
-                    <td>东区补货计划</td>
-                    <td>2023-08-17</td>
-                    <td><span style="color: #fbbc04;">进行中</span></td>
-                    <td>王五</td>
-                    <td>
-                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>ST-202308004</td>
-                    <td>西区季度盘点</td>
-                    <td>2023-08-18</td>
-                    <td><span style="color: #5f6368;">未开始</span></td>
-                    <td>赵六</td>
-                    <td>
-                        <button class="action-btn view-btn"><i class="fas fa-eye"></i> 查看</button>
-                        <button class="action-btn edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                        <button class="action-btn delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                    </td>
-                </tr>
-            </tbody>
-            </table>
+            <div id="pending-applications-list">
+                <div class="loading">正在加载申请数据...</div>
+            </div>
         </div>
         
+    {% endblock %}
+
+    {% block extra_js %}
+    <script src="{{ url_for('static', filename='dashboard-ajax.js') }}"></script>
     {% endblock %}
 </body>
 </html>

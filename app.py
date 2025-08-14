@@ -9,7 +9,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import traceback
 from functools import wraps
 import jinja2
-
+# 从配置文件导入数据库路径
+from config import DATABASE
+# 使用db_manager统一管理数据库初始化
+from db_manager import DatabaseManager
 
 # 应用初始化
 from flask_login import LoginManager, UserMixin, login_required, current_user,login_user,logout_user    
@@ -20,6 +23,8 @@ class User(UserMixin):
         self.username = username
         self.full_name = full_name
         self.roles = roles or []
+        # 支持单一角色访问
+        self.role = roles[0] if roles and roles[0] else None
 from config import SECRET_KEY
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -30,16 +35,21 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'  # 设置登录页面路由
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600
+# 加载配置到 app 中（关键步骤）
+app.config['DATABASE'] = DATABASE  # 确保这行代码存在
 
-# 从配置文件导入数据库路径
-from config import DATABASE
+# 再次打印调试，确认应用中已加载
+print("=== Flask 应用配置 ===")
+print(f"应用中的数据库路径: {app.config['DATABASE']}")  # 必须显示正确路径
+print(f"SECRET_KEY 是否设置: {bool(app.config['SECRET_KEY'])}")
+
+
 
 
 # 日志配置
 app.logger.setLevel(logging.DEBUG)
 
-# 使用db_manager统一管理数据库初始化
-from db_manager import DatabaseManager
+
 
 # 在应用启动时初始化数据库
 with app.app_context():
@@ -52,14 +62,15 @@ def load_user(user_id):
     db = get_db()
     user = db.execute('SELECT id, username, full_name FROM User WHERE id = ? AND is_active = 1', (user_id,)).fetchone()
     if user:
-        # 获取用户角色
-        roles = db.execute('''
+        # 获取用户单一角色
+        role = db.execute('''
             SELECT r.name FROM Role r
             JOIN UserRole ur ON r.id = ur.role_id
             WHERE ur.user_id = ?
-        ''', (user_id,)).fetchall()
-        role_names = [role['name'] for role in roles]
-        return User(user['id'], user['username'], user['full_name'], role_names)
+        ''', (user_id,)).fetchone()
+        user_role = role['name'] if role else None
+        # 使用单一角色创建用户对象
+        return User(user['id'], user['username'], user['full_name'], [user_role])
     return None
 
 def get_db():
@@ -96,10 +107,11 @@ def get_user_modules(user_id):
         return []
     cursor = db_manager.cursor
     try:
-        # 获取用户角色
+        # 获取用户单一角色
         cursor.execute('''
             SELECT r.name FROM User u
-            JOIN Role r ON u.role_id = r.id
+            JOIN UserRole ur ON u.id = ur.user_id
+            JOIN Role r ON ur.role_id = r.id
             WHERE u.id = ?
         ''', (user_id,))
         role_result = cursor.fetchone()
@@ -122,9 +134,8 @@ def get_user_modules(user_id):
                 SELECT m.id, m.name, m.display_name, m.route_name, m.icon_class, m.parent_id
                 FROM modules m
                 JOIN role_module_permissions rmp ON m.id = rmp.module_id
-                JOIN User u ON u.id = ur.user_id
                 JOIN UserRole ur ON ur.role_id = rmp.role_id
-                WHERE u.id = ? AND rmp.can_view = 1 AND m.is_active = 1
+                WHERE ur.user_id = ? AND rmp.can_view = 1 AND m.is_active = 1
                 ORDER BY m.sort_order
             ''', (user_id,))
         
@@ -247,21 +258,22 @@ def login():
             cursor.close()
         
         if user and check_password_hash(user['password'], password):
-            # 获取用户角色
-            roles = db.execute('''
+            # 获取用户角色（单一角色）
+            role = db.execute('''
                 SELECT r.name FROM Role r
                 JOIN UserRole ur ON r.id = ur.role_id
                 WHERE ur.user_id = ?
-            ''', (user['id'],)).fetchall()
-            role_names = [role['name'] for role in roles]
+            ''', (user['id'],)).fetchone()
+            user_role = role['name'] if role else None
+            
             # 创建用户对象并添加角色信息
-            user_obj = User(user['id'], username, user['full_name'], role_names)
+            user_obj = User(user['id'], username, user['full_name'], [user_role])
             # 使用Flask-Login进行登录
             login_user(user_obj, remember=True)
-            # 同步设置session['user_id']以兼容权限检查
+            # 同步设置session以兼容权限检查
             session['user_id'] = user['id']
-            session['user_roles'] = role_names
-            print(f"用户 {username} 登录成功，角色: {role_names}")  # 调试日志
+            session['user_role'] = user_role
+            print(f"用户 {username} 登录成功，角色: {user_role}")  # 调试日志
             return redirect(url_for('dashboard'))
         
         return '用户名或密码错误'
@@ -365,6 +377,135 @@ except ImportError as e:
 except Exception as e:
     print(f'蓝图注册错误: {str(e)}', file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
+
+# 新增 AJAX 演示路由
+@app.route('/ajax-demo')
+def ajax_demo():
+    return render_template('ajax-demo.html')
+
+
+
+@app.route('/api/dashboard/stats')
+@login_required
+def dashboard_stats():
+    """获取仪表盘统计数据"""
+    try:
+        db = get_db()
+        
+        # 获取统计数据
+        total_tasks = db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
+        pending_tasks = db.execute('SELECT COUNT(*) FROM tasks WHERE status = ?', ('pending',)).fetchone()[0]
+        completed_tasks = db.execute('SELECT COUNT(*) FROM tasks WHERE status = ?', ('completed',)).fetchone()[0]
+        
+        # 获取收入数据（假设有revenue字段）
+        total_revenue = db.execute('SELECT COALESCE(SUM(revenue), 0) FROM tasks WHERE status = ?', ('completed',)).fetchone()[0]
+        
+        stats = {
+            'total_tasks': total_tasks,
+            'pending_tasks': pending_tasks,
+            'completed_tasks': completed_tasks,
+            'total_revenue': total_revenue or 0,
+            'today_tasks': 12,  # 模拟数据
+            'active_vehicles': 8  # 模拟数据
+        }
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks')
+@login_required
+def api_tasks():
+    """获取任务列表API"""
+    try:
+        db = get_db()
+        status = request.args.get('status')
+        limit = request.args.get('limit', 10, type=int)
+        
+        query = 'SELECT id, title, status, priority, created_at FROM tasks'
+        params = []
+        
+        if status:
+            query += ' WHERE status = ?'
+            params.append(status)
+        
+        query += ' ORDER BY created_at DESC LIMIT ?'
+        params.append(limit)
+        
+        tasks = db.execute(query, params).fetchall()
+        
+        return jsonify([{
+            'id': task['id'],
+            'title': task['title'],
+            'status': task['status'],
+            'priority': task['priority'],
+            'created_at': task['created_at']
+        } for task in tasks])
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks', methods=['POST'])
+@login_required
+def create_task():
+    """创建新任务API"""
+    try:
+        data = request.get_json()
+        
+        # 验证必需字段
+        if not data.get('title'):
+            return jsonify({'error': '任务标题不能为空'}), 400
+            
+        db = get_db()
+        cursor = db.cursor()
+        
+        cursor.execute('''
+            INSERT INTO tasks (title, description, priority, status, created_by)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            data['title'],
+            data.get('description', ''),
+            data.get('priority', 'medium'),
+            data.get('status', 'pending'),
+            current_user.id
+        ))
+        
+        task_id = cursor.lastrowid
+        db.commit()
+        
+        return jsonify({
+            'id': task_id,
+            'message': '任务创建成功'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/<int:task_id>/status', methods=['PUT'])
+@login_required
+def update_task_status(task_id):
+    """更新任务状态API"""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status:
+            return jsonify({'error': '状态不能为空'}), 400
+            
+        db = get_db()
+        db.execute('UPDATE tasks SET status = ? WHERE id = ?', (new_status, task_id))
+        db.commit()
+        
+        return jsonify({
+            'message': '状态更新成功'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 注册API蓝图
+from api import init_api_routes
+init_api_routes(app)
 
 # 应用入口点
 if __name__ == '__main__':

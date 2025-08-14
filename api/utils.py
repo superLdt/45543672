@@ -21,10 +21,10 @@ def validate_dispatch_data(data):
     # 验证枚举值
     if data.get('requirement_type') not in ['正班', '加班']:
         return False, '需求类型必须是"正班"或"加班"'
-    
+
     if data.get('transport_type') not in ['单程', '往返']:
         return False, '运输类型必须是"单程"或"往返"'
-    
+
     if data.get('dispatch_track') and data.get('dispatch_track') not in ['轨道A', '轨道B']:
         return False, '流程轨道必须是"轨道A"或"轨道B"'
     
@@ -32,7 +32,7 @@ def validate_dispatch_data(data):
     valid_weights = ['5', '8', '12', '20', '30', '40A', '40B']
     if str(data.get('weight')) not in valid_weights:
         return False, f'重量吨必须是以下之一: {", ".join(valid_weights)}'
-    
+
     # 验证容积
     try:
         volume = float(data.get('volume', 0))
@@ -40,7 +40,7 @@ def validate_dispatch_data(data):
             return False, '容积必须大于0'
     except (ValueError, TypeError):
         return False, '容积必须是有效数字'
-    
+
     # 验证时间格式（ISO格式）
     try:
         if data.get('required_time'):

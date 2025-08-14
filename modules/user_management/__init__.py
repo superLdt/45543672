@@ -148,28 +148,59 @@ def user_new():
         
         conn = get_db()
         try:
-            # 检查用户名是否已存在
-            existing_user = conn.execute('SELECT id FROM User WHERE username = ?', (username,)).fetchone()
+            # 检查用户名和邮箱是否已存在 (增强调试日志)
+            print(f"正在检查用户名: {username} (精确匹配)")  # 调试日志
+            existing_user = conn.execute('SELECT id FROM User WHERE username = ? COLLATE NOCASE', (username,)).fetchone()
             if existing_user:
+                print(f"用户名已存在: {username} (现有用户ID: {existing_user['id']})")  # 调试日志
+                print(f"当前事务状态: {conn.in_transaction}")  # 调试事务状态
                 roles = conn.execute('SELECT * FROM Role').fetchall()
                 companies = conn.execute('SELECT * FROM Company').fetchall()
+                print(f"查询到的角色数量: {len(roles)}, 公司数量: {len(companies)}")  # 调试日志
                 return render_template('user_management/user_edit.html', error='用户名已存在', roles=roles, companies=companies, user_roles=[])
             
-            # 创建用户
-            conn.execute('''
-                INSERT INTO User (username, password, full_name, email, company_id, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (username, hashed_password, full_name, email, company_id, 1, datetime.now(), datetime.now()))
+            # 检查邮箱是否已存在
+            print(f"正在检查邮箱: {email}")  # 调试日志
+            existing_email = conn.execute('SELECT id FROM User WHERE email = ?', (email,)).fetchone()
+            if existing_email:
+                print(f"邮箱已存在: {email} (现有用户ID: {existing_email['id']})")  # 调试日志
+                roles = conn.execute('SELECT * FROM Role').fetchall()
+                companies = conn.execute('SELECT * FROM Company').fetchall()
+                return render_template('user_management/user_edit.html', error='邮箱已被注册', roles=roles, companies=companies, user_roles=[])
             
-            # 获取新创建的用户
-            user = conn.execute('SELECT id FROM User WHERE username = ?', (username,)).fetchone()
-            
-            # 分配角色（单个角色）
-            if role_id:
-                conn.execute('INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)', (user['id'], role_id))
+            # 创建用户 (增强调试和错误处理)
+            print(f"正在创建新用户: {username}, 姓名: {full_name}, 邮箱: {email}")  # 调试日志
+            try:
+                # 开始事务
+                with conn:
+                    conn.execute('''
+                        INSERT INTO User (username, password, full_name, email, company_id, is_active, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (username, hashed_password, full_name, email, company_id, 1, datetime.now(), datetime.now()))
+                    
+                    # 获取新创建的用户
+                    user = conn.execute('SELECT id FROM User WHERE username = ?', (username,)).fetchone()
+                    print(f"新用户创建成功，ID: {user['id']}")  # 调试日志
+                    
+                    # 分配角色（单个角色）
+                    if role_id:
+                        conn.execute('INSERT INTO UserRole (user_id, role_id) VALUES (?, ?)', (user['id'], role_id))
+                        print(f"角色分配成功，角色ID: {role_id}")  # 调试日志
                 
-            conn.commit()
-            return redirect(url_for('user_management_bp.user_list'))
+                # 确保当前用户会话有效
+                if not current_user.is_authenticated:
+                    print("警告：当前用户会话无效")
+                
+                return redirect(url_for('user_management_bp.user_list'))
+            except Exception as e:
+                print(f"用户创建过程中出错: {str(e)}")  # 调试日志
+                roles = conn.execute('SELECT * FROM Role').fetchall()
+                companies = conn.execute('SELECT * FROM Company').fetchall()
+                return render_template('user_management/user_edit.html', 
+                                    error=f"创建用户失败: {str(e)}", 
+                                    roles=roles, 
+                                    companies=companies, 
+                                    user_roles=[])
         except sqlite3.IntegrityError:
             roles = conn.execute('SELECT * FROM Role').fetchall()
             companies = conn.execute('SELECT * FROM Company').fetchall()
