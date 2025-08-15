@@ -210,6 +210,23 @@
     color: #f54a45;
 }
 
+/* 基于时间差的优先级样式 */
+.priority-normal {
+    background: #e6fff9;
+    color: #00d6b9;
+}
+
+.priority-urgent {
+    background: #fff4e6;
+    color: #ff8f1f;
+}
+
+.priority-emergency {
+    background: #ffebe6;
+    color: #f54a45;
+    font-weight: 600;
+}
+
 /* 飞书风格进度条 */
 .feishu-progress {
     padding: var(--feishu-spacing-md);
@@ -421,6 +438,62 @@
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }
+.text-muted { color: var(--feishu-text-tertiary); }
+
+/* 时间信息样式 */
+.time-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.time-info small {
+    font-size: 12px;
+    color: var(--feishu-text-secondary);
+}
+
+/* 优先级标签样式优化 */
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.priority-badge.priority-normal {
+    background: rgba(0, 214, 185, 0.1);
+    color: #00d6b9;
+    border: 1px solid rgba(0, 214, 185, 0.3);
+}
+
+.priority-badge.priority-urgent {
+    background: rgba(255, 143, 31, 0.1);
+    color: #ff8f1f;
+    border: 1px solid rgba(255, 143, 31, 0.3);
+}
+
+.priority-badge.priority-emergency {
+    background: rgba(245, 74, 69, 0.1);
+    color: #f54a45;
+    border: 1px solid rgba(245, 74, 69, 0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 74, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 4px rgba(245, 74, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 74, 69, 0);
+    }
+}
 
 .mb-0 { margin-bottom: 0; }
 .mb-1 { margin-bottom: var(--feishu-spacing-xs); }

@@ -42,7 +42,7 @@ export class TaskRenderer {
      */
     renderTaskRow(task, index) {
         const statusClass = this.getStatusClass(task.status);
-        const priorityClass = this.getPriorityClass(task.priority);
+        const timePriority = this.calculateTimePriority(task.required_date);
         
         return `
             <tr class="task-row" data-task-id="${task.task_id || task.id}">
@@ -64,13 +64,14 @@ export class TaskRenderer {
                     </span>
                 </td>
                 <td>
-                    <span class="priority-badge ${priorityClass}">
-                        ${task.requirement_type || '普通'}
+                    <span class="priority-badge ${timePriority.class}">
+                        ${timePriority.text}
                     </span>
                 </td>
                 <td>
                     <div class="time-info">
                         <span>${this.formatDateTime(task.required_date)}</span>
+                        <small class="text-muted">${timePriority.remaining}</small>
                     </div>
                 </td>
                 <td>
@@ -250,6 +251,65 @@ export class TaskRenderer {
             'low': 'priority-low'
         };
         return priorityMap[priority] || 'priority-normal';
+    }
+
+    /**
+     * 计算基于时间差的优先级
+     * @param {string} requiredDate - 要求时间
+     * @returns {object} 优先级信息
+     */
+    calculateTimePriority(requiredDate) {
+        if (!requiredDate) {
+            return {
+                class: 'priority-normal',
+                text: '正常',
+                remaining: '无时间要求'
+            };
+        }
+
+        const now = new Date();
+        const required = new Date(requiredDate);
+        
+        // 计算时间差（小时）
+        const diffMs = required.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        
+        let priority = {
+            class: '',
+            text: '',
+            remaining: ''
+        };
+
+        // 根据时间差设置优先级
+        if (diffHours > 48) {
+            priority.class = 'priority-normal';
+            priority.text = '正常';
+        } else if (diffHours > 12) {
+            priority.class = 'priority-urgent';
+            priority.text = '加急';
+        } else if (diffHours > 0) {
+            priority.class = 'priority-emergency';
+            priority.text = '紧急';
+        } else {
+            priority.class = 'priority-emergency';
+            priority.text = '已超时';
+        }
+
+        // 计算剩余时间描述
+        if (diffHours > 24) {
+            const days = Math.floor(diffHours / 24);
+            priority.remaining = `剩余${days}天`;
+        } else if (diffHours > 1) {
+            priority.remaining = `剩余${Math.floor(diffHours)}小时`;
+        } else if (diffHours > 0) {
+            const minutes = Math.floor(diffHours * 60);
+            priority.remaining = `剩余${minutes}分钟`;
+        } else {
+            const overdueHours = Math.abs(Math.floor(diffHours));
+            priority.remaining = `已超时${overdueHours}小时`;
+        }
+
+        return priority;
     }
     
     /**
