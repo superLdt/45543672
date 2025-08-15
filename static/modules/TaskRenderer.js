@@ -45,15 +45,15 @@ export class TaskRenderer {
         const priorityClass = this.getPriorityClass(task.priority);
         
         return `
-            <tr class="task-row" data-task-id="${task.id}">
+            <tr class="task-row" data-task-id="${task.task_id || task.id}">
                 <td>${index + 1}</td>
                 <td>
                     <div class="task-id">
                         <span class="text-primary">${task.task_id || task.id}</span>
                     </div>
                 </td>
-                <td>${task.start_location || '-'}</td>
-                <td>${task.end_location || '-'}</td>
+                <td>${task.start_bureau || '-'}</td>
+                <td>${task.route_name || '-'}</td>
                 <td>
                     <span class="transport-type">${task.transport_type || '-'}</span>
                 </td>
@@ -65,17 +65,17 @@ export class TaskRenderer {
                 </td>
                 <td>
                     <span class="priority-badge ${priorityClass}">
-                        ${task.priority || '普通'}
+                        ${task.requirement_type || '普通'}
                     </span>
                 </td>
                 <td>
                     <div class="time-info">
-                        <span>${this.formatDateTime(task.required_time)}</span>
+                        <span>${this.formatDateTime(task.required_date)}</span>
                     </div>
                 </td>
                 <td>
                     <button class="feishu-btn feishu-btn-primary feishu-btn-sm view-detail" 
-                            data-task-id="${task.id}">
+                            data-task-id="${task.task_id || task.id}">
                         <i class="fas fa-eye"></i> 详情
                     </button>
                 </td>

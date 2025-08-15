@@ -357,7 +357,7 @@
 
 /* 路线标题样式 */
 .route-title {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     font-weight: 600;
     color: var(--feishu-text-primary);
     line-height: 1.4;
@@ -442,3 +442,214 @@
 
 .w-100 { width: 100%; }
 .h-100 { height: 100%; }
+
+/* ========== 任务管理页面专用样式 ========== */
+
+.task-management-container {
+    display: flex;
+    height: calc(100vh - 120px);
+    gap: var(--feishu-spacing-md);
+    padding: var(--feishu-spacing-md);
+    background: var(--feishu-bg);
+}
+
+/* 主内容区域 - 左右分布布局 */
+.main-content-wrapper {
+    display: flex;
+    gap: var(--feishu-spacing-md);
+    flex: 1;
+}
+
+.task-list-section {
+    flex: 2; /* 占2/3宽度 */
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-section {
+    flex: 1; /* 占1/3宽度 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 筛选区样式 */
+.filter-panel {
+    width: 280px;
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    overflow: hidden;
+}
+
+.filter-header {
+    background: linear-gradient(135deg, var(--feishu-primary), #5b8bff);
+    color: white;
+    padding: var(--feishu-spacing-lg);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.filter-body {
+    padding: var(--feishu-spacing-lg);
+}
+
+.filter-section {
+    margin-bottom: var(--feishu-spacing-xl);
+}
+
+.filter-section h6 {
+    color: var(--feishu-text-primary);
+    font-weight: 600;
+    margin-bottom: var(--feishu-spacing-sm);
+    font-size: 14px;
+}
+
+/* 筛选组 */
+.filter-group {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.filter-label {
+    display: block;
+    margin-bottom: var(--feishu-spacing-xs);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+}
+
+/* 列表区样式 */
+.list-panel {
+    flex: 1;
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    overflow: hidden;
+}
+
+.list-header {
+    padding: var(--feishu-spacing-lg);
+    border-bottom: 1px solid var(--feishu-border);
+    background: var(--feishu-white);
+}
+
+.list-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin: 0;
+}
+
+.list-subtitle {
+    color: var(--feishu-text-secondary);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* 详情区样式 */
+.detail-panel {
+    width: 400px;
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    overflow: hidden;
+}
+
+.detail-header {
+    padding: var(--feishu-spacing-lg);
+    border-bottom: 1px solid var(--feishu-border);
+    background: var(--feishu-white);
+}
+
+.detail-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin: 0;
+}
+
+/* 信息卡片 */
+.info-card {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius);
+    padding: var(--feishu-spacing-md);
+    margin: var(--feishu-spacing-md);
+}
+
+/* 修复网格布局显示问题 */
+.filter-body .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: calc(-1 * var(--feishu-spacing-sm) / 2);
+    margin-left: calc(-1 * var(--feishu-spacing-sm) / 2);
+}
+
+.filter-body .col-lg-4,
+.filter-body .col-md-4,
+.filter-body .col-sm-6 {
+    position: relative;
+    width: 100%;
+    padding-right: calc(var(--feishu-spacing-sm) / 2);
+    padding-left: calc(var(--feishu-spacing-sm) / 2);
+}
+
+@media (min-width: 992px) {
+    .filter-body .col-lg-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .filter-body .col-md-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .filter-body .col-sm-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+    .main-content-wrapper {
+        flex-direction: column;
+    }
+    
+    .task-list-section {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .detail-section {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .detail-panel {
+        width: 100%;
+    }
+}
+
+@media (max-width: 992px) {
+    .task-management-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .filter-panel {
+        width: 100%;
+        margin-bottom: var(--feishu-spacing-md);
+    }
+    
+    .main-content-wrapper {
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>调试测试</title>
+</head>
+<body>
+    <h1>调试测试页面</h1>
+    <div id="debugArea"></div>
+    <button onclick="testButton()">点击测试</button>
+
+    <script>
+        // 最简单的调试方式
+        function debug(message) {
+            const debugArea = document.getElementById('debugArea');
+            debugArea.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+
+        // 页面加载时立即执行
+        debug('页面开始加载...');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('DOM加载完成');
+            
+            // 测试fetch
+            fetch('/api/dispatch/tasks?page=1&limit=1', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                debug('响应状态: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                debug('响应数据: ' + JSON.stringify(data));
+            })
+            .catch(error => {
+                debug('错误: ' + error.message);
+            });
+        });
+
+        function testButton() {
+            debug('按钮被点击');
+        }
+    </script>
+</body>
+</html>

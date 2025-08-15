@@ -117,7 +117,7 @@ def create_task():
 @dispatch_bp.route('/tasks', methods=['GET'])
 @require_role(['车间地调', '区域调度员', '超级管理员', '供应商'])
 def get_tasks():
-    """获取任务列表"""
+    """获取任务列表 - 根据用户角色返回不同的任务范围"""
     try:
         # 获取查询参数
         page = int(request.args.get('page', 1))
@@ -137,25 +137,65 @@ def get_tasks():
         try:
             # 获取当前用户信息
             current_user_id = session.get('user_id')
+            current_user_role = session.get('user_role')
+            
             if not current_user_id:
                 return create_response(success=False, error={
                     'code': 4002,
                     'message': '未登录用户'
                 }), 401
-                
-            # 获取当前用户创建的任务总数
-            total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE initiator_user_id = ?"
-            db_manager.cursor.execute(total_query, [current_user_id])
+            
+            # 根据用户角色确定查询条件 - 优化查询性能
+            if current_user_role in ['超级管理员', '区域调度员']:
+                # 超级管理员和区域调度员可以看到所有任务
+                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks"
+                query = """
+                    SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
+                           transport_type, requirement_type, volume, weight, status, 
+                           created_at, updated_at, special_requirements
+                    FROM manual_dispatch_tasks 
+                    ORDER BY created_at DESC 
+                    LIMIT ? OFFSET ?
+                """
+                params = [limit, offset]
+            elif current_user_role == '供应商':
+                # 供应商只能看到分配给自己的任务
+                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE assigned_supplier_id = ?"
+                query = """
+                    SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
+                           transport_type, requirement_type, volume, weight, status, 
+                           created_at, updated_at, special_requirements
+                    FROM manual_dispatch_tasks 
+                    WHERE assigned_supplier_id = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT ? OFFSET ?
+                """
+                params = [current_user_id, limit, offset]
+            else:
+                # 车间地调只能看到自己创建的任务
+                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE initiator_user_id = ?"
+                query = """
+                    SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
+                           transport_type, requirement_type, volume, weight, status, 
+                           created_at, updated_at, special_requirements
+                    FROM manual_dispatch_tasks 
+                    WHERE initiator_user_id = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT ? OFFSET ?
+                """
+                params = [current_user_id, limit, offset]
+            
+            # 执行总数查询
+            if current_user_role in ['超级管理员', '区域调度员']:
+                db_manager.cursor.execute(total_query)
+            elif current_user_role == '供应商':
+                db_manager.cursor.execute(total_query, [current_user_id])
+            else:
+                db_manager.cursor.execute(total_query, [current_user_id])
             total = db_manager.cursor.fetchone()[0]
             
-            # 获取当前用户创建的任务 - 按创建时间倒序
-            query = """
-                SELECT * FROM manual_dispatch_tasks 
-                WHERE initiator_user_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?
-            """
-            db_manager.cursor.execute(query, [current_user_id, limit, offset])
+            # 执行任务查询
+            db_manager.cursor.execute(query, params)
             rows = db_manager.cursor.fetchall()
                 
             # 转换为字典列表

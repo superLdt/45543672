@@ -733,7 +733,7 @@ function createRequirementItem(req) {
     const weight = req.weight || req.cargo_weight || 0;
     const volume = req.volume || req.cargo_volume || 0;
     const transportType = req.transport_type || req.transport_type_name || '普通运输';
-    const requiredTime = req.required_date || req.required_time || '';
+    const requiredTime = req.required_time || '';
     const specialReq = req.special_requirements || '';
     const createdAt = formatDateTime(req.created_at);
     const requiredTimeFormatted = formatDateTime(requiredTime);

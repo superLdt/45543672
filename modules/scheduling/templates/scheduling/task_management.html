@@ -497,24 +497,25 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- 绝对可见的调试面板 -->
-<div id="debugPanel" style="position: fixed !important; top: 10px !important; right: 10px !important; width: 350px !important; max-height: 300px !important; background: rgba(255, 0, 0, 0.9) !important; color: white !important; border: 3px solid yellow !important; border-radius: 8px !important; font-size: 12px !important; font-family: monospace !important; overflow-y: auto !important; z-index: 99999 !important; padding: 10px !important; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5) !important;">
-    <div style="font-weight: bold; border-bottom: 1px solid white; margin-bottom: 5px;">
-        🔍 强制调试面板 (绝对可见)
-        <button onclick="document.getElementById('debugPanel').style.display='none'" style="float: right; background: white; color: red; border: none; padding: 2px 6px; cursor: pointer; border-radius: 3px; font-size: 10px;">✕</button>
-    </div>
-    <div id="debugContent"></div>
-</div>
-
-
-    
-    <!-- ES6模块导入 -->
     <script type="module">
-        import { initTaskManagement } from '../../../../static/modules/index.js';
+        console.log('开始加载任务管理系统模块11111111');
+        import { initTaskManagement } from '/static/modules/index.js';
+        
+        // 添加调试输出
+        console.log('开始加载任务管理系统模块');
         
         // 初始化任务管理系统
         document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM已完全加载');
             try {
+                console.log('开始初始化任务管理系统');
+                
+                // 检查必要元素是否存在
+                if (!document.getElementById('taskListBody') || 
+                    !document.getElementById('paginationContainer')) {
+                    throw new Error('缺少必要的HTML元素');
+                }
+                
                 await initTaskManagement({
                     taskManager: {
                         apiEndpoint: '/api/dispatch/tasks',
@@ -535,7 +536,17 @@
                 console.log('任务管理系统初始化完成');
             } catch (error) {
                 console.error('任务管理系统初始化失败:', error);
-                alert('系统初始化失败，请刷新页面重试');
+                // 更友好的错误提示
+                const debugContent = document.getElementById('debugContent');
+                if (debugContent) {
+                    debugContent.innerHTML = `
+                        <div style="color:white;padding:10px;">
+                            <h4>系统初始化错误</h4>
+                            <p>${error.message}</p>
+                            <p>请检查控制台获取详细信息</p>
+                        </div>
+                    `;
+                }
             }
         });
     </script>

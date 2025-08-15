@@ -12,7 +12,7 @@ import { ErrorHandler } from '../utils/ErrorHandler.js';
 /**
  * 任务管理应用主类
  */
-export class TaskManagementApp {
+class TaskManagementApp {
     constructor(options = {}) {
         this.debug = new Debug('TaskManagementApp');
         this.errorHandler = new ErrorHandler();
@@ -159,9 +159,7 @@ export class TaskManagementApp {
         try {
             const task = await this.taskManager.getTaskDetail(taskId);
             if (task) {
-                // 这里可以集成详情弹窗或侧边栏
                 console.log('Task detail:', task);
-                // TODO: 实现详情展示
             }
         } catch (error) {
             this.errorHandler.handle(error, '获取任务详情失败');

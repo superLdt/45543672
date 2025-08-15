@@ -70,9 +70,16 @@ export class TaskManager {
             
             this.debug.log('Loading tasks with params:', params.toString());
             
+            // 添加超时控制和重试机制
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+            
             const response = await fetch(`${this.options.apiEndpoint}?${params}`, {
-                credentials: 'include'
+                credentials: 'include',
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (response.status === 401) {
                 window.location.href = '/login';
@@ -86,8 +93,26 @@ export class TaskManager {
             const result = await response.json();
             
             if (result.success) {
-                this.state.tasks = result.data || [];
-                this.state.totalTasks = result.total || 0;
+                // 适配API返回格式：可能是数组或包含list的对象
+                let tasks = [];
+                let total = 0;
+                
+                if (Array.isArray(result.data)) {
+                    // 兼容旧格式：直接是数组
+                    tasks = result.data;
+                    total = tasks.length;
+                } else if (result.data && Array.isArray(result.data.list)) {
+                    // 新格式：包含list的对象
+                    tasks = result.data.list;
+                    total = result.data.total || 0;
+                } else {
+                    // 其他情况
+                    tasks = [];
+                    total = 0;
+                }
+                
+                this.state.tasks = tasks;
+                this.state.totalTasks = total;
                 this.emit('data-loaded', {
                     tasks: this.state.tasks,
                     total: this.state.totalTasks
@@ -98,8 +123,19 @@ export class TaskManager {
             
         } catch (error) {
             this.debug.error('Failed to load tasks:', error);
+            
+            // 网络错误时的友好提示
+            if (error.name === 'AbortError' || error.message.includes('fetch')) {
+                error.message = '网络连接超时，请检查网络后重试';
+            }
+            
             this.errorHandler.handle(error);
             this.emit('error', error);
+            
+            // 清空数据避免显示错误数据
+            this.state.tasks = [];
+            this.state.totalTasks = 0;
+            this.emit('data-loaded', { tasks: [], total: 0 });
         } finally {
             this.state.isLoading = false;
             this.emit('loading-end');
@@ -178,9 +214,37 @@ export class TaskManager {
     /**
      * 设置当前页码
      */
-    setPage(page) {
-        this.state.currentPage = Math.max(1, page);
-        this.loadTasks(this.state.filters);
+    async setPage(page) {
+        if (page < 1 || page > this.getPaginationInfo().totalPages) {
+            return;
+        }
+        
+        // 防止重复点击
+        if (this.state.isLoading) {
+            return;
+        }
+        
+        this.state.currentPage = page;
+        
+        // 添加页面切换动画
+        this.showPageTransition();
+        
+        await this.loadTasks(this.state.filters);
+    }
+    
+    /**
+     * 显示页面切换动画
+     */
+    showPageTransition() {
+        const tbody = document.getElementById('taskTableBody');
+        if (tbody) {
+            tbody.style.opacity = '0.5';
+            tbody.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                tbody.style.opacity = '1';
+            }, 100);
+        }
     }
     
     /**

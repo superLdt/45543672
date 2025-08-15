@@ -909,7 +909,7 @@ function createTaskElement(task) {
     
     console.log('📝 开始构建任务卡片...');
     
-    // 状态样式映射 - 使用飞书风格状态标签（清晰命名版）
+    // 状态样式映射 - 使用飞书风格状态标签
     const statusMap = {
         '待提交': { class: 'feishu-badge-pending', text: '待提交' },
         '待调度员审核': { class: 'feishu-badge-pending', text: '待审核' },
@@ -923,11 +923,11 @@ function createTaskElement(task) {
     
     const statusInfo = statusMap[task.status] || { class: 'feishu-badge-pending', text: task.status };
     
-    // 获取始发局和线路信息用于显示
-    const weight = task.weight || task.cargo_weight || 0;
-    const volume = task.volume || task.cargo_volume || 0;
-    const transportType = task.transport_type || task.vehicle_type || '普通运输';
-    const requiredDate = task.required_date || task.expected_start_time || '';
+    // 修正字段映射，使用数据库实际字段名
+    const weight = task.weight || 0;
+    const volume = task.volume || 0;
+    const transportType = task.transport_type || '普通运输';
+    const requiredDate = task.required_date || '';
     const specialReq = task.special_requirements || '';
     
     console.log('📊 任务数据解析完成:', {
@@ -1007,43 +1007,46 @@ function createTaskElement(task) {
                         <div class="feishu-col-md-4">
                             <div class="info-item">
                                 <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
-                                    <i class="fas fa-hashtag me-2" style="color: var(--feishu-text-tertiary);"></i>任务编号
+                                    <i class="fas fa-building me-2" style="color: var(--feishu-text-tertiary);"></i>承运商
                                 </span>
-                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px; font-family: 'Courier New', monospace;">
-                                    ${task.task_id || 'N/A'}
+                                <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px;">
+                                    ${task.carrier_company || '未指定'}
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- 特殊要求和承运商信息 -->
-                     ${specialReq || task.carrier_company ? `
-                     <div class="additional-info" style="border-top: 1px solid var(--feishu-border-light); padding-top: 12px;">
-                         ${specialReq ? `
-                             <div class="info-item mb-2">
-                                 <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
-                                     <i class="fas fa-exclamation-triangle me-2" style="color: var(--feishu-warning);"></i>特殊要求
-                                 </span>
-                                 <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px; line-height: 1.5;">
-                                     ${specialReq}
-                                 </div>
-                             </div>
-                         ` : ''}
-                     </div>
-                     ` : ''}
-                     
-                     <!-- 操作按钮 -->
-                     <div class="action-buttons mt-3 pt-3" style="border-top: 1px solid var(--feishu-border-light);">
-                         <button class="feishu-btn feishu-btn-primary feishu-btn-sm" onclick="viewTaskDetails('${task.task_id}')">
-                             <i class="fas fa-eye me-1"></i> 查看详情
-                         </button>
-                     </div>
-                 </div>
-             </div>
-         `;
-         
-         console.log('✅ createTaskElement: 任务卡片构建成功');
-         return div;
+                    ${specialReq ? `
+                    <div class="mb-3">
+                        <span class="info-label" style="font-size: 13px; font-weight: 600; color: var(--feishu-text-secondary);">
+                            <i class="fas fa-sticky-note me-2" style="color: var(--feishu-text-tertiary);"></i>特殊要求
+                        </span>
+                        <div class="info-value" style="font-size: 14px; color: var(--feishu-text-primary); margin-top: 4px; background: var(--feishu-bg); padding: 8px; border-radius: 4px;">
+                            ${specialReq}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            创建时间: ${formatDateTime(task.created_at)}
+                        </small>
+                        <div>
+                            <button class="feishu-btn feishu-btn-primary feishu-btn-sm me-2" onclick="viewTaskDetail('${task.task_id}')">
+                                <i class="fas fa-eye"></i> 详情
+                            </button>
+                            <button class="feishu-btn feishu-btn-secondary feishu-btn-sm" onclick="editTask('${task.task_id}')">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        console.log('✅ 任务卡片创建成功');
+        return div;
     } catch (error) {
         console.error('❌ createTaskElement: 构建任务卡片失败', error);
         return null;

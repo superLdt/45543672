@@ -59,6 +59,20 @@
 - **车间地调**: 提交车辆需求 → 系统自动创建轨道A任务（状态：待提交）
 - **区域调度员**: 直接创建派车任务 → 系统创建轨道B任务（状态：待区域调度员审核）
 
+**实际数据库字段映射**:
+| API参数 | 数据库字段 | 说明 |
+|---------|------------|------|
+| requirement_type | requirement_type | 需求类型（正班/加班） |
+| start_location | start_bureau | 始发局 |
+| end_location | route_name | 邮路名称/目的地 |
+| carrier_company | carrier_company | 委办承运公司 |
+| transport_type | transport_type | 运输类型（单程/往返） |
+| weight | weight | 重量（吨） |
+| volume | volume | 容积（立方米） |
+| required_time | required_date | 用车时间 |
+| special_requirements | special_requirements | 特殊要求 |
+| dispatch_track | dispatch_track | 流程轨道（轨道A/B） |
+
 **请求示例**:
 ```json
 {
@@ -69,7 +83,7 @@
   "transport_type": "单程",
   "weight": 8,
   "volume": 45,
-  "required_time": "2024-01-15T14:00",
+  "required_time": "2024-01-15",
   "special_requirements": "需要冷链运输",
   "dispatch_track": "轨道A"
 }
