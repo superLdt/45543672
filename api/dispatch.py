@@ -92,6 +92,7 @@ def create_task():
                 'volume': data.get('volume'),
                 'weight': data.get('weight'),
                 'special_requirements': data.get('special_requirements', ''),
+                'assigned_supplier_id': data.get('assigned_supplier_id'),
                 'initiator_role': initiator_role,
                 'initiator_user_id': current_user_id,
                 'current_handler_user_id': current_user_id,
@@ -174,18 +175,36 @@ def get_tasks():
                 """
                 params = [limit, offset]
             elif current_user_role == '供应商':
-                # 供应商只能看到分配给自己的任务
-                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE assigned_supplier_id = ?"
-                query = """
-                    SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
-                           transport_type, requirement_type, volume, weight, status, 
-                           created_at, updated_at, special_requirements
-                    FROM manual_dispatch_tasks 
-                    WHERE assigned_supplier_id = ? 
-                    ORDER BY created_at DESC 
-                    LIMIT ? OFFSET ?
-                """
-                params = [current_user_id, limit, offset]
+                # 供应商只能看到分配给自己的任务或与自己公司相关的任务
+                # 首先获取供应商所属的公司ID
+                db_manager.cursor.execute("SELECT company_id FROM User WHERE id = ?", [current_user_id])
+                company_row = db_manager.cursor.fetchone()
+                if company_row:
+                    company_id = company_row[0]
+                    total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE assigned_supplier_id = ? OR carrier_company = (SELECT name FROM Company WHERE id = ?)"
+                    query = """
+                        SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
+                               transport_type, requirement_type, volume, weight, status, 
+                               created_at, updated_at, special_requirements
+                        FROM manual_dispatch_tasks 
+                        WHERE assigned_supplier_id = ? OR carrier_company = (SELECT name FROM Company WHERE id = ?)
+                        ORDER BY created_at DESC 
+                        LIMIT ? OFFSET ?
+                    """
+                    params = [current_user_id, company_id, limit, offset]
+                else:
+                    # 如果没有找到公司信息，则只显示直接分配给供应商的任务
+                    total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE assigned_supplier_id = ?"
+                    query = """
+                        SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
+                               transport_type, requirement_type, volume, weight, status, 
+                               created_at, updated_at, special_requirements
+                        FROM manual_dispatch_tasks 
+                        WHERE assigned_supplier_id = ? 
+                        ORDER BY created_at DESC 
+                        LIMIT ? OFFSET ?
+                    """
+                    params = [current_user_id, limit, offset]
             else:
                 # 车间地调只能看到自己创建的任务
                 total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE initiator_user_id = ?"
@@ -204,7 +223,13 @@ def get_tasks():
             if current_user_role in ['超级管理员', '区域调度员']:
                 db_manager.cursor.execute(total_query)
             elif current_user_role == '供应商':
-                db_manager.cursor.execute(total_query, [current_user_id])
+                # 为供应商角色正确传递参数
+                if company_row and company_row[0]:
+                    # 当有公司信息时，传递两个参数
+                    db_manager.cursor.execute(total_query, [current_user_id, company_id])
+                else:
+                    # 当无公司信息时，只传递一个参数
+                    db_manager.cursor.execute(total_query, [current_user_id])
             else:
                 db_manager.cursor.execute(total_query, [current_user_id])
             total = db_manager.cursor.fetchone()[0]
@@ -410,8 +435,18 @@ def get_statistics():
             params = []
             
             if current_user_role == '供应商':
-                base_where = "WHERE assigned_supplier_id = ?"
-                params = [current_user_id]
+                # 供应商可以看到分配给自己的任务或与自己公司相关的任务
+                # 首先获取供应商所属的公司ID
+                db_manager.cursor.execute("SELECT company_id FROM User WHERE id = ?", [current_user_id])
+                company_row = db_manager.cursor.fetchone()
+                if company_row:
+                    company_id = company_row[0]
+                    base_where = "WHERE assigned_supplier_id = ? OR carrier_company = (SELECT name FROM Company WHERE id = ?)"
+                    params = [current_user_id, company_id]
+                else:
+                    # 如果没有找到公司信息，则只显示直接分配给供应商的任务
+                    base_where = "WHERE assigned_supplier_id = ?"
+                    params = [current_user_id]
             elif current_user_role == '车间地调':
                 base_where = "WHERE initiator_user_id = ?"
                 params = [current_user_id]

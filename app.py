@@ -17,6 +17,9 @@ from db_manager import DatabaseManager
 # 应用初始化
 from flask_login import LoginManager, UserMixin, login_required, current_user,login_user,logout_user    
 
+# 导入公司API并设置数据库管理器
+from api.company import set_db_manager as set_company_db_manager
+
 class User(UserMixin):
     def __init__(self, user_id, username, full_name, roles=None):
         self.id = user_id
@@ -54,6 +57,8 @@ app.logger.setLevel(logging.DEBUG)
 # 在应用启动时初始化数据库
 with app.app_context():
     DatabaseManager.init_database()
+    # 设置公司API的数据库管理器
+    set_company_db_manager(DatabaseManager())
 
 
 # 数据库操作函数
@@ -343,7 +348,7 @@ def init_db():
     try:
         from db_manager import DatabaseManager
         db_manager = DatabaseManager()
-        db_manager.initialize_all_tables()
+        db_manager.create_tables()
         app.logger.info('数据库初始化完成')
     except Exception as e:
         app.logger.error(f'数据库初始化失败: {str(e)}')

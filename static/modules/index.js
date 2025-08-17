@@ -66,6 +66,9 @@ class TaskManagementApp {
         try {
             this.debug.log('Initializing Task Management App...');
             
+            // 获取当前用户信息
+            await this.loadCurrentUserInfo();
+            
             // 绑定UI事件
             this.bindUIEvents();
             
@@ -78,6 +81,22 @@ class TaskManagementApp {
             this.debug.log('Task Management App initialized successfully');
         } catch (error) {
             this.errorHandler.handle(error, '初始化失败');
+        }
+    }
+    
+    /**
+     * 加载当前用户信息
+     */
+    async loadCurrentUserInfo() {
+        try {
+            const userInfo = await this.taskManager.getCurrentUserInfo();
+            if (userInfo) {
+                // 将用户信息存储在全局变量中
+                window.currentUserInfo = userInfo;
+                this.debug.log('Current user info loaded:', userInfo);
+            }
+        } catch (error) {
+            this.errorHandler.handle(error, '加载用户信息失败');
         }
     }
 
@@ -208,6 +227,42 @@ class TaskManagementApp {
     }
     
     /**
+     * 确认审批
+     */
+    confirmApproval(taskId) {
+        // TODO: 实现确认审批逻辑
+        console.log('Confirm approval for task:', taskId);
+        alert('确认审批功能待实现');
+    }
+    
+    /**
+     * 拒绝审批
+     */
+    rejectApproval(taskId) {
+        // TODO: 实现拒绝审批逻辑
+        console.log('Reject approval for task:', taskId);
+        alert('拒绝审批功能待实现');
+    }
+    
+    /**
+     * 车间发车
+     */
+    workshopDeparture(taskId) {
+        // TODO: 实现车间发车逻辑
+        console.log('Workshop departure for task:', taskId);
+        alert('车间发车功能待实现');
+    }
+    
+    /**
+     * 最终确认
+     */
+    finalConfirmation(taskId) {
+        // TODO: 实现最终确认逻辑
+        console.log('Final confirmation for task:', taskId);
+        alert('最终确认功能待实现');
+    }
+    
+    /**
      * 跳转到指定页
      */
     goToPage(page) {
@@ -224,6 +279,30 @@ export async function initTaskManagement(options = {}) {
     
     // 暴露到全局
     window.taskManagementApp = app;
+    
+    // 创建全局taskManagement对象，暴露常用方法
+    window.taskManagement = {
+        closeDetail: () => app.taskRenderer.closeDetail(),
+        confirmResponse: (taskId) => app.taskManager.updateTaskStatus(taskId, '供应商已响应'),
+        addRemark: (taskId) => {
+            const remark = prompt('请输入备注:');
+            if (remark) {
+                // TODO: 实现添加备注逻辑
+                alert('备注功能待实现');
+            }
+        },
+        requestPause: (taskId) => {
+            if (confirm('确定要申请暂停此任务吗？')) {
+                // TODO: 实现申请暂停逻辑
+                alert('申请暂停功能待实现');
+            }
+        },
+        confirmApproval: (taskId) => app.confirmApproval(taskId),
+        rejectApproval: (taskId) => app.rejectApproval(taskId),
+        workshopDeparture: (taskId) => app.workshopDeparture(taskId),
+        finalConfirmation: (taskId) => app.finalConfirmation(taskId),
+        showTaskDetail: (taskId) => app.showTaskDetail(taskId)
+    };
     
     return app;
 }

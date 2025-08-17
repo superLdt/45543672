@@ -17,7 +17,7 @@
 | required_date | TEXT | 用车时间（日期） | NOT NULL |
 | start_bureau | TEXT | 始发局 | NOT NULL |
 | route_direction | TEXT | 路向 | NOT NULL |
-| carrier_company | TEXT | 委办承运公司 | NOT NULL |
+| carrier_company | TEXT | 委办承运公司 | NOT NULL (外键关联Company表name字段) |
 | route_name | TEXT | 邮路名称 | NOT NULL |
 | transport_type | TEXT | 运输类型（单程/往返） | CHECK IN ('单程', '往返') |
 | requirement_type | TEXT | 需求类型（正班/加班） | CHECK IN ('正班', '加班') |
@@ -40,6 +40,7 @@
 | audit_note | TEXT | 审核备注 | 可选 |
 | current_handler_role | TEXT | 当前处理人角色 | 可选 |
 | current_handler_user_id | INTEGER | 当前处理人用户ID | 可选 |
+| assigned_supplier_id | INTEGER | 指定供应商用户ID | 可选 (外键关联User表id字段) |
 
 ### 2. vehicles - 车辆信息表
 

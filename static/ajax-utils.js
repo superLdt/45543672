@@ -91,8 +91,10 @@ class AjaxUtils {
             const response = await fetch(url, config);
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `HTTP ${response.status}`);
+                // 将响应对象附加到错误对象上，以便调用者可以访问
+                const error = new Error(`HTTP ${response.status}`);
+                error.response = response;
+                throw error;
             }
 
             const contentType = response.headers.get('content-type');

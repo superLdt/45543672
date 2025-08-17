@@ -185,6 +185,39 @@ export class TaskManager {
     }
     
     /**
+     * 获取当前用户信息
+     */
+    async getCurrentUserInfo() {
+        try {
+            this.debug.log('Fetching current user info');
+            const response = await fetch('/api/dispatch/user/info', {
+                credentials: 'include'
+            });
+            
+            this.debug.log(`User info response status: ${response.status}`);
+            
+            // 处理401未认证错误，重定向到登录页面
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            this.debug.log('User info result:', result);
+            return result.success ? result.data : null;
+            
+        } catch (error) {
+            this.debug.error('Failed to get user info:', error);
+            this.errorHandler.handle(error);
+            throw error;
+        }
+    }
+    
+    /**
      * 更新任务状态
      */
     async updateTaskStatus(taskId, status, data = {}) {

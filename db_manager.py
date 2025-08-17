@@ -8,11 +8,18 @@ class DatabaseManager:
         self.db_path = db_path
         self.conn = None
         self.cursor = None
+        self.connect()
+        self.create_tables()
+        self.insert_default_data()
+        self.insert_sample_dispatch_data()
+        self.update_manual_dispatch_tables()  # 更新现有表结构
 
     def connect(self):
         """连接到数据库"""
         try:
             self.conn = sqlite3.connect(self.db_path)
+            # 启用外键约束
+            self.conn.execute('PRAGMA foreign_keys = ON')
             self.cursor = self.conn.cursor()
             print(f'成功连接到数据库: {self.db_path}')
             return True
@@ -122,8 +129,15 @@ class DatabaseManager:
                 current_handler_role TEXT,
                 current_handler_user_id INTEGER,
                 
+                -- 供应商分配信息
+                assigned_supplier_id INTEGER,
+                
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                
+                -- 外键约束
+                FOREIGN KEY (carrier_company) REFERENCES Company(name),
+                FOREIGN KEY (assigned_supplier_id) REFERENCES User(id)
             )
             ''')
 
@@ -184,9 +198,9 @@ class DatabaseManager:
 
             # 插入示例任务（包含双轨派车字段，使用新的清晰命名）
             sample_tasks = [
-                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输', '待供应商响应', '2024-01-15 08:00:00', '2024-01-15 08:00:00', '轨道A', '车间地调', 1, '北京中心局', 1, '区域调度员', 2, '已通过', '2024-01-15 09:00:00', '审核通过，请尽快安排', '供应商', 4),
-                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高', '待供应商响应', '2024-01-16 08:00:00', '2024-01-16 08:00:00', '轨道B', '区域调度员', 2, '上海中心局', 0, None, None, '已通过', None, '区域调度直接派车', '供应商', 4),
-                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None, '待调度员审核', '2024-01-17 08:00:00', '2024-01-17 08:00:00', '轨道A', '车间地调', 3, '广州中心局', 1, '区域调度员', 2, '待审核', None, None, '区域调度员', 2)
+                ('T2024001', '2024-01-15', '北京邮区中心局', '北京-上海', '中国邮政集团', '京沪深线', '单程', '正班', 45, 8.5, '需要冷链运输', '待供应商响应', '2024-01-15 08:00:00', '2024-01-15 08:00:00', '轨道A', '车间地调', 1, '北京中心局', 1, '区域调度员', 2, '已通过', '2024-01-15 09:00:00', '审核通过，请尽快安排', '供应商', 4, 4),
+                ('T2024002', '2024-01-16', '上海邮区中心局', '上海-广州', '顺丰速运', '沪深广线', '往返', '加班', 60, 12.0, '时效要求高', '待供应商响应', '2024-01-16 08:00:00', '2024-01-16 08:00:00', '轨道B', '区域调度员', 2, '上海中心局', 0, None, None, '已通过', None, '区域调度直接派车', '供应商', 4, 4),
+                ('T2024003', '2024-01-17', '广州邮区中心局', '广州-深圳', '中通快递', '广深线', '单程', '正班', 30, 5.5, None, '待调度员审核', '2024-01-17 08:00:00', '2024-01-17 08:00:00', '轨道A', '车间地调', 3, '广州中心局', 1, '区域调度员', 2, '待审核', None, None, '区域调度员', 2, None)
             ]
 
             # 处理None值，使用Python的None代替SQL的NULL
@@ -201,8 +215,8 @@ class DatabaseManager:
              transport_type, requirement_type, volume, weight, special_requirements, status,
              created_at, updated_at, dispatch_track, initiator_role, initiator_user_id, initiator_department, 
              audit_required, auditor_role, auditor_user_id, audit_status, audit_time, audit_note,
-             current_handler_role, current_handler_user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             current_handler_role, current_handler_user_id, assigned_supplier_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', processed_tasks)
 
             # 插入示例状态历史
@@ -259,13 +273,22 @@ class DatabaseManager:
                 initial_status = '待供应商响应'
                 current_handler_role = '供应商'
             
+            # 获取承运公司对应的供应商用户ID
+            self.cursor.execute("SELECT id FROM User WHERE company_id = (SELECT id FROM Company WHERE name = ?) AND id IN (SELECT user_id FROM UserRole WHERE role_id = (SELECT id FROM Role WHERE name = '供应商'))", (task_data['carrier_company'],))
+            supplier_row = self.cursor.fetchone()
+            assigned_supplier_id = supplier_row[0] if supplier_row else None
+            
+            # 验证承运公司是否存在对应的供应商用户
+            if not supplier_row:
+                return {'success': False, 'error': f'公司"{task_data["carrier_company"]}"下暂无供应商用户，请先创建用户'}
+            
             self.cursor.execute('''
             INSERT INTO manual_dispatch_tasks 
             (task_id, required_date, start_bureau, route_direction, carrier_company, route_name,
              transport_type, requirement_type, volume, weight, special_requirements,
              dispatch_track, initiator_role, initiator_user_id, initiator_department,
-             audit_required, current_handler_role, current_handler_user_id, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             audit_required, current_handler_role, current_handler_user_id, status, assigned_supplier_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 task_data['required_date'],
@@ -285,7 +308,8 @@ class DatabaseManager:
                 audit_required,
                 current_handler_role,
                 task_data.get('current_handler_user_id', 1),
-                initial_status
+                initial_status,
+                assigned_supplier_id
             ))
 
             # 记录状态历史
@@ -297,9 +321,15 @@ class DatabaseManager:
             self.conn.commit()
             return {'success': True, 'task_id': task_id}
             
+        except sqlite3.IntegrityError as e:
+            self.conn.rollback()
+            return {'success': False, 'error': f'数据完整性错误: {str(e)}'}
+        except sqlite3.Error as e:
+            self.conn.rollback()
+            return {'success': False, 'error': f'数据库操作错误: {str(e)}'}
         except Exception as e:
             self.conn.rollback()
-            return {'success': False, 'error': str(e)}
+            return {'success': False, 'error': f'创建任务失败: {str(e)}'}
 
     def get_dispatch_tasks(self, status=None, date_from=None, date_to=None):
         """获取派车任务列表"""
@@ -362,6 +392,19 @@ class DatabaseManager:
             self.conn.rollback()
             return {'success': False, 'error': str(e)}
 
+    def get_company_id_by_name(self, company_name):
+        """根据公司名称获取公司ID"""
+        if not self.cursor:
+            return None
+
+        try:
+            self.cursor.execute("SELECT id FROM Company WHERE name = ?", (company_name,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            print(f'获取公司ID失败: {str(e)}')
+            return None
+
     def assign_vehicle(self, task_id, vehicle_data):
         """分配车辆到任务"""
         if not self.cursor:
@@ -409,8 +452,7 @@ class DatabaseManager:
 
     def get_task_status_history(self, task_id):
         """获取任务状态变更历史"""
-        if not self.cursor:
-            return []
+        if not self.cursor:            return []
 
         try:
             self.cursor.execute('''
@@ -462,6 +504,7 @@ class DatabaseManager:
                 ("initiator_department", "TEXT"),
                 ("audit_required", "BOOLEAN DEFAULT 1"),
                 ("auditor_role", "TEXT"),
+                ("assigned_supplier_id", "INTEGER"),
                 ("auditor_user_id", "INTEGER"),
                 ("audit_status", "TEXT CHECK(audit_status IN ('待审核', '已通过', '已拒绝')) DEFAULT '待审核'"),
                 ("audit_time", "TEXT"),
@@ -477,6 +520,23 @@ class DatabaseManager:
                 else:
                     print(f"⏭️ 字段已存在: {column_name}")
             
+            # 添加外键约束
+            if "auditor_user_id" in existing_columns:
+                # 检查是否已存在外键约束
+                self.cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='manual_dispatch_tasks'")
+                table_sql = self.cursor.fetchone()[0]
+                if "auditor_user_id" in table_sql and "REFERENCES User(id)" not in table_sql and "REFERENCES users(id)" not in table_sql:
+                    print("注意：无法直接添加外键约束，需要重新创建表")
+            
+            # 添加索引
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_status ON manual_dispatch_tasks(status)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_date ON manual_dispatch_tasks(required_date)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_initiator ON manual_dispatch_tasks(initiator_user_id)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_auditor ON manual_dispatch_tasks(auditor_user_id)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_handler ON manual_dispatch_tasks(current_handler_user_id)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_track ON manual_dispatch_tasks(dispatch_track)")
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_supplier ON manual_dispatch_tasks(assigned_supplier_id)")
+            
             self.conn.commit()
             print("✅ 表结构更新完成")
             return True
@@ -486,7 +546,7 @@ class DatabaseManager:
             print(f"❌ 更新表结构失败: {str(e)}")
             return False
 
-    def initialize_all_tables(self):
+    def create_tables(self):
         """
         初始化所有数据库表
         包括用户管理、公司管理、人工派车等所有表
@@ -519,8 +579,6 @@ class DatabaseManager:
             print(f"❌ 初始化表失败: {str(e)}")
             self.conn.rollback()
             return False
-        finally:
-            self.disconnect()
 
     def validate_and_update_status_fields(self):
         """验证和更新状态字段，确保使用新的清晰命名"""
@@ -743,10 +801,14 @@ class DatabaseManager:
             # 检查用户是否已存在
             self.cursor.execute('SELECT id FROM User WHERE username = ?', (admin_username,))
             if not self.cursor.fetchone():
+                # 对密码进行哈希处理
+                from werkzeug.security import generate_password_hash
+                hashed_password = generate_password_hash(admin_password)
+                
                 self.cursor.execute('''
                     INSERT INTO User (username, password, full_name, email, is_active)
                     VALUES (?, ?, ?, ?, ?)
-                ''', (admin_username, admin_password, admin_fullname, admin_email, True))
+                ''', (admin_username, hashed_password, admin_fullname, admin_email, True))
                 
                 admin_user_id = self.cursor.lastrowid
                 
@@ -767,7 +829,18 @@ class DatabaseManager:
                     self.cursor.executemany('INSERT OR IGNORE INTO RolePermission (role_id, permission_id) VALUES (?, ?)', 
                                      role_permissions)
 
-            # 5. 配置角色权限（整合init_permissions.py的功能）
+            # 5. 插入默认承运公司数据
+            companies = [
+                ('XX物流有限公司', 'XX物流', '13800138000'),
+                ('YY运输集团', 'YY运输', '13900139000'),
+                ('ZZ货运公司', 'ZZ货运', '13700137000')
+            ]
+            self.cursor.executemany('''
+                INSERT OR IGNORE INTO Company (name, contact_person, contact_phone)
+                VALUES (?, ?, ?)
+            ''', companies)
+
+            # 6. 配置角色权限（整合init_permissions.py的功能）
             self._configure_role_permissions()
 
             self.conn.commit()
@@ -883,8 +956,6 @@ class DatabaseManager:
         except Exception as e:
             print(f"❌ 权限检查失败: {str(e)}")
             return False
-        finally:
-            self.disconnect()
 
 # 使用示例
 if __name__ == '__main__':

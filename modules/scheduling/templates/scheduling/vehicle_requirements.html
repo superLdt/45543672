@@ -391,19 +391,8 @@
                 
                 <div class="form-group">
                     <label class="form-label">委办承运公司</label>
-                    <select class="feishu-form-control" name="carrier_company" required>
-                        <option value="">请选择委办承运公司</option>
-                        <option value="中国邮政速递物流">中国邮政速递物流</option>
-                        <option value="顺丰速运">顺丰速运</option>
-                        <option value="圆通速递">圆通速递</option>
-                        <option value="中通快递">中通快递</option>
-                        <option value="申通快递">申通快递</option>
-                        <option value="韵达快递">韵达快递</option>
-                        <option value="百世快递">百世快递</option>
-                        <option value="德邦物流">德邦物流</option>
-                        <option value="京东物流">京东物流</option>
-                        <option value="菜鸟网络">菜鸟网络</option>
-                    </select>
+                    <input type="text" class="feishu-form-control" name="carrier_company" id="carrierCompanyInput" placeholder="请选择或输入委办承运公司" list="carrierCompanyList" required>
+                    <datalist id="carrierCompanyList"></datalist>
                 </div>
                 
                 <div class="form-group">
@@ -555,7 +544,7 @@ document.getElementById('requirementsForm').addEventListener('submit', function(
     
     // 必填字段验证
     const requiredFields = ['requirement_type', 'start_location', 'end_location', 
-                          'carrier_company', 'transport_type', 'weight', 'volume', 'required_time'];
+                          'transport_type', 'weight', 'volume', 'required_time'];
     
     for (const field of requiredFields) {
         if (!data[field]) {
@@ -563,6 +552,17 @@ document.getElementById('requirementsForm').addEventListener('submit', function(
             return;
         }
     }
+    
+    // 导入并使用companySelector.js模块进行公司选择验证
+    import('/static/modules/companySelector.js').then(module => {
+        if (!module.validateCompanySelection()) {
+            return;
+        }
+    }).catch(error => {
+        console.error('加载companySelector模块失败:', error);
+        alert('系统错误，请刷新页面重试');
+        return;
+    });
     
     // 获取当前用户角色
     const userRole = "{{ session.get('user_role', '') }}";
@@ -572,7 +572,7 @@ document.getElementById('requirementsForm').addEventListener('submit', function(
         requirement_type: data.requirement_type,
         start_location: data.start_location,
         end_location: data.end_location,
-        carrier_company: data.carrier_company,
+        carrier_company: data.carrier_company, // 使用用户输入或选择的公司名称
         transport_type: data.transport_type,
         weight: data.weight,
         volume: parseInt(data.volume),
@@ -641,6 +641,13 @@ document.getElementById('requirementsForm').addEventListener('submit', function(
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('volumeInput').disabled = true;
     loadRequirements();
+    
+    // 初始化公司选择器
+    import('/static/modules/companySelector.js').then(module => {
+        module.initializeCompanySelector('carrierCompanyInput');
+    }).catch(error => {
+        console.error('初始化公司选择器失败:', error);
+    });
 });
 
 // 加载需求记录列表

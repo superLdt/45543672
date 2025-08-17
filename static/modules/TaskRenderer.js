@@ -59,7 +59,11 @@ export class TaskRenderer {
                 <td>
                     <span class="transport-type">${task.transport_type || '-'}</span>
                 </td>
-                <td>${task.carrier_company || '-'}</td>
+                <td>
+                    <div style="max-width: 120px;" title="${task.carrier_company || '-'}">
+                        ${(task.carrier_company || '-').substring(0, 4)}
+                    </div>
+                </td>
                 <td>
                     <span class="status-badge ${statusClass}">
                         ${this.getStatusText(task.status)}
@@ -384,18 +388,86 @@ export class TaskRenderer {
             <div class="detail-section" style="padding:12px 16px;">
                 <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">当前操作</h6>
                 <div style="display:flex;gap:8px;flex-direction:column;">
-                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.confirmResponse('${task.id}')">
-                        <i class="fas fa-check"></i> 确认响应
-                    </button>
-                    <button class="feishu-btn feishu-btn-secondary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.addRemark('${task.id}')">
-                        <i class="fas fa-comment"></i> 添加备注
-                    </button>
-                    <button class="feishu-btn feishu-btn-warning" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.requestPause('${task.id}')">
-                        <i class="fas fa-exclamation-triangle"></i> 申请暂停
-                    </button>
+                    ${this.renderOperationButtons(task)}
                 </div>
             </div>
         `;
+    }
+    
+    /**
+     * 根据用户角色和任务状态渲染操作按钮
+     */
+    renderOperationButtons(task) {
+        // 获取当前用户信息
+        const userInfo = window.currentUserInfo || {};
+        const userRole = userInfo.user_role || '';
+        
+        // 根据角色和状态确定可显示的按钮
+        let buttons = [];
+        
+        // 超级管理员、区域调度员
+        if (userRole === '超级管理员' || userRole === '区域调度员') {
+            // 根据任务状态显示不同的按钮
+            if (task.status === '待调度员审核') {
+                buttons.push(`
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.confirmApproval('${task.id}')">
+                        <i class="fas fa-check"></i> 确认审批
+                    </button>
+                    <button class="feishu-btn feishu-btn-danger" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.rejectApproval('${task.id}')">
+                        <i class="fas fa-times"></i> 拒绝审批
+                    </button>
+                `);
+            } else {
+                // 其他状态显示提示信息
+                buttons.push(`<div class="feishu-alert feishu-alert-info" style="padding:8px 12px;font-size:13px;">请等待流程进度确认</div>`);
+            }
+        }
+        // 车间地调
+        else if (userRole === '车间地调') {
+            if (task.status === '供应商已响应') {
+                buttons.push(`
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.workshopDeparture('${task.id}')">
+                        <i class="fas fa-truck"></i> 车间发车
+                    </button>
+                `);
+            } else if (task.status === '供应商已确认') {
+                buttons.push(`
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.finalConfirmation('${task.id}')">
+                        <i class="fas fa-check-circle"></i> 最终确认
+                    </button>
+                `);
+            } else {
+                // 其他状态显示提示信息
+                buttons.push(`<div class="feishu-alert feishu-alert-info" style="padding:8px 12px;font-size:13px;">请等待流程进度确认</div>`);
+            }
+        }
+        // 供应商
+        else if (userRole === '供应商') {
+            if (task.status === '待供应商响应') {
+                buttons.push(`
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.confirmResponse('${task.id}')">
+                        <i class="fas fa-check"></i> 确认响应
+                    </button>
+                `);
+            } else {
+                // 其他状态显示提示信息
+                buttons.push(`<div class="feishu-alert feishu-alert-info" style="padding:8px 12px;font-size:13px;">请等待流程进度确认</div>`);
+            }
+        }
+        // 默认按钮（兼容旧数据）
+        else {
+            buttons.push(`
+                <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.confirmResponse('${task.id}')">
+                    <i class="fas fa-check"></i> 确认响应
+                </button>
+                <button class="feishu-btn feishu-btn-warning" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.requestPause('${task.id}')">
+                    <i class="fas fa-exclamation-triangle"></i> 申请暂停
+                </button>
+                <div class="feishu-alert feishu-alert-info" style="padding:8px 12px;font-size:13px;margin-top:8px;">请等待流程进度确认</div>
+            `);
+        }
+        
+        return buttons.join('\n');
     }
 
     /**
@@ -528,9 +600,10 @@ export class TaskRenderer {
      * 渲染操作记录
      */
     renderOperationRecords(task) {
-        // 这里应该从任务数据中获取操作记录
-        // 暂时使用静态数据演示
-        const records = [
+        // 从任务数据中获取操作记录
+        // 如果任务数据中包含history字段，则使用该字段
+        // 否则使用静态数据演示
+        const records = task.history || [
             { title: '区域调度派车', operator: '张经理', time: '08:30', description: '派车至合肥中心局，5吨车辆' }
         ];
         
@@ -538,9 +611,9 @@ export class TaskRenderer {
             <div class="timeline-item" style="padding:8px 0;">
                 <div class="timeline-dot" style="width:6px;height:6px;margin-left:-15px;"></div>
                 <div class="timeline-content">
-                    <p class="timeline-title" style="font-size:13px;margin:0;">${record.title}</p>
-                    <p class="timeline-subtitle" style="font-size:11px;margin:0;">${record.operator} ${record.time}</p>
-                    <p class="timeline-desc" style="font-size:12px;margin-top:2px;">${record.description}</p>
+                    <p class="timeline-title" style="font-size:13px;margin:0;">${record.title || record.status_change}</p>
+                    <p class="timeline-subtitle" style="font-size:11px;margin:0;">${record.operator || '系统'} ${this.formatDateTime(record.time || record.timestamp)}</p>
+                    <p class="timeline-desc" style="font-size:12px;margin-top:2px;">${record.description || record.note || ''}</p>
                 </div>
             </div>
         `).join('');

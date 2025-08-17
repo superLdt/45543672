@@ -276,19 +276,8 @@
                 
                 <div class="form-group">
                     <label class="form-label">委办承运公司 *</label>
-                    <select class="form-control" name="carrier_company" required>
-                        <option value="">请选择委办承运公司</option>
-                        <option value="中国邮政速递物流">中国邮政速递物流</option>
-                        <option value="顺丰速运">顺丰速运</option>
-                        <option value="圆通速递">圆通速递</option>
-                        <option value="中通快递">中通快递</option>
-                        <option value="申通快递">申通快递</option>
-                        <option value="韵达快递">韵达快递</option>
-                        <option value="百世快递">百世快递</option>
-                        <option value="德邦物流">德邦物流</option>
-                        <option value="京东物流">京东物流</option>
-                        <option value="菜鸟网络">菜鸟网络</option>
-                    </select>
+                    <input type="text" class="form-control" name="carrier_company" id="carrierCompanySelect" required list="companyList" placeholder="请选择或输入委办承运公司">
+                    <datalist id="companyList"></datalist>
                 </div>
                 
                 <div class="form-group">
@@ -340,6 +329,16 @@
 
 
 </div>
+
+<script type="module">
+// 导入公司选择框模块
+import { initializeCompanySelector } from '/static/modules/companySelector.js';
+
+// 初始化公司选择框
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCompanySelector('carrierCompanySelect');
+});
+</script>
 
 <script>
 // 重量和容积映射关系
@@ -421,7 +420,7 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
     
     // 必填字段验证
     const requiredFields = ['requirement_type', 'start_location', 'end_location', 
-                          'carrier_company', 'transport_type', 'weight', 'volume', 'required_time'];
+                          'transport_type', 'weight', 'volume', 'required_time'];
     
     for (const field of requiredFields) {
         if (!data[field]) {
@@ -430,74 +429,97 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
         }
     }
     
-    // 获取当前用户角色
-    const userRole = "{{ session.get('user_role', '') }}";
-    console.log('当前用户角色:', userRole, '类型:', typeof userRole);
-    
-    // 根据角色确定轨道类型
-    let dispatchTrack = '轨道A'; // 默认
-    if (userRole === '车间地调') {
-        dispatchTrack = '轨道A';
-        console.log('设置为轨道A - 车间地调');
-    } else if (userRole === '区域调度员' || userRole === '超级管理员') {
-        dispatchTrack = '轨道B';
-        console.log('设置为轨道B - 区域调度员/超级管理员');
-    } else {
-        console.log('未匹配角色，使用默认轨道A');
-    }
-    console.log('最终选择的轨道类型:', dispatchTrack);
-    
-    // 准备API数据 - 使用后端验证期望的字段名
-    const apiData = {
-        requirement_type: data.requirement_type,
-        start_location: data.start_location,
-        end_location: data.end_location,
-        carrier_company: data.carrier_company,
-        transport_type: data.transport_type,
-        weight: data.weight,
-        volume: parseInt(data.volume),
-        required_time: data.required_time,
-        special_requirements: data.special_requirements || '',
-        dispatch_track: dispatchTrack
-    };
-    
-    // 显示加载状态
+    // 获取提交按钮
     const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
-    submitBtn.disabled = true;
     
-    // 使用AJAX工具创建任务
-    $ajax.post('/api/dispatch/tasks', apiData)
-        .then(result => {
-            if (result.success) {
-                showToast('派车任务创建成功！', 'success');
-                this.reset();
-                // 重置容积输入状态
-                document.getElementById('volumeInput').disabled = true;
-                document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
-                
-
-            } else {
-                showToast('创建失败: ' + (result.error?.message || '未知错误'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (error.message && error.message.includes('401')) {
-                showToast('请先登录系统', 'error');
-                // 可以重定向到登录页面
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-            } else {
-                showToast('网络错误，请稍后重试', 'error');
-            }
-        })
-        .finally(() => {
+    // 验证公司选择
+    import('/static/modules/companySelector.js').then(module => {
+        if (!module.validateCompanySelection()) {
+            // 重置按钮状态
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 创建派车任务';
             submitBtn.disabled = false;
-        });
+            return;
+        }
+        
+        // 获取当前用户角色
+        const userRole = "{{ session.get('user_role', '') }}";
+        console.log('当前用户角色:', userRole, '类型:', typeof userRole);
+        
+        // 根据角色确定轨道类型
+        let dispatchTrack = '轨道A'; // 默认
+        if (userRole === '车间地调') {
+            dispatchTrack = '轨道A';
+            console.log('设置为轨道A - 车间地调');
+        } else if (userRole === '区域调度员' || userRole === '超级管理员') {
+            dispatchTrack = '轨道B';
+            console.log('设置为轨道B - 区域调度员/超级管理员');
+        } else {
+            console.log('未匹配角色，使用默认轨道A');
+        }
+        console.log('最终选择的轨道类型:', dispatchTrack);
+        
+        // 准备API数据 - 使用后端验证期望的字段名
+        const apiData = {
+            requirement_type: data.requirement_type,
+            start_location: data.start_location,
+            end_location: data.end_location,
+            carrier_company: module.currentSelectedCompany || data.carrier_company,
+            transport_type: data.transport_type,
+            weight: data.weight,
+            volume: parseInt(data.volume),
+            required_time: data.required_time,
+            special_requirements: data.special_requirements || '',
+            dispatch_track: dispatchTrack
+        };
+        
+        // 显示加载状态
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
+        submitBtn.disabled = true;
+        
+        // 使用AJAX工具创建任务
+        $ajax.post('/api/dispatch/tasks', apiData)
+            .then(result => {
+                if (result.success) {
+                    showToast('派车任务创建成功！', 'success');
+                    this.reset();
+                    // 重置容积输入状态
+                    document.getElementById('volumeInput').disabled = true;
+                    document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
+                    
+                } else {
+                    // 显示具体的错误信息
+                    const errorMessage = result.error?.message || '未知错误';
+                    showToast('创建失败: ' + errorMessage, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message && error.message.includes('401')) {
+                    showToast('请先登录系统', 'error');
+                    // 可以重定向到登录页面
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    // 尝试解析错误响应中的具体信息
+                    if (error.response) {
+                        error.response.json().then(errorData => {
+                            const errorMessage = errorData.error?.message || '网络错误，请稍后重试';
+                            showToast('创建失败: ' + errorMessage, 'error');
+                        }).catch(() => {
+                            showToast('网络错误，请稍后重试', 'error');
+                        });
+                    } else {
+                        showToast('网络错误，请稍后重试', 'error');
+                    }
+                }
+            })
+            .finally(() => {
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 创建派车任务';
+                submitBtn.disabled = false;
+            });
+    });
 });
 
 // 页面加载时禁用容积输入

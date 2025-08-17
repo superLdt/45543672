@@ -165,6 +165,9 @@ class ManualDispatchApp {
             const formData = new FormData(form);
             const taskData = Object.fromEntries(formData.entries());
             
+            // assigned_supplier_id字段的值现在通过前端自动获取并设置
+            // 不需要在这里手动处理
+            
             // 容积验证
             const weight = taskData.weight;
             const volume = parseInt(taskData.volume);
@@ -201,7 +204,7 @@ class ManualDispatchApp {
             submitBtn.disabled = true;
             
             // 发送创建任务请求
-            const response = await fetch('/api/dispatch-tasks', {
+            const response = await fetch('/api/dispatch/tasks', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
