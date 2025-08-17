@@ -45,7 +45,9 @@ export class TaskRenderer {
         const timePriority = this.calculateTimePriority(task.required_date);
         
         return `
-            <tr class="task-row" data-task-id="${task.task_id || task.id}">
+            <tr class="task-row" data-task-id="${task.task_id}" style="cursor: pointer;" 
+                onmouseover="this.style.backgroundColor='#f5f5f5'" 
+                onmouseout="this.style.backgroundColor=''">
                 <td>${index + 1}</td>
                 <td>
                     <div class="task-id">
@@ -328,5 +330,337 @@ export class TaskRenderer {
             hour: '2-digit',
             minute: '2-digit'
         });
+    }
+    
+    /**
+     * 渲染任务详情
+     */
+    renderTaskDetail(task) {
+        const container = document.getElementById(this.options.detailContainerId);
+        if (!container) return;
+
+        // 添加加载状态
+        container.innerHTML = `
+            <div class="detail-header">
+                <h5><i class="fas fa-file-alt"></i> 流程详情</h5>
+                <button class="feishu-btn feishu-btn-secondary feishu-btn-sm" onclick="taskManagement.closeDetail()">
+                    <i class="fas fa-times"></i> 关闭
+                </button>
+            </div>
+            
+            <!-- 流程进度 -->
+            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">流程进度</h6>
+                <div class="progress-steps" style="gap:8px;">
+                    ${this.renderProgressSteps(task)}
+                </div>
+            </div>
+            
+            <!-- 基础信息 -->
+            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">基础信息</h6>
+                <div style="font-size:13px;line-height:1.6;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">任务编号</span><span style="font-weight:500;">${task.task_id || task.id}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">轨道类型</span><span style="font-weight:500;">${task.dispatch_track || '-'}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">始发局</span><span style="font-weight:500;">${task.start_bureau || '-'}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">线路名称</span><span style="font-weight:500;">${task.route_name || '-'}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">运输类型</span><span style="font-weight:500;">${task.transport_type || '-'}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">承运商</span><span style="font-weight:500;">${task.carrier_company || '-'}</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">吨位/容积</span><span style="font-weight:500;">${task.weight || '-'}吨/${task.volume || '-'}立方米</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">发起时间</span><span style="font-weight:500;">${this.formatDateTime(task.created_at)}</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--feishu-text-secondary);">要求时间</span><span style="font-weight:500;">${this.formatDateTime(task.required_date)}</span></div>
+                </div>
+            </div>
+            
+            <!-- 操作记录 -->
+            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
+                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">操作记录</h6>
+                <div class="feishu-timeline" style="padding:0;">
+                    ${this.renderOperationRecords(task)}
+                </div>
+            </div>
+            
+            <!-- 当前操作 -->
+            <div class="detail-section" style="padding:12px 16px;">
+                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">当前操作</h6>
+                <div style="display:flex;gap:8px;flex-direction:column;">
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.confirmResponse('${task.id}')">
+                        <i class="fas fa-check"></i> 确认响应
+                    </button>
+                    <button class="feishu-btn feishu-btn-secondary" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.addRemark('${task.id}')">
+                        <i class="fas fa-comment"></i> 添加备注
+                    </button>
+                    <button class="feishu-btn feishu-btn-warning" style="padding:8px 12px;font-size:13px;" onclick="taskManagement.requestPause('${task.id}')">
+                        <i class="fas fa-exclamation-triangle"></i> 申请暂停
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * 渲染进度步骤
+     * 根据任务的当前状态动态计算每个步骤的状态
+     */
+    renderProgressSteps(task) {
+        // 根据轨道类型确定步骤
+        let steps = [];
+        
+        // 定义轨道A和轨道B的状态流转
+        const trackAStatusFlow = [
+            '待提交',
+            '待调度员审核',
+            '待供应商响应',
+            '供应商已响应',
+            '车间已核查',
+            '供应商已确认',
+            '任务结束'
+        ];
+        
+        const trackBStatusFlow = [
+            '待供应商响应',
+            '供应商已响应',
+            '车间已核查',
+            '供应商已确认',
+            '任务结束'
+        ];
+        
+        // 获取当前状态的索引
+        let currentStatusIndex = -1;
+        
+        if (task.dispatch_track === '轨道A') {
+            currentStatusIndex = trackAStatusFlow.indexOf(task.status);
+            steps = [
+                { name: '车间地调需求', key: 'requirement' },
+                { name: '区域调度审核', key: 'dispatch' },
+                { name: '供应商响应', key: 'carrier' },
+                { name: '车间发车', key: 'departure' },
+                { name: '供应商确认', key: 'confirmation' },
+                { name: '车间最终确认', key: 'final' }
+            ];
+        } else if (task.dispatch_track === '轨道B') {
+            currentStatusIndex = trackBStatusFlow.indexOf(task.status);
+            steps = [
+                { name: '区域调度直派', key: 'dispatch' },
+                { name: '供应商响应', key: 'carrier' },
+                { name: '车间发车', key: 'departure' },
+                { name: '供应商确认', key: 'confirmation' },
+                { name: '车间最终确认', key: 'final' }
+            ];
+        } else {
+            // 默认步骤（兼容旧数据）
+            steps = [
+                { name: '区域调度派车', key: 'dispatch' },
+                { name: '承运商响应', key: 'carrier' },
+                { name: '车间发车', key: 'departure' },
+                { name: '承运商确认', key: 'confirmation' },
+                { name: '车间最终确认', key: 'final' }
+            ];
+        }
+
+        // 为每个步骤设置状态
+        steps = steps.map((step, index) => {
+            // 默认状态为待处理
+            let status = 'pending';
+            
+            // 根据当前状态索引设置步骤状态
+            if (task.dispatch_track === '轨道A') {
+                if (index < currentStatusIndex) {
+                    status = 'completed';
+                } else if (index === currentStatusIndex) {
+                    status = 'in_progress';
+                }
+            } else if (task.dispatch_track === '轨道B') {
+                // 对于轨道B，当状态为"待供应商响应"时，"区域调度直派"步骤应显示为已完成
+                if (task.status === '待供应商响应' && index === 0) {
+                    status = 'completed';
+                } 
+                // 对于轨道B，当状态为"待供应商响应"时，"供应商响应"步骤应显示为进行中
+                else if (task.status === '待供应商响应' && index === 1) {
+                    status = 'in_progress';
+                } else if (index < currentStatusIndex) {
+                    status = 'completed';
+                } else if (index === currentStatusIndex) {
+                    status = 'in_progress';
+                }
+            }
+            
+            return {
+                ...step,
+                status: status
+            };
+        });
+
+        return steps.map((step, index) => {
+            const isCompleted = step.status === 'completed';
+            const isActive = step.status === 'in_progress';
+            const isPending = step.status === 'pending';
+            
+            // 处理操作人和时间信息
+            let subtitleText = '';
+            if (isCompleted) {
+                subtitleText = '已完成';
+            } else if (isActive) {
+                subtitleText = '进行中';
+            } else {
+                subtitleText = '待处理';
+            }
+
+            return `
+                <div class="progress-step ${isCompleted ? 'completed' : isActive ? 'active' : ''}" 
+                     style="padding: 8px; border-radius: var(--feishu-radius);">
+                    <div class="step-icon ${isCompleted ? 'completed' : isActive ? 'active' : 'pending'}" 
+                         style="width: 20px; height: 20px; font-size: 10px;">
+                        ${index + 1}
+                    </div>
+                    <div class="step-content">
+                        <p class="step-title" style="font-size: 13px; margin: 0;">${step.name}</p>
+                        <p class="step-subtitle" style="font-size: 11px; margin: 0; color: var(--feishu-text-secondary);">
+                            ${subtitleText}
+                        </p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
+     * 渲染操作记录
+     */
+    renderOperationRecords(task) {
+        // 这里应该从任务数据中获取操作记录
+        // 暂时使用静态数据演示
+        const records = [
+            { title: '区域调度派车', operator: '张经理', time: '08:30', description: '派车至合肥中心局，5吨车辆' }
+        ];
+        
+        return records.map(record => `
+            <div class="timeline-item" style="padding:8px 0;">
+                <div class="timeline-dot" style="width:6px;height:6px;margin-left:-15px;"></div>
+                <div class="timeline-content">
+                    <p class="timeline-title" style="font-size:13px;margin:0;">${record.title}</p>
+                    <p class="timeline-subtitle" style="font-size:11px;margin:0;">${record.operator} ${record.time}</p>
+                    <p class="timeline-desc" style="font-size:12px;margin-top:2px;">${record.description}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * 显示任务详情加载状态
+     */
+    showDetailLoading() {
+        const container = document.getElementById(this.options.detailContainerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">加载中...</span>
+                </div>
+                <p style="margin-top: 12px; color: var(--feishu-text-secondary);">正在加载任务详情...</p>
+            </div>
+        `;
+    }
+
+    /**
+     * 显示任务详情错误状态
+     */
+    showDetailError(message) {
+        const container = document.getElementById(this.options.detailContainerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--feishu-danger); margin-bottom: 16px;"></i>
+                <p style="color: var(--feishu-text-secondary); margin-bottom: 16px;">${message}</p>
+                <button class="feishu-btn feishu-btn-primary" onclick="taskManagement.retryDetail()">
+                    <i class="fas fa-redo"></i> 重试
+                </button>
+            </div>
+        `;
+    }
+
+    /**
+     * 渲染任务统计信息
+     */
+    renderStatistics(statistics) {
+        const container = document.getElementById(this.options.detailContainerId);
+        if (!container || !statistics) return;
+
+        container.innerHTML = `
+            <div class="statistics-container">
+                <div class="statistics-header">
+                    <h3>任务统计概览</h3>
+                    <div class="statistics-time">更新时间：${new Date().toLocaleString('zh-CN')}</div>
+                </div>
+                
+                <div class="statistics-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-number">${statistics.total_tasks || 0}</div>
+                            <div class="stat-label">总任务数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-number">${statistics.today_new_tasks || 0}</div>
+                            <div class="stat-label">今日新增</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-content">
+                            <div class="stat-number">${statistics.urgent_tasks || 0}</div>
+                            <div class="stat-label">即将超时</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="statistics-section">
+                    <h4>状态分布</h4>
+                    <div class="status-distribution">
+                        ${Object.entries(statistics.status_counts || {}).map(([status, count]) => `
+                            <div class="status-item">
+                                <span class="status-name">${status}</span>
+                                <span class="status-count">${count}</span>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill" style="width: ${statistics.total_tasks > 0 ? (count / statistics.total_tasks * 100) : 0}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="statistics-section">
+                    <h4>轨道类型分布</h4>
+                    <div class="track-distribution">
+                        ${Object.entries(statistics.track_counts || {}).map(([track, count]) => `
+                            <div class="track-item">
+                                <span class="track-name">${track}</span>
+                                <span class="track-count">${count}</span>
+                                <div class="track-bar">
+                                    <div class="track-bar-fill" style="width: ${statistics.total_tasks > 0 ? (count / statistics.total_tasks * 100) : 0}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                ${statistics.urgent_tasks > 0 ? `
+                    <div class="urgent-notice">
+                        <div class="notice-icon">🚨</div>
+                        <div class="notice-content">
+                            <h5>紧急提醒</h5>
+                            <p>有 ${statistics.urgent_tasks} 个任务需要在24小时内处理，请及时关注！</p>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 }

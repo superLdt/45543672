@@ -334,20 +334,7 @@
                     </div>
                 </div>
 
-                <script>
-                    document.getElementById('toggleFilters').addEventListener('click', function() {
-                        const filterBody = document.getElementById('filterBody');
-                        const button = document.getElementById('toggleFilters');
-                        
-                        if (filterBody.style.display === 'none') {
-                            filterBody.style.display = 'block';
-                            button.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏筛选条件';
-                        } else {
-                            filterBody.style.display = 'none';
-                            button.innerHTML = '<i class="fas fa-eye"></i> 显示筛选条件';
-                        }
-                    });
-                </script>
+
                 
                 <!-- 主内容区域 - 左右分布 -->
                 <div class="main-content-wrapper">
@@ -398,95 +385,17 @@
                     <div class="detail-section">
                         <div class="detail-panel">
                             <div class="detail-header">
-                                <h5><i class="fas fa-file-alt"></i> 流程详情</h5>
-                                <button class="feishu-btn feishu-btn-secondary feishu-btn-sm">关闭</button>
+                                
+                            </div>
+                            <!-- 任务详情容器 -->
+                            <div id="taskDetailContainer">
+                                <!-- 任务详情将在这里动态加载 -->
                             </div>
                             
-                            <!-- 流程进度 -->
-                            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
-                                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">流程进度</h6>
-                                <div class="progress-steps" style="gap:8px;">
-                                    <div class="progress-step completed" style="padding:8px;">
-                                        <div class="step-icon completed" style="width:20px;height:20px;font-size:10px;">1</div>
-                                        <div class="step-content">
-                                            <p class="step-title" style="font-size:13px;">区域调度派车</p>
-                                            <p class="step-subtitle" style="font-size:11px;">张经理 08:30</p>
-                                        </div>
-                                    </div>
-                                    <div class="progress-step active" style="padding:8px;">
-                                        <div class="step-icon active" style="width:20px;height:20px;font-size:10px;">2</div>
-                                        <div class="step-content">
-                                            <p class="step-title" style="font-size:13px;">承运商响应</p>
-                                            <p class="step-subtitle" style="font-size:11px;">待处理</p>
-                                        </div>
-                                    </div>
-                                    <div class="progress-step" style="padding:8px;">
-                                        <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">3</div>
-                                        <div class="step-content">
-                                            <p class="step-title" style="font-size:13px;">车间发车</p>
-                                            <p class="step-subtitle" style="font-size:11px;">待处理</p>
-                                        </div>
-                                    </div>
-                                    <div class="progress-step" style="padding:8px;">
-                                        <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">4</div>
-                                        <div class="step-content">
-                                            <p class="step-title" style="font-size:13px;">承运商确认</p>
-                                            <p class="step-subtitle" style="font-size:11px;">待处理</p>
-                                        </div>
-                                    </div>
-                                    <div class="progress-step" style="padding:8px;">
-                                        <div class="step-icon pending" style="width:20px;height:20px;font-size:10px;">5</div>
-                                        <div class="step-content">
-                                            <p class="step-title" style="font-size:13px;">车间最终确认</p>
-                                            <p class="step-subtitle" style="font-size:11px;">待处理</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                           
                             
-                            <!-- 基础信息 -->
-                            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
-                                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">基础信息</h6>
-                                <div style="font-size:13px;line-height:1.6;">
-                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">流程编号</span><span style="font-weight:500;">LC2308001</span></div>
-                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">轨道类型</span><span style="font-weight:500;">轨道B</span></div>
-                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">发起车间</span><span style="font-weight:500;">合肥中心局</span></div>
-                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">承运商</span><span style="font-weight:500;">中国邮政速递物流</span></div>
-                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--feishu-text-secondary);">货物信息</span><span style="font-weight:500;">5吨/35立方米</span></div>
-                                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--feishu-text-secondary);">发起时间</span><span style="font-weight:500;">2023-08-01 08:30</span></div>
-                                </div>
-                            </div>
+                           
                             
-                            <!-- 操作记录 -->
-                            <div class="detail-section" style="padding:12px 16px;border-bottom:1px solid var(--feishu-border);">
-                                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">操作记录</h6>
-                                <div class="feishu-timeline" style="padding:0;">
-                                    <div class="timeline-item" style="padding:8px 0;">
-                                        <div class="timeline-dot" style="width:6px;height:6px;margin-left:-15px;"></div>
-                                        <div class="timeline-content">
-                                            <p class="timeline-title" style="font-size:13px;margin:0;">区域调度派车</p>
-                                            <p class="timeline-subtitle" style="font-size:11px;margin:0;">张经理 08:30</p>
-                                            <p class="timeline-desc" style="font-size:12px;margin-top:2px;">派车至合肥中心局，5吨车辆</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 当前操作 -->
-                            <div class="detail-section" style="padding:12px 16px;">
-                                <h6 style="color:var(--feishu-text-secondary);margin-bottom:12px;font-size:14px;">当前操作</h6>
-                                <div style="display:flex;gap:8px;flex-direction:column;">
-                                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;">
-                                        <i class="fas fa-check"></i> 确认响应
-                                    </button>
-                                    <button class="feishu-btn feishu-btn-secondary" style="padding:8px 12px;font-size:13px;">
-                                        <i class="fas fa-comment"></i> 添加备注
-                                    </button>
-                                    <button class="feishu-btn feishu-btn-warning" style="padding:8px 12px;font-size:13px;">
-                                        <i class="fas fa-exclamation-triangle"></i> 申请暂停
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -497,56 +406,30 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- 引入任务管理主入口模块 -->
     <script type="module">
-        console.log('开始加载任务管理系统模块11111111');
-        import { initTaskManagement } from '/static/modules/index.js';
+        import { initTaskManagement } from '../../../../static/modules/index.js';
+
         
-        // 添加调试输出
-        console.log('开始加载任务管理系统模块');
-        
-        // 初始化任务管理系统
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('DOM已完全加载');
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('开始初始化任务管理系统');
-                
-                // 检查必要元素是否存在
-                if (!document.getElementById('taskListBody') || 
-                    !document.getElementById('paginationContainer')) {
-                    throw new Error('缺少必要的HTML元素');
-                }
-                
-                await initTaskManagement({
+                // Initialize task management application with manual dispatch configuration
+                const app = await initTaskManagement({
                     taskManager: {
-                        apiEndpoint: '/api/dispatch/tasks',
-                        pageSize: 10,
-                        debug: true
+                        apiEndpoint: '/api/dispatch/tasks'
                     },
                     taskRenderer: {
-                        containerId: 'taskListBody',
-                        emptyStateId: 'emptyState',
-                        loadingId: 'loadingState'
+                        tableId: 'taskListBody',
+                        detailContainerId: 'taskDetailContainer'
                     },
                     pagination: {
                         containerId: 'paginationContainer',
-                        maxPages: 5
+                        pageSize: 10
                     }
                 });
-                
-                console.log('任务管理系统初始化完成');
+                console.log('Task management initialized successfully');
             } catch (error) {
-                console.error('任务管理系统初始化失败:', error);
-                // 更友好的错误提示
-                const debugContent = document.getElementById('debugContent');
-                if (debugContent) {
-                    debugContent.innerHTML = `
-                        <div style="color:white;padding:10px;">
-                            <h4>系统初始化错误</h4>
-                            <p>${error.message}</p>
-                            <p>请检查控制台获取详细信息</p>
-                        </div>
-                    `;
-                }
+                console.error('Failed to initialize task management:', error);
             }
         });
     </script>

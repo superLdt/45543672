@@ -69,12 +69,35 @@ class TaskManagementApp {
             // 绑定UI事件
             this.bindUIEvents();
             
+            // 加载统计信息
+            await this.loadStatistics();
+            
             // 加载初始数据
             await this.taskManager.loadTasks();
             
             this.debug.log('Task Management App initialized successfully');
         } catch (error) {
             this.errorHandler.handle(error, '初始化失败');
+        }
+    }
+
+    /**
+     * 加载统计信息
+     */
+    async loadStatistics() {
+        try {
+            this.taskRenderer.showDetailLoading();
+            // 加载统计信息
+            const statistics = await this.taskManager.getStatistics();
+        
+            if (statistics) {
+                this.taskRenderer.renderStatistics(statistics);
+            } else {
+                this.taskRenderer.showDetailError('无法加载统计信息');
+            }
+        } catch (error) {
+            console.error('加载统计信息失败:', error);
+            this.taskRenderer.showDetailError('加载统计信息失败');
         }
     }
     
@@ -94,11 +117,20 @@ class TaskManagementApp {
             resetBtn.addEventListener('click', () => this.handleReset());
         }
         
-        // 详情按钮（事件委托）
+        // 详情按钮和任务行点击（事件委托）
         document.addEventListener('click', (e) => {
+            // 检查是否点击了详情按钮
             if (e.target.classList.contains('view-detail') || e.target.closest('.view-detail')) {
                 const btn = e.target.classList.contains('view-detail') ? e.target : e.target.closest('.view-detail');
                 const taskId = btn.dataset.taskId;
+                if (taskId) {
+                    this.showTaskDetail(taskId);
+                }
+            }
+            // 检查是否点击了任务行
+            else if (e.target.classList.contains('task-row') || e.target.closest('.task-row')) {
+                const row = e.target.classList.contains('task-row') ? e.target : e.target.closest('.task-row');
+                const taskId = row.dataset.taskId;
                 if (taskId) {
                     this.showTaskDetail(taskId);
                 }
@@ -157,11 +189,20 @@ class TaskManagementApp {
      */
     async showTaskDetail(taskId) {
         try {
+            // 显示加载状态
+            this.taskRenderer.showDetailLoading();
+            
             const task = await this.taskManager.getTaskDetail(taskId);
             if (task) {
-                console.log('Task detail:', task);
+                // 渲染任务详情
+                this.taskRenderer.renderTaskDetail(task);
+            } else {
+                // 显示错误状态
+                this.taskRenderer.showDetailError('未找到任务详情');
             }
         } catch (error) {
+            // 显示错误状态
+            this.taskRenderer.showDetailError('获取任务详情失败: ' + error.message);
             this.errorHandler.handle(error, '获取任务详情失败');
         }
     }

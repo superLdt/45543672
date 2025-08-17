@@ -44,6 +44,86 @@
     --feishu-spacing-xl: 32px;
 }
 
+/* ========== 任务管理页面专用样式 ========== */
+
+/* 任务行选中状态 */
+.task-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.task-row.selected {
+    background-color: rgba(51, 112, 255, 0.08);
+    border-left: 3px solid var(--feishu-primary);
+}
+
+.task-row:hover {
+    background-color: rgba(51, 112, 255, 0.04);
+    cursor: pointer;
+}
+
+/* 详情面板样式优化 */
+.detail-panel {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius);
+    box-shadow: var(--feishu-shadow);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.detail-content {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.task-info-card {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius-sm);
+    padding: 12px;
+    border: 1px solid var(--feishu-border);
+}
+
+.detail-panel .feishu-btn-secondary {
+    border: none;
+    background: transparent;
+    color: var(--feishu-text-secondary);
+}
+
+.detail-panel .feishu-btn-secondary:hover {
+    background: var(--feishu-bg);
+    color: var(--feishu-text-primary);
+}
+
+/* 加载动画 */
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: 0.125em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 响应式布局 - 任务管理页面 */
+@media (max-width: 768px) {
+    .task-management-container {
+        flex-direction: column;
+    }
+    
+    .detail-section {
+        margin-top: var(--feishu-spacing-md);
+        max-height: 400px;
+    }
+}
+
 /* ========== 基础组件 ========== */
 
 /* 飞书风格卡片 */
@@ -725,4 +805,182 @@
     .main-content-wrapper {
         flex-direction: column;
     }
+}
+
+/* ========== 统计信息样式 ========== */
+
+.statistics-container {
+    padding: var(--feishu-spacing-md);
+}
+
+.statistics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--feishu-spacing-xl);
+    padding-bottom: var(--feishu-spacing-md);
+    border-bottom: 1px solid var(--feishu-border);
+}
+
+.statistics-header h3 {
+    margin: 0;
+    color: var(--feishu-text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.statistics-time {
+    color: var(--feishu-text-secondary);
+    font-size: 12px;
+}
+
+.statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--feishu-spacing-md);
+    margin-bottom: var(--feishu-spacing-xl);
+}
+
+.stat-card {
+    background: var(--feishu-white);
+    border: 1px solid var(--feishu-border);
+    border-radius: var(--feishu-radius);
+    padding: var(--feishu-spacing-lg);
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--feishu-shadow-md);
+}
+
+.stat-card.primary {
+    border-left: 4px solid var(--feishu-primary);
+}
+
+.stat-card.success {
+    border-left: 4px solid var(--feishu-success);
+}
+
+.stat-card.warning {
+    border-left: 4px solid var(--feishu-warning);
+}
+
+.stat-icon {
+    font-size: 24px;
+    margin-right: var(--feishu-spacing-md);
+    width: 32px;
+    text-align: center;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--feishu-text-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--feishu-text-secondary);
+    margin-top: 4px;
+}
+
+.statistics-section {
+    margin-bottom: var(--feishu-spacing-xl);
+}
+
+.statistics-section h4 {
+    margin: 0 0 var(--feishu-spacing-md) 0;
+    color: var(--feishu-text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.status-distribution,
+.track-distribution {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius-sm);
+    padding: var(--feishu-spacing-md);
+}
+
+.status-item,
+.track-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--feishu-spacing-md);
+    font-size: 14px;
+}
+
+.status-item:last-child,
+.track-item:last-child {
+    margin-bottom: 0;
+}
+
+.status-name,
+.track-name {
+    flex: 1;
+    color: var(--feishu-text-secondary);
+    margin-right: var(--feishu-spacing-md);
+}
+
+.status-count,
+.track-count {
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin-right: var(--feishu-spacing-md);
+    min-width: 30px;
+    text-align: right;
+}
+
+.status-bar,
+.track-bar {
+    flex: 2;
+    height: 8px;
+    background: var(--feishu-border-light);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.status-bar-fill,
+.track-bar-fill {
+    height: 100%;
+    background: var(--feishu-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.urgent-notice {
+    background: #fff2e8;
+    border: 1px solid #ffd591;
+    border-radius: var(--feishu-radius);
+    padding: var(--feishu-spacing-md);
+    display: flex;
+    align-items: flex-start;
+}
+
+.notice-icon {
+    font-size: 20px;
+    margin-right: var(--feishu-spacing-md);
+    color: var(--feishu-warning);
+}
+
+.notice-content h5 {
+    margin: 0 0 var(--feishu-spacing-sm) 0;
+    color: #d46b08;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.notice-content p {
+    margin: 0;
+    color: #d46b08;
+    font-size: 14px;
+    line-height: 1.5;
 }

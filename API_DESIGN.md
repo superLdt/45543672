@@ -43,7 +43,7 @@
 | 状态管理 | 更新状态 | PUT | /api/dispatch/tasks/<task_id>/status | 更新任务状态 | ✅ 已实现 |
 | 车辆分配 | 分配车辆 | POST | /api/dispatch/tasks/<task_id>/assign-vehicle | 分配车辆 | ❌ 待实现 |
 | 车辆分配 | 分配司机 | POST | /api/dispatch/tasks/<task_id>/assign-driver | 分配司机 | 🚫 已取消 |
-| 查询统计 | 获取统计信息 | GET | /api/dispatch/statistics | 获取派车统计 | ❌ 待实现 |
+| 查询统计 | 获取统计信息 | GET | /api/dispatch/statistics | 获取派车统计 | ✅ 已实现 |
 | 查询统计 | 导出数据 | GET | /api/dispatch/export | 导出任务数据 | ❌ 待实现 |
 
 ## 🔧 详细接口设计
@@ -87,6 +87,44 @@
   "special_requirements": "需要冷链运输",
   "dispatch_track": "轨道A"
 }
+
+### 5. 获取统计信息
+
+**HTTP方法**: GET  
+**路径**: `/api/dispatch/statistics`  
+**权限**: 所有角色（根据角色返回相应权限的统计数据）
+
+**功能说明**: 获取当前用户的派车任务统计数据，包括总任务数、各状态任务数、今日新增、即将超时任务和轨道类型分布等。
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_tasks": 17,
+    "status_distribution": {
+      "待调度员审核": 6,
+      "待供应商响应": 11,
+      "已分配车辆": 0,
+      "已完成": 0,
+      "已拒绝": 0
+    },
+    "today_new": 0,
+    "expiring_soon": 11,
+    "track_distribution": {
+      "轨道A": 6,
+      "轨道B": 11
+    }
+  }
+}
+```
+
+**统计字段说明**:
+- **total_tasks**: 当前用户权限范围内的总任务数
+- **status_distribution**: 各状态任务数量分布
+- **today_new**: 今日新增任务数（基于创建时间）
+- **expiring_soon**: 即将超时任务数（待处理状态的任务）
+- **track_distribution**: 按轨道类型分布的任务数
 ```
 
 **响应示例**:
@@ -105,7 +143,7 @@
 
 **状态说明**:
 - **轨道A**: 车间地调提交后状态为"待提交"，需后续手动提交审核
-- **轨道B**: 区域调度员创建后状态为"待区域调度员审核"，直接进入审核流程
+- **轨道B**: 区域调度员创建后状态为"待供应商响应"，直接进入供应商响应流程
 
 ### 2. 获取任务列表
 
@@ -231,7 +269,6 @@
 
 ### ❌ 待实现
 - **分配车辆接口**：POST /api/dispatch/tasks/<task_id>/assign-vehicle
-- **统计接口**：GET /api/dispatch/statistics  
 - **导出接口**：GET /api/dispatch/export
 
 ### 🚫 已取消
@@ -262,6 +299,7 @@ d:\智能运力系统\45543672_backup\
 | v1.0 | 2024-01-15 | 初始API设计 | 系统开发 | ✅ 已完成 |
 | v2.0 | 2024-01-15 | 双轨派车功能 | 系统开发 | ✅ 已完成 |
 | v2.1 | 2024-08-13 | 实际实现更新 | 系统开发 | ✅ 核心功能100%完成 |
+| v2.2 | 2024-08-13 | 统计接口实现 | 系统开发 | ✅ 统计功能已实现 |
 
 ## 🎯 使用指南
 
