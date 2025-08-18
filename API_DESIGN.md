@@ -298,22 +298,73 @@
 }
 ```
 
-### 4. 分配车辆
+### 4. 供应商确认响应（含车辆信息）
+
+**HTTP方法**: POST  
+**路径**: `/api/dispatch/tasks/<task_id>/confirm-with-vehicle`  
+**权限**: 供应商
+
+**功能说明**: 供应商确认响应派车任务，并填写车辆详细信息（路单流水号、派车单号、车牌号等）。此接口替代原有的简单确认响应，确保车辆信息完整登记。
+
+**请求参数**:
+- `manifest_number` (必填): 路单流水号
+- `dispatch_number` (必填): 派车单号
+- `license_plate` (必填): 车牌号
+- `carriage_number` (选填): 车厢号
+- `notes` (选填): 备注信息
+
+**请求示例**:
+```json
+{
+  "manifest_number": "LD20240115001",
+  "dispatch_number": "PC20240115001",
+  "license_plate": "皖A12345",
+  "carriage_number": "车厢01",
+  "driver_name": "张师傅",
+  "driver_phone": "13812345678",
+  "notes": "车辆已检查完毕，可按时发车"
+}
+```
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "车辆信息提交成功，任务已确认响应",
+  "data": {
+    "task_id": "T20240115001",
+    "new_status": "供应商已响应",
+    "vehicle_info": {
+      "manifest_number": "LD20240115001",
+      "dispatch_number": "PC20240115001",
+      "license_plate": "皖A12345",
+      "driver_name": "张师傅"
+    }
+  }
+}
+```
+
+**业务逻辑**:
+1. 验证任务状态必须为"待供应商响应"
+2. 验证所有必填字段完整性
+3. 更新任务状态为"供应商已响应"
+4. 将车辆信息写入vehicles表
+5. 记录状态变更历史
+6. 返回成功响应和车辆信息摘要
+
+**错误处理**:
+- 400: 请求数据格式错误或必填字段缺失
+- 404: 任务不存在或状态不正确
+- 401: 未登录用户或无权限操作
+- 500: 数据库操作失败
+
+### 5. 分配车辆（已废弃）
 
 **HTTP方法**: POST  
 **路径**: `/api/dispatch/tasks/<task_id>/assign-vehicle`  
 **权限**: 供应商
 
-**请求示例**:
-```json
-{
-  "vehicle_id": "V001",
-  "vehicle_type": "货车",
-  "license_plate": "京A12345",
-  "driver_name": "张三",
-  "driver_phone": "13800138000"
-}
-```
+**状态**: ❌ 已废弃，使用`confirm-with-vehicle`接口替代
 
 ### 5. 获取公司列表
 

@@ -229,19 +229,112 @@ class TaskManagementApp {
     /**
      * 确认审批
      */
-    confirmApproval(taskId) {
-        // TODO: 实现确认审批逻辑
-        console.log('Confirm approval for task:', taskId);
-        alert('确认审批功能待实现');
+    async confirmApproval(taskId) {
+        try {
+            const confirmed = await this.showApprovalDialog('确认审批', '确定要通过此任务的审批吗？');
+            if (!confirmed) return;
+
+            const response = await fetch(`/api/dispatch/tasks/${taskId}/audit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    audit_result: '通过',
+                    audit_note: '审批通过'
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSuccessMessage('审批通过成功');
+                // 重新加载任务列表和详情
+                await this.taskManager.loadTasks();
+                await this.showTaskDetail(taskId);
+            } else {
+                this.showErrorMessage(result.error?.message || '审批失败');
+            }
+        } catch (error) {
+            this.showErrorMessage('审批请求失败: ' + error.message);
+            this.errorHandler.handle(error, '确认审批失败');
+        }
     }
     
     /**
      * 拒绝审批
      */
-    rejectApproval(taskId) {
-        // TODO: 实现拒绝审批逻辑
-        console.log('Reject approval for task:', taskId);
-        alert('拒绝审批功能待实现');
+    async rejectApproval(taskId) {
+        try {
+            const note = await this.showRejectDialog();
+            if (!note) return;
+
+            const response = await fetch(`/api/dispatch/tasks/${taskId}/audit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    audit_result: '拒绝',
+                    audit_note: note
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSuccessMessage('审批拒绝成功');
+                // 重新加载任务列表和详情
+                await this.taskManager.loadTasks();
+                await this.showTaskDetail(taskId);
+            } else {
+                this.showErrorMessage(result.error?.message || '拒绝审批失败');
+            }
+        } catch (error) {
+            this.showErrorMessage('拒绝审批请求失败: ' + error.message);
+            this.errorHandler.handle(error, '拒绝审批失败');
+        }
+    }
+
+    /**
+     * 显示审批确认对话框
+     */
+    async showApprovalDialog(title, message) {
+        return new Promise((resolve) => {
+            const confirmed = confirm(`${title}\n\n${message}`);
+            resolve(confirmed);
+        });
+    }
+
+    /**
+     * 显示拒绝对话框
+     */
+    async showRejectDialog() {
+        return new Promise((resolve) => {
+            const note = prompt('请输入拒绝原因：');
+            if (note && note.trim()) {
+                resolve(note.trim());
+            } else if (note === '') {
+                alert('拒绝原因不能为空');
+                resolve(null);
+            } else {
+                resolve(null);
+            }
+        });
+    }
+
+    /**
+     * 显示成功消息
+     */
+    showSuccessMessage(message) {
+        alert(message); // 可以替换为更好的通知组件
+    }
+
+    /**
+     * 显示错误消息
+     */
+    showErrorMessage(message) {
+        alert(message); // 可以替换为更好的通知组件
     }
     
     /**
@@ -301,7 +394,11 @@ export async function initTaskManagement(options = {}) {
         rejectApproval: (taskId) => app.rejectApproval(taskId),
         workshopDeparture: (taskId) => app.workshopDeparture(taskId),
         finalConfirmation: (taskId) => app.finalConfirmation(taskId),
-        showTaskDetail: (taskId) => app.showTaskDetail(taskId)
+        showTaskDetail: (taskId) => app.showTaskDetail(taskId),
+        showSupplierConfirmDialog: (taskId) => app.taskManager.showSupplierConfirmDialog(taskId),
+        showApprovalDialog: (taskId, action) => app.taskManager.showApprovalDialog(taskId, action),
+        submitSupplierConfirm: (taskId) => app.taskManager.submitSupplierConfirm(taskId),
+        submitApproval: (taskId, action) => app.taskManager.submitApproval(taskId, action)
     };
     
     return app;

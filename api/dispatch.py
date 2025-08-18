@@ -293,10 +293,11 @@ def get_task_detail(task_id):
             
             # 获取状态历史
             db_manager.cursor.execute('''
-                SELECT status_change as status, timestamp, operator as updated_by, note as notes
-                FROM dispatch_status_history
-                WHERE task_id = ?
-                ORDER BY timestamp DESC
+                SELECT h.status_change as status, h.timestamp, h.operator as updated_by_id, h.note as notes, u.full_name as updated_by_name
+                FROM dispatch_status_history h
+                LEFT JOIN User u ON h.operator = u.id
+                WHERE h.task_id = ?
+                ORDER BY h.timestamp DESC
             ''', (task_id,))
             
             # 手动构建状态历史字典
@@ -305,7 +306,7 @@ def get_task_detail(task_id):
                 history.append({
                     'status': row[0],
                     'timestamp': row[1],
-                    'updated_by': row[2],
+                    'updated_by': row[4] or f'用户{row[2]}',  # 使用用户名，如果没有则使用ID
                     'notes': row[3]
                 })
             
@@ -405,6 +406,176 @@ def update_task(task_id):
         return create_response(success=False, error={
             'code': 5001,
             'message': f'更新任务失败: {str(e)}'
+        }), 500
+
+@dispatch_bp.route('/tasks/<task_id>/confirm', methods=['POST'])
+@require_role(['供应商'])
+def confirm_supplier_response(task_id):
+    """供应商确认响应派车"""
+    try:
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 检查任务是否存在且状态为"待供应商响应"
+            db_manager.cursor.execute('''
+                SELECT * FROM manual_dispatch_tasks 
+                WHERE task_id = ? AND status = ?
+            ''', (task_id, '待供应商响应'))
+            
+            task = db_manager.cursor.fetchone()
+            if not task:
+                return create_response(success=False, error={
+                    'code': 4041,
+                    'message': '任务不存在或状态不正确'
+                }), 404
+            
+            # 获取当前用户信息
+            current_user_id = session.get('user_id')
+            if not current_user_id:
+                return create_response(success=False, error={
+                    'code': 4002,
+                    'message': '未登录用户'
+                }), 401
+            
+            # 更新任务状态为"供应商已响应"
+            new_status = '供应商已响应'
+            old_status = task['status']
+            
+            db_manager.cursor.execute('''
+                UPDATE manual_dispatch_tasks 
+                SET status = ?, current_handler_user_id = ?, updated_at = ?
+                WHERE task_id = ?
+            ''', (new_status, current_user_id, datetime.datetime.now(), task_id))
+            
+            # 记录状态变更历史
+            db_manager.cursor.execute('''
+                INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
+                VALUES (?, ?, ?, ?)
+            ''', (task_id, f"{old_status}→{new_status}", current_user_id, '供应商确认响应'))
+            
+            db_manager.conn.commit()
+            
+            return create_response(message='供应商响应成功', data={
+                'task_id': task_id,
+                'new_status': new_status
+            })
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'供应商响应失败: {str(e)}'
+        }), 500
+
+@dispatch_bp.route('/tasks/<task_id>/confirm-with-vehicle', methods=['POST'])
+@require_role(['供应商'])
+def confirm_supplier_response_with_vehicle(task_id):
+    """供应商确认响应并填写车辆信息"""
+    try:
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 获取请求数据
+            data = request.get_json()
+            if not data:
+                return create_response(success=False, error={
+                    'code': 4001,
+                    'message': '请求数据格式错误'
+                }), 400
+            
+            # 验证必填字段
+            required_fields = ['manifest_number', 'dispatch_number', 'license_plate']
+            for field in required_fields:
+                if not data.get(field):
+                    return create_response(success=False, error={
+                        'code': 4001,
+                        'message': f'{field}不能为空'
+                    }), 400
+            
+            # 检查任务是否存在且状态为"待供应商响应"
+            db_manager.cursor.execute('''
+                SELECT * FROM manual_dispatch_tasks 
+                WHERE task_id = ? AND status = ?
+            ''', (task_id, '待供应商响应'))
+            
+            task = db_manager.cursor.fetchone()
+            if not task:
+                return create_response(success=False, error={
+                    'code': 4041,
+                    'message': '任务不存在或状态不正确'
+                }), 404
+            
+            # 获取当前用户信息
+            current_user_id = session.get('user_id')
+            if not current_user_id:
+                return create_response(success=False, error={
+                    'code': 4002,
+                    'message': '未登录用户'
+                }), 401
+            
+            # 更新任务状态为"供应商已响应"
+            new_status = '供应商已响应'
+            old_status = task['status']
+            
+            db_manager.cursor.execute('''
+                UPDATE manual_dispatch_tasks 
+                SET status = ?, current_handler_user_id = ?, updated_at = ?
+                WHERE task_id = ?
+            ''', (new_status, current_user_id, datetime.datetime.now(), task_id))
+            
+            # 插入车辆信息
+            db_manager.cursor.execute('''
+                INSERT INTO vehicles (task_id, manifest_number, dispatch_number, license_plate, 
+                                    carriage_number, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                task_id,
+                data['manifest_number'],
+                data['dispatch_number'],
+                data['license_plate'],
+                data.get('carriage_number'),
+                data.get('notes'),
+                datetime.datetime.now()
+            ))
+            
+            # 记录状态变更历史
+            db_manager.cursor.execute('''
+                INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
+                VALUES (?, ?, ?, ?)
+            ''', (task_id, f"{old_status}→{new_status}", current_user_id, 
+                  f"供应商确认响应，车辆信息已登记：{data['license_plate']}"))
+            
+            db_manager.conn.commit()
+            
+            return create_response(message='车辆信息提交成功，任务已确认响应', data={
+                'task_id': task_id,
+                'new_status': new_status,
+                'vehicle_info': {
+                    'manifest_number': data['manifest_number'],
+                    'dispatch_number': data['dispatch_number'],
+                    'license_plate': data['license_plate']
+                }
+            })
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'车辆信息确认失败: {str(e)}'
         }), 500
 
 @dispatch_bp.route('/statistics', methods=['GET'])

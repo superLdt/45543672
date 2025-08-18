@@ -94,7 +94,7 @@ class DispatchValidators:
     @staticmethod
     def validate_audit_data(data):
         """验证审核数据"""
-        required_fields = ['task_id', 'audit_result', 'auditor_role', 'auditor_user_id']
+        required_fields = ['audit_result']
         
         for field in required_fields:
             if field not in data or not data.get(field):
@@ -103,11 +103,6 @@ class DispatchValidators:
         # 验证审核结果
         if data.get('audit_result') not in ['通过', '拒绝']:
             return False, '审核结果必须是"通过"或"拒绝"'
-        
-        # 验证审核人角色
-        valid_roles = ['区域调度员', '超级管理员']
-        if data.get('auditor_role') not in valid_roles:
-            return False, f'审核人角色必须是以下之一: {", ".join(valid_roles)}'
         
         # 验证备注长度
         audit_note = data.get('audit_note', '')

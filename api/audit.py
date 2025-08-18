@@ -104,12 +104,11 @@ def audit_task(task_id):
         # 获取审核数据
         data = request.get_json()
         
-        # 验证数据
-        is_valid, error_msg = validators.validate_audit_data(data)
-        if not is_valid:
+        # 简单验证
+        if not data or 'audit_result' not in data:
             return create_response(success=False, error={
                 'code': 4001,
-                'message': error_msg
+                'message': '缺少必填参数：audit_result'
             }), 400
         
         audit_result = data.get('audit_result')
@@ -143,7 +142,7 @@ def audit_task(task_id):
             task_dict = dict(task)
             
             # 状态检查 - 必须是待审核状态
-            if task_dict['status'] != '待区域调度员审核':
+            if task_dict['status'] != '待调度员审核':
                 return create_response(success=False, error={
                     'code': 4003,
                     'message': f'当前状态为{task_dict["status"]}，无法审核'
@@ -162,7 +161,7 @@ def audit_task(task_id):
                 current_handler_role = '供应商'
                 audit_status = '已通过'
             else:  # 拒绝
-                new_status = '已拒绝'
+                new_status = '已取消'
                 current_handler_role = None
                 audit_status = '已拒绝'
             
@@ -370,7 +369,7 @@ def check_status_transition(old_status, new_status, current_role, task_dict):
             },
             '待调度员审核': {
                 '允许操作': ['区域调度员', '超级管理员'],
-                '允许目标': ['待供应商响应', '已拒绝']
+                '允许目标': ['待供应商响应', '已取消']
             },
             '待供应商响应': {
                 '允许操作': ['供应商'],
@@ -438,6 +437,7 @@ def get_next_handler(new_status, task_dict):
         '车间已核查': '供应商',
         '供应商已确认': '车间地调' if task_dict['dispatch_track'] == '轨道A' else '区域调度员',
         '任务结束': None,
+        '已取消': None,
         '已拒绝': None
     }
     

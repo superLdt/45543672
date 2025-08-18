@@ -255,41 +255,204 @@ export class TaskManager {
     }
     
     /**
-     * 确认响应
+     * 显示供应商确认响应对话框
+     * 供应商对派车任务进行接单确认，填写车辆信息
+     * @param {string} taskId - 任务ID
      */
-    async confirmResponse(taskId) {
-        try {
-            const response = await fetch(`${this.options.apiEndpoint}/${taskId}/confirm`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            if (result.success) {
-                // 更新本地数据
-                const taskIndex = this.state.tasks.findIndex(t => t.id === taskId);
-                if (taskIndex !== -1) {
-                    this.state.tasks[taskIndex].status = 'confirmed';
-                    this.emit('task-updated', this.state.tasks[taskIndex]);
-                }
+    showSupplierConfirmDialog(taskId) {
+        const task = this.state.tasks.find(t => (t.task_id || t.id) === taskId);
+        if (!task) return;
+
+        // 使用独立的供应商车辆信息确认模块
+        import('./SupplierVehicleModal.js').then(({ SupplierVehicleModal }) => {
+            SupplierVehicleModal.show(task, this);
+        }).catch(error => {
+            console.error('Failed to load SupplierVehicleModal:', error);
+            // 降级处理：使用旧的实现
+            this.showLegacySupplierConfirmDialog(task);
+        });
+    }
+
+    /**
+     * 传统供应商确认对话框（降级方案）
+     * @param {Object} task - 任务数据
+     */
+    showLegacySupplierConfirmDialog(task) {
+        console.warn('Using legacy supplier confirm dialog');
+        const modal = this.createSupplierVehicleModal(task);
+        document.body.appendChild(modal);
+    }
+
+    /**
+     * 创建供应商车辆信息填写模态框（保留为降级方案）
+     */
+    createSupplierVehicleModal(task) {
+        const modal = document.createElement('div');
+        modal.className = 'feishu-modal';
+        modal.id = 'supplierVehicleModal';
+        
+        modal.innerHTML = `
+            <div class="feishu-modal-content" style="max-width: 600px;">
+                <div class="feishu-modal-header">
+                    <h3 class="feishu-modal-title">
+                        <i class="fas fa-truck" style="color:var(--feishu-success);margin-right:8px;"></i>
+                        车辆信息确认
+                    </h3>
+                    <button class="feishu-modal-close" onclick="this.closest('.feishu-modal').remove()">&times;</button>
+                </div>
                 
-                // 触发确认响应事件
-                this.emit('response-confirmed', { taskId, data: result.data });
+                <div class="feishu-modal-body">
+                    <div class="confirmation-card" style="margin-bottom: 20px;">
+                        <div class="confirmation-title">派车任务信息</div>
+                        <div class="confirmation-content">
+                            <div class="form-preview" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-preview-item">
+                                    <span class="form-preview-label">任务编号:</span>
+                                    <span class="form-preview-value">${task.task_id || task.id}</span>
+                                </div>
+                                <div class="form-preview-item">
+                                    <span class="form-preview-label">承运公司:</span>
+                                    <span class="form-preview-value">${task.carrier_company || ''}</span>
+                                </div>
+                                <div class="form-preview-item" style="grid-column: 1 / -1;">
+                                    <span class="form-preview-label">路线:</span>
+                                    <span class="form-preview-value">${task.start_bureau || ''} → ${task.route_name || ''}</span>
+                                </div>
+                                <div class="form-preview-item">
+                                    <span class="form-preview-label">用车时间:</span>
+                                    <span class="form-preview-value">${this.formatDateTime(task.required_date)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form class="supplier-form" id="supplierVehicleForm">
+                        <div class="form-section" style="margin-bottom: 15px;">
+                            <h4 class="form-section-title" style="margin-bottom: 10px; font-size: 14px;">
+                                <i class="fas fa-file-alt"></i> 单据信息
+                            </h4>
+                            
+                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label form-required" style="font-size: 13px; margin-bottom: 4px;">路单流水号</label>
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="manifest_number" 
+                                           placeholder="如：LS20240115001"
+                                           required
+                                           style="height: 32px; font-size: 13px; padding: 6px 8px;">
+                                </div>
+                                
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label form-required" style="font-size: 13px; margin-bottom: 4px;">派车单号</label>
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="dispatch_number" 
+                                           placeholder="如：PC20240115001"
+                                           required
+                                           style="height: 32px; font-size: 13px; padding: 6px 8px;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section" style="margin-bottom: 15px;">
+                            <h4 class="form-section-title" style="margin-bottom: 10px; font-size: 14px;">
+                                <i class="fas fa-car"></i> 车辆信息
+                            </h4>
+                            
+                            <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label form-required" style="font-size: 13px; margin-bottom: 4px;">车牌号</label>
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="license_plate" 
+                                           placeholder="如：京A12345"
+                                           required
+                                           pattern="^[\u4e00-\u9fa5][A-Z][0-9A-Z]{5,6}$"
+                                           style="height: 32px; font-size: 13px; padding: 6px 8px;">
+                                </div>
+                                
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">车厢号</label>
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="carriage_number" 
+                                           placeholder="可选"
+                                           style="height: 32px; font-size: 13px; padding: 6px 8px;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-size: 13px; margin-bottom: 4px;">备注信息</label>
+                            <textarea class="form-textarea" 
+                                      name="notes" 
+                                      placeholder="可选：补充说明、特殊要求等..."
+                                      style="height: 60px; font-size: 13px; padding: 6px 8px; min-height: 40px;"></textarea>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="feishu-modal-footer">
+                    <button class="feishu-btn feishu-btn-secondary" style="height: 32px; font-size: 13px;" onclick="this.closest('.feishu-modal').remove()">
+                        取消
+                    </button>
+                    <button class="feishu-btn feishu-btn-primary" style="height: 32px; font-size: 13px;" onclick="taskManager.submitSupplierVehicleConfirm('${task.task_id || task.id}')">
+                        <i class="fas fa-check"></i> 确认响应
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // 添加点击背景关闭功能
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
             }
-            
-            return result.success;
-            
-        } catch (error) {
-            this.debug.error('Failed to confirm response:', error);
-            this.errorHandler.handle(error);
-            throw error;
+        });
+        
+        return modal;
+    }
+
+    /**
+     * 提交供应商车辆信息确认响应（已废弃）
+     * 新的实现已移至 SupplierVehicleModal.js 模块
+     * @deprecated 请使用 SupplierVehicleModal.submit() 方法
+     */
+    async submitSupplierVehicleConfirm(taskId) {
+        console.warn('submitSupplierVehicleConfirm is deprecated. Use SupplierVehicleModal instead.');
+        // 此方法已被废弃，新的实现由 SupplierVehicleModal 模块处理
+    }
+
+    /**
+     * 获取字段中文标签
+     */
+    getFieldLabel(fieldName) {
+        const labels = {
+            'manifest_number': '路单流水号',
+            'dispatch_number': '派车单号',
+            'license_plate': '车牌号',
+            'driver_name': '司机姓名',
+            'driver_phone': '联系电话'
+        };
+        return labels[fieldName] || fieldName;
+    }
+
+    /**
+     * 格式化日期时间显示
+     */
+    formatDateTime(dateStr) {
+        if (!dateStr) return '待定';
+        try {
+            return new Date(dateStr).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return dateStr;
         }
     }
     

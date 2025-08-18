@@ -1,0 +1,329 @@
+<!-- 供应商车辆信息确认模板 -->
+<div class="feishu-modal" id="supplierVehicleModal">
+    <div class="feishu-modal-content supplier-modal-content">
+        <div class="feishu-modal-header">
+            <h3 class="feishu-modal-title">
+                <i class="fas fa-truck" style="color:var(--feishu-success);margin-right:8px;"></i>
+                车辆信息确认
+            </h3>
+            <button class="feishu-modal-close" onclick="this.closest('.feishu-modal').remove()">&times;</button>
+        </div>
+        
+        <div class="feishu-modal-body">
+            <!-- 任务信息卡片 -->
+            <div class="confirmation-card task-info-card">
+                <div class="confirmation-title">
+                    <i class="fas fa-info-circle"></i>
+                    派车任务信息
+                </div>
+                <div class="confirmation-content">
+                    <div class="task-info-grid">
+                        <div class="task-info-item">
+                            <span class="info-label">任务编号:</span>
+                            <span class="info-value" data-field="task_id"></span>
+                        </div>
+                        <div class="task-info-item">
+                            <span class="info-label">承运公司:</span>
+                            <span class="info-value" data-field="carrier_company"></span>
+                        </div>
+                        <div class="task-info-item full-width">
+                            <span class="info-label">路线:</span>
+                            <span class="info-value route-display" data-field="route"></span>
+                        </div>
+                        <div class="task-info-item">
+                            <span class="info-label">用车时间:</span>
+                            <span class="info-value" data-field="required_date"></span>
+                        </div>
+                        <div class="task-info-item">
+                            <span class="info-label">吨位:</span>
+                            <span class="info-value" data-field="tonnage"></span>
+                        </div>
+                        <div class="task-info-item">
+                            <span class="info-label">容积:</span>
+                            <span class="info-value" data-field="volume"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 车辆信息表单 -->
+            <form class="supplier-form" id="supplierVehicleForm">
+                <!-- 单据信息 -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-file-alt"></i>
+                        单据信息
+                        <span class="section-subtitle">请准确填写相关单据号码</span>
+                    </h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label form-required">
+                                <i class="fas fa-hashtag"></i>
+                                路单流水号
+                            </label>
+                            <input type="text" 
+                                   class="form-input" 
+                                   name="manifest_number" 
+                                   placeholder="例：LS20240115001"
+                                   required
+                                   maxlength="20">
+                            <span class="form-hint">格式：LS + 年月日 + 序号</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label form-required">
+                                <i class="fas fa-file-invoice"></i>
+                                派车单号
+                            </label>
+                            <input type="text" 
+                                   class="form-input" 
+                                   name="dispatch_number" 
+                                   placeholder="例：PC20240115001"
+                                   required
+                                   maxlength="20">
+                            <span class="form-hint">格式：PC + 年月日 + 序号</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 车辆信息 -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-car"></i>
+                        车辆信息
+                        <span class="section-subtitle">请提供准确的车辆信息</span>
+                    </h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group vehicle-plate">
+                            <label class="form-label form-required">
+                                <i class="fas fa-car-side"></i>
+                                车牌号
+                            </label>
+                            <input type="text" 
+                                   class="form-input" 
+                                   name="license_plate" 
+                                   placeholder="例：京A12345"
+                                   required
+                                   pattern="^[\u4e00-\u9fa5][A-Z][0-9A-Z]{5,6}$"
+                                   maxlength="8">
+                            <span class="form-hint">格式：省份简称 + 字母 + 5-6位数字/字母</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-box"></i>
+                                车厢号
+                            </label>
+                            <input type="text" 
+                                   class="form-input" 
+                                   name="carriage_number" 
+                                   placeholder="可选填写"
+                                   maxlength="10">
+                            <span class="form-hint">如有多个车厢请填写</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 备注信息 -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-sticky-note"></i>
+                        备注信息
+                        <span class="section-subtitle">补充说明或特殊要求</span>
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-edit"></i>
+                            备注
+                        </label>
+                        <textarea class="form-textarea" 
+                                  name="notes" 
+                                  placeholder="如有特殊要求或补充说明，请在此填写..."
+                                  maxlength="500"
+                                  rows="3"></textarea>
+                        <span class="form-hint">最多500字符</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="feishu-modal-footer">
+            <button type="button" class="feishu-btn feishu-btn-secondary" onclick="SupplierVehicleModal.close()">
+                <i class="fas fa-times"></i>
+                取消
+            </button>
+            <button type="button" class="feishu-btn feishu-btn-primary" onclick="SupplierVehicleModal.submit()">
+                <i class="fas fa-check"></i>
+                确认响应
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 供应商车辆信息确认模态框样式 */
+.supplier-modal-content {
+    max-width: 650px !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.task-info-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+    border: 1px solid #e8f0fe;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.task-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: center;
+}
+
+.task-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.task-info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 13px;
+    white-space: nowrap;
+    min-width: 70px;
+}
+
+.info-value {
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.route-display {
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: #059669;
+    font-weight: 600;
+}
+
+.form-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #fafbfc;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.section-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 400;
+    margin-left: auto;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-group.vehicle-plate {
+    grid-column: 1;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-label.form-required::after {
+    content: '*';
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .task-info-grid,
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .form-section {
+        padding: 16px;
+    }
+    
+    .supplier-modal-content {
+        margin: 20px;
+        max-width: calc(100% - 40px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .supplier-modal-content {
+        margin: 10px;
+        max-width: calc(100% - 20px) !important;
+    }
+}
+</style>

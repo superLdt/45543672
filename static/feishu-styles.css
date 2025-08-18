@@ -417,6 +417,146 @@
     .feishu-container {
         flex-direction: column;
     }
+    
+    .approval-options {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .approval-option {
+        width: 100%;
+    }
+}
+
+/* 动画效果 */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes zoomOut {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+}
+
+/* Toast通知样式 */
+.feishu-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: var(--feishu-radius);
+    box-shadow: var(--feishu-shadow-md);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideInRight 0.3s ease;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.feishu-toast-success {
+    background: var(--feishu-success);
+    color: white;
+}
+
+.feishu-toast-error {
+    background: var(--feishu-error);
+    color: white;
+}
+
+.feishu-toast-warning {
+    background: var(--feishu-warning);
+    color: white;
+}
+
+/* 模态框动画 */
+.feishu-modal {
+    animation: fadeIn 0.3s ease;
+}
+
+.feishu-modal-content {
+    animation: zoomIn 0.3s ease;
+}
+
+/* 响应式模态框 */
+@media (max-width: 768px) {
+    .feishu-modal-content {
+        margin: 20px;
+        max-height: calc(100vh - 40px);
+        border-radius: var(--feishu-radius);
+    }
+    
+    .feishu-modal-body {
+        padding: 16px;
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+    
+    .feishu-modal-footer {
+        padding: 12px 16px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .feishu-modal-footer .feishu-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
 }
 
 @media (max-width: 992px) {
@@ -604,6 +744,229 @@
     gap: var(--feishu-spacing-md);
     padding: var(--feishu-spacing-md);
     background: var(--feishu-bg);
+}
+
+/* ========== 飞书风格模态对话框 ========== */
+.feishu-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.feishu-modal-content {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-lg);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    animation: feishu-modal-in 0.2s ease-out;
+}
+
+@keyframes feishu-modal-in {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.feishu-modal-header {
+    padding: var(--feishu-spacing-lg);
+    border-bottom: 1px solid var(--feishu-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.feishu-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin: 0;
+}
+
+.feishu-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--feishu-text-tertiary);
+    transition: color 0.2s;
+}
+
+.feishu-modal-close:hover {
+    color: var(--feishu-text-primary);
+}
+
+.feishu-modal-body {
+    padding: var(--feishu-spacing-lg);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.feishu-modal-footer {
+    padding: var(--feishu-spacing-lg);
+    border-top: 1px solid var(--feishu-border);
+    display: flex;
+    gap: var(--feishu-spacing-sm);
+    justify-content: flex-end;
+}
+
+/* ========== 供应商确认表单样式 ========== */
+.supplier-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-md);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-xs);
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+}
+
+.form-required::before {
+    content: '*';
+    color: var(--feishu-error);
+    margin-right: 2px;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--feishu-text-secondary);
+    margin-top: 4px;
+}
+
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-preview {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius-sm);
+    padding: var(--feishu-spacing-md);
+    margin: var(--feishu-spacing-sm) 0;
+}
+
+.form-preview-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--feishu-spacing-xs);
+}
+
+.form-preview-item:last-child {
+    margin-bottom: 0;
+}
+
+.form-preview-label {
+    font-size: 13px;
+    color: var(--feishu-text-secondary);
+}
+
+.form-preview-value {
+    font-size: 14px;
+    color: var(--feishu-text-primary);
+    font-weight: 500;
+}
+
+/* ========== 审批确认样式 ========== */
+.approval-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-md);
+}
+
+.approval-options {
+    display: flex;
+    gap: var(--feishu-spacing-sm);
+    flex-wrap: wrap;
+}
+
+.approval-option {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
+.approval-reason {
+    display: none;
+}
+
+.approval-reason.show {
+    display: block;
+}
+
+.reason-textarea {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid var(--feishu-border);
+    border-radius: var(--feishu-radius);
+    padding: var(--feishu-spacing-sm);
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.reason-textarea:focus {
+    outline: none;
+    border-color: var(--feishu-primary);
+}
+
+/* ========== 状态确认卡片 ========== */
+.confirmation-card {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius);
+    padding: var(--feishu-spacing-lg);
+    margin-bottom: var(--feishu-spacing-md);
+    border-left: 4px solid var(--feishu-primary);
+}
+
+.confirmation-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin-bottom: var(--feishu-spacing-sm);
+}
+
+.confirmation-content {
+    font-size: 14px;
+    color: var(--feishu-text-secondary);
+    line-height: 1.5;
+}
+
+/* ========== 响应式模态框 ========== */
+@media (max-width: 768px) {
+    .feishu-modal-content {
+        width: 95%;
+        margin: var(--feishu-spacing-md);
+    }
+    
+    .feishu-modal-footer {
+        flex-direction: column;
+    }
+    
+    .approval-options {
+        flex-direction: column;
+    }
 }
 
 /* 主内容区域 - 左右分布布局 */

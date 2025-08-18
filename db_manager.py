@@ -18,6 +18,8 @@ class DatabaseManager:
         """连接到数据库"""
         try:
             self.conn = sqlite3.connect(self.db_path)
+            # 设置row_factory为sqlite3.Row，以便将查询结果转换为字典
+            self.conn.row_factory = sqlite3.Row
             # 启用外键约束
             self.conn.execute('PRAGMA foreign_keys = ON')
             self.cursor = self.conn.cursor()
@@ -141,20 +143,58 @@ class DatabaseManager:
             )
             ''')
 
-            # 创建车辆信息表
-            self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS vehicles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT,
-                manifest_number TEXT,
-                manifest_serial TEXT,
-                dispatch_number TEXT,
-                license_plate TEXT NOT NULL,
-                carriage_number TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
-            )
-            ''')
+            # 检查vehicles表是否需要更新（移除manifest_serial字段）
+            self.cursor.execute("PRAGMA table_info(vehicles)")
+            columns = [col[1] for col in self.cursor.fetchall()]
+            
+            if 'manifest_serial' in columns:
+                # 需要重建表来移除manifest_serial字段
+                print("检测到vehicles表包含manifest_serial字段，正在重建表...")
+                
+                # 备份现有数据
+                self.cursor.execute("SELECT * FROM vehicles")
+                existing_data = self.cursor.fetchall()
+                
+                # 删除现有表
+                self.cursor.execute("DROP TABLE vehicles")
+                
+                # 创建新表结构（不含manifest_serial）
+                self.cursor.execute('''
+                CREATE TABLE vehicles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id TEXT,
+                    manifest_number TEXT,
+                    dispatch_number TEXT,
+                    license_plate TEXT NOT NULL,
+                    carriage_number TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+                )
+                ''')
+                
+                # 重新插入数据（跳过manifest_serial字段）
+                if existing_data:
+                    for row in existing_data:
+                        new_row = [row[0], row[1], row[2], row[4], row[5], row[6]]  # 跳过manifest_serial
+                        self.cursor.execute('''
+                        INSERT INTO vehicles (id, task_id, manifest_number, dispatch_number, license_plate, carriage_number, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', new_row)
+                    print(f"已迁移{len(existing_data)}条车辆记录到新表结构")
+            else:
+                # 创建新表
+                self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS vehicles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id TEXT,
+                    manifest_number TEXT,
+                    dispatch_number TEXT,
+                    license_plate TEXT NOT NULL,
+                    carriage_number TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+                )
+                ''')
 
             # 创建派车状态历史表
             self.cursor.execute('''
@@ -233,13 +273,13 @@ class DatabaseManager:
 
             # 插入示例车辆信息
             sample_vehicles = [
-                ('T2024001', 'MN2024001', 'MS2024001', 'DP2024001', '京A12345', '1'),
-                ('T2024002', 'MN2024002', 'MS2024002', 'DP2024002', '沪B67890', '2')
+                ('T2024001', 'MN2024001', 'DP2024001', '京A12345', '1'),
+                ('T2024002', 'MN2024002', 'DP2024002', '沪B67890', '2')
             ]
 
             self.cursor.executemany('''
-            INSERT INTO vehicles (task_id, manifest_number, manifest_serial, dispatch_number, license_plate, carriage_number)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO vehicles (task_id, manifest_number, dispatch_number, license_plate, carriage_number)
+            VALUES (?, ?, ?, ?, ?)
             ''', sample_vehicles)
 
             self.conn.commit()
@@ -312,11 +352,16 @@ class DatabaseManager:
                 assigned_supplier_id
             ))
 
+            # 获取发起者用户名
+            self.cursor.execute("SELECT full_name FROM User WHERE id = ?", (task_data.get('initiator_user_id', 1),))
+            user_row = self.cursor.fetchone()
+            operator_name = user_row[0] if user_row else '系统'
+            
             # 记录状态历史
             self.cursor.execute('''
             INSERT INTO dispatch_status_history (task_id, status_change, operator, note)
             VALUES (?, ?, ?, ?)
-            ''', (task_id, initial_status, task_data.get('operator', '系统'), f'创建{dispatch_track}派车任务'))
+            ''', (task_id, initial_status, operator_name, f'创建{dispatch_track}派车任务'))
 
             self.conn.commit()
             return {'success': True, 'task_id': task_id}

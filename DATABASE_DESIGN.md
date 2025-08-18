@@ -49,10 +49,9 @@
 | id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | task_id | TEXT | 关联任务ID | FOREIGN KEY REFERENCES manual_dispatch_tasks(task_id) |
 | manifest_number | TEXT | 路单流水号 | NOT NULL |
-| manifest_serial | TEXT | 路单流水号 | NOT NULL |
 | dispatch_number | TEXT | 派车单号 | NOT NULL |
-| license_plate | TEXT | 车牌号 | 可选 |
-| carriage_number | TEXT | 车厢号 | NOT NULL |
+| license_plate | TEXT | 车牌号 | 必选 |
+| carriage_number | TEXT | 车厢号 | 可选 |
 | created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
 
 ### 3. dispatch_status_history - 派车状态历史表
