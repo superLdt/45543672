@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast测试</title>
+    <link rel="stylesheet" href="feishu-styles.css">
+    <script src="ajax-utils.js"></script>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>Toast通知测试</h1>
+        <button onclick="showToast('这是一条成功消息', 'success')">显示成功消息</button>
+        <button onclick="showToast('这是一条错误消息', 'error')">显示错误消息</button>
+        <button onclick="showToast('这是一条警告消息', 'warning')">显示警告消息</button>
+        <button onclick="showToast('这是一条普通消息', 'info')">显示普通消息</button>
+    </div>
+</body>
+</html>

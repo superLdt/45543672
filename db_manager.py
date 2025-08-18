@@ -191,6 +191,7 @@ class DatabaseManager:
                     dispatch_number TEXT,
                     license_plate TEXT NOT NULL,
                     carriage_number TEXT,
+                    notes TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
                 )

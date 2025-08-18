@@ -557,7 +557,7 @@
         justify-content: center;
     }
 }
-}
+
 
 @media (max-width: 992px) {
     .feishu-col-md-6 { flex: 0 0 50%; }
@@ -887,6 +887,53 @@
     font-size: 14px;
     color: var(--feishu-text-primary);
     font-weight: 500;
+}
+
+/* ========== 派车表单样式 ========== */
+.dispatch-form {
+    padding: 20px;
+}
+
+.dispatch-form .form-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--feishu-spacing-md);
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.dispatch-form .form-label {
+    flex: 0 0 120px; /* 固定标签宽度 */
+    margin-bottom: 0; /* 移除底部间距 */
+    text-align: right; /* 标签右对齐 */
+}
+
+.dispatch-form .feishu-form-control {
+    flex: 1; /* 控件占据剩余空间 */
+    max-width: 400px; /* 限制最大宽度 */
+}
+
+.dispatch-form .form-hint {
+    flex: 0 0 100%; /* 提示信息独占一行 */
+    margin-top: var(--feishu-spacing-xs);
+    margin-left: 136px; /* 与标签对齐 */
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .dispatch-form .form-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .dispatch-form .form-label {
+        text-align: left;
+        margin-bottom: var(--feishu-spacing-xs);
+    }
+    
+    .dispatch-form .form-hint {
+        margin-left: 0;
+    }
 }
 
 /* ========== 审批确认样式 ========== */

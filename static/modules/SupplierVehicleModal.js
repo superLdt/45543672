@@ -54,9 +54,14 @@ export class SupplierVehicleModal {
     /**
      * 显示模态框
      * @param {Object} task - 任务数据
+     * @param {Object} context - 上下文对象（可选）
+     * @param {Object} options - 配置选项
+     * @param {string} options.returnUrl - 提交成功后的返回URL
      */
-    show(task) {
+    show(task, context = null, options = {}) {
         this.currentTask = task;
+        this.options = options; // 存储配置选项
+        this.context = context; // 存储上下文
         this.renderModal();
         this.bindEvents();
         this.showModal();
@@ -68,6 +73,9 @@ export class SupplierVehicleModal {
     renderModal() {
         if (!this.currentTask) return;
         
+        // 添加必要的CSS样式
+        this.injectStyles();
+        
         // 创建模态框容器
         this.modalElement = document.createElement('div');
         this.modalElement.className = 'feishu-modal-overlay';
@@ -77,6 +85,38 @@ export class SupplierVehicleModal {
         this.fillTaskData();
         
         document.body.appendChild(this.modalElement);
+    }
+    
+    /**
+     * 注入必要的CSS样式
+     */
+    injectStyles() {
+        if (document.getElementById('supplierModalStyles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'supplierModalStyles';
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translate(-50%, -100%); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+            
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+            
+            .field-error {
+                animation: shake 0.3s ease-in-out;
+            }
+            
+            .form-input.error {
+                border-color: #ff4d4f !important;
+                box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+            }
+        `;
+        document.head.appendChild(style);
     }
     
     /**
@@ -292,7 +332,9 @@ export class SupplierVehicleModal {
         this.modalElement.querySelector('[data-field="required_date"]').textContent = this.formatDateTime(task.required_date);
         
         // 填充吨位和容积信息
-        this.modalElement.querySelector('[data-field="tonnage"]').textContent = task.tonnage ? `${task.tonnage}吨` : '未指定';
+        const weight = task.weight;
+        const weightText = (weight !== null && weight !== undefined && weight !== '' && weight !== 0) ? `${weight}吨` : '未指定';
+        this.modalElement.querySelector('[data-field="weight"]').textContent = weightText;
         this.modalElement.querySelector('[data-field="volume"]').textContent = task.volume ? `${task.volume}m³` : '未指定';
     }
     
@@ -391,6 +433,16 @@ export class SupplierVehicleModal {
             if (!errorEl) {
                 errorEl = document.createElement('div');
                 errorEl.className = 'field-error';
+                errorEl.style.cssText = `
+                    color: #ff4d4f;
+                    font-size: 12px;
+                    margin-top: 4px;
+                    background: #fff2f0;
+                    border: 1px solid #ffccc7;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    animation: shake 0.3s ease-in-out;
+                `;
                 formGroup.appendChild(errorEl);
             }
             errorEl.textContent = message;
@@ -483,12 +535,33 @@ export class SupplierVehicleModal {
         
         const taskId = this.currentTask.task_id || this.currentTask.id;
         
+        // 检查任务状态，如果已经响应则提示用户
+        if (this.currentTask.status === '供应商已响应') {
+            this.showError('该任务已经确认响应，请勿重复提交');
+            return;
+        }
+        
+        // 额外检查：向服务器查询任务的最新状态
+        try {
+            const statusResponse = await fetch(`/api/dispatch/tasks/${taskId}`);
+            if (statusResponse.ok) {
+                const statusResult = await statusResponse.json();
+                if (statusResult.data && statusResult.data.status === '供应商已响应') {
+                    this.showError('该任务已经确认响应，请勿重复提交');
+                    return;
+                }
+            }
+        } catch (error) {
+            // 如果无法获取最新状态，继续执行原逻辑
+            this.debug.warn('无法获取任务最新状态:', error);
+        }
+        
         try {
             // 显示加载状态
             const submitBtn = this.modalElement.querySelector('[data-action="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
                 submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
             }
             
             const response = await fetch(`/api/dispatch/tasks/${taskId}/confirm-with-vehicle`, {
@@ -507,15 +580,39 @@ export class SupplierVehicleModal {
             const result = await response.json();
             
             if (result.success) {
-                this.showSuccess('车辆信息提交成功，任务已确认响应');
+                // 成功提交 - 显示成功消息并自动跳转
+                if (window.feishuUtils && window.feishuUtils.showToast) {
+                    window.feishuUtils.showToast('车辆信息提交成功，正在跳转...', 'success', {
+                        duration: 1500,
+                        onClose: () => {
+                            this.handleSuccessRedirect();
+                        }
+                    });
+                } else {
+                    this.showSuccess('提交成功，正在跳转...');
+                    setTimeout(() => this.handleSuccessRedirect(), 1000);
+                }
+                
+                // 关闭模态框
                 this.close();
                 
-                // 触发全局事件，通知任务列表更新
-                window.dispatchEvent(new CustomEvent('task-confirmed', { 
-                    detail: { taskId } 
-                }));
             } else {
-                this.showError(result.message || '提交失败，请重试');
+                // 显示具体的错误信息
+                const errorMsg = result.message || result.error?.message || '提交失败，请重试';
+                this.showError(errorMsg);
+                
+                // 如果是唯一约束冲突，高亮对应字段
+                if (result.error?.code === 4003) {
+                    const manifestInput = form.querySelector('input[name="manifest_number"]');
+                    if (manifestInput) {
+                        this.showFieldError(manifestInput, '路单流水号已存在');
+                    }
+                } else if (result.error?.code === 4004) {
+                    const dispatchInput = form.querySelector('input[name="dispatch_number"]');
+                    if (dispatchInput) {
+                        this.showFieldError(dispatchInput, '派车单号已存在');
+                    }
+                }
             }
             
         } catch (error) {
@@ -525,10 +622,19 @@ export class SupplierVehicleModal {
             // 恢复按钮状态
             const submitBtn = this.modalElement?.querySelector('[data-action="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> 确认响应';
                 submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> 确认响应';
             }
         }
+    }
+    
+    /**
+     * 处理成功后的跳转 - 强制跳转到任务管理页面
+     */
+    handleSuccessRedirect() {
+        // 无论任何情况，强制跳转到任务管理页面
+        console.log('供应商确认成功，强制跳转到: /scheduling/task-management');
+        window.location.href = '/scheduling/task-management';
     }
     
     /**
@@ -567,18 +673,54 @@ export class SupplierVehicleModal {
      * 显示成功消息
      */
     showSuccess(message) {
-        // 这里可以集成通知系统
-        console.log('Success:', message);
-        // 实际项目中应该使用统一的通知组件
+        // 使用项目中已有的Toast通知组件
+        if (typeof showToast === 'function') {
+            showToast(message, 'success');
+        } else {
+            console.log('Success:', message);
+        }
     }
     
     /**
      * 显示错误消息
      */
     showError(message) {
-        // 这里可以集成错误提示系统
-        console.error('Error:', message);
-        // 实际项目中应该使用统一的错误提示组件
+        // 使用统一的错误提示方式，增强在暗色背景下的可见性
+        if (window.feishuUtils && window.feishuUtils.showToast) {
+            window.feishuUtils.showToast(message, 'error', {
+                backgroundColor: '#ff4d4f',
+                textColor: '#ffffff',
+                duration: 4000,
+                position: 'top-center'
+            });
+        } else {
+            // 创建自定义错误提示
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #ff4d4f;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 9999;
+                font-size: 14px;
+                max-width: 400px;
+                text-align: center;
+                animation: slideDown 0.3s ease-out;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 3000);
+        }
     }
 }
 

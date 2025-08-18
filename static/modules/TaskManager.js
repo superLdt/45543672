@@ -263,9 +263,12 @@ export class TaskManager {
         const task = this.state.tasks.find(t => (t.task_id || t.id) === taskId);
         if (!task) return;
 
+        // 构建正确的返回URL - 使用相对路径
+        const returnUrl = encodeURIComponent('/scheduling/task-management');
+
         // 使用独立的供应商车辆信息确认模块
         import('./SupplierVehicleModal.js').then(({ SupplierVehicleModal }) => {
-            SupplierVehicleModal.show(task, this);
+            SupplierVehicleModal.show(task, this, { returnUrl });
         }).catch(error => {
             console.error('Failed to load SupplierVehicleModal:', error);
             // 降级处理：使用旧的实现

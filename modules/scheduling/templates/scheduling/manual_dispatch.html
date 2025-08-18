@@ -78,11 +78,11 @@
         font-size: 18px;
     }
 
-    .form-group {
+    .feishu-form-group {
         margin-bottom: 20px;
     }
 
-    .form-label {
+    .feishu-form-label {
         display: block;
         margin-bottom: 8px;
         font-weight: 600;
@@ -90,7 +90,7 @@
         font-size: 14px;
     }
 
-    .form-control {
+    .feishu-form-control {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid var(--feishu-border);
@@ -100,13 +100,13 @@
         background: var(--feishu-white);
     }
 
-    .form-control:focus {
+    .feishu-form-control:focus {
         outline: none;
         border-color: var(--feishu-primary);
         box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
     }
 
-    .form-control::placeholder {
+    .feishu-form-control::placeholder {
         color: var(--feishu-text-tertiary);
     }
 
@@ -255,43 +255,43 @@
                 <div class="dispatch-form feishu-card">
                     <h4>创建派车任务</h4>
             <form id="dispatchForm">
-                <div class="form-group">
-                    <label class="form-label">需求类型 *</label>
-                    <select class="form-control" name="requirement_type" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">需求类型 *</label>
+                    <select class="feishu-form-control" name="requirement_type" required>
                         <option value="">请选择需求类型</option>
                         <option value="加班">加班</option>
                         <option value="正班">正班</option>
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">始发局 *</label>
-                    <input type="text" class="form-control" name="start_location" placeholder="请输入始发局" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">始发局 *</label>
+                    <input type="text" class="feishu-form-control" name="start_location" placeholder="请输入始发局" required>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">邮路名称 *</label>
-                    <input type="text" class="form-control" name="end_location" placeholder="请输入邮路名称" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">邮路名称 *</label>
+                    <input type="text" class="feishu-form-control" name="end_location" placeholder="请输入邮路名称" required>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">委办承运公司 *</label>
-                    <input type="text" class="form-control" name="carrier_company" id="carrierCompanySelect" required list="companyList" placeholder="请选择或输入委办承运公司">
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">委办承运公司 *</label>
+                    <input type="text" class="feishu-form-control" name="carrier_company" id="carrierCompanySelect" required list="companyList" placeholder="请选择或输入委办承运公司">
                     <datalist id="companyList"></datalist>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">运输类型 *</label>
-                    <select class="form-control" name="transport_type" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">运输类型 *</label>
+                    <select class="feishu-form-control" name="transport_type" required>
                         <option value="">请选择运输类型</option>
                         <option value="单程">单程</option>
                         <option value="往返">往返</option>
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">重量吨 *</label>
-                    <select class="form-control" name="weight" id="weightSelect" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">重量吨 *</label>
+                    <select class="feishu-form-control" name="weight" id="weightSelect" required>
                         <option value="">请选择重量吨</option>
                         <option value="5">5吨</option>
                         <option value="8">8吨</option>
@@ -303,20 +303,20 @@
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">容积 (立方米) *</label>
-                    <input type="number" class="form-control" name="volume" id="volumeInput" placeholder="请选择重量后输入容积" min="1" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">容积 (立方米) *</label>
+                    <input type="number" class="feishu-form-control" name="volume" id="volumeInput" placeholder="请选择重量后输入容积" min="1" required>
                     <small id="volumeHint" class="form-text text-muted">请先选择重量，容积必须大于等于对应最小值</small>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">要求用车时间 *</label>
-                    <input type="datetime-local" class="form-control" name="required_time" required>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">要求用车时间 *</label>
+                    <input type="datetime-local" class="feishu-form-control" name="required_time" required>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">特殊要求（可选）</label>
-                    <textarea class="form-control" name="special_requirements" rows="3" placeholder="请输入特殊要求（选填）"></textarea>
+                <div class="feishu-form-group">
+                    <label class="feishu-form-label">特殊要求（可选）</label>
+                    <textarea class="feishu-form-control" name="special_requirements" rows="3" placeholder="请输入特殊要求（选填）"></textarea>
                 </div>
                 
                 <button type="submit" class="btn-primary">
@@ -393,6 +393,240 @@ document.getElementById('volumeInput').addEventListener('input', function() {
     }
 });
 
+// 飞书风格消息通知
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `feishu-toast feishu-toast-${type}`;
+    toast.innerHTML = `
+        <div class="feishu-toast-content">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // 添加样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .feishu-toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            max-width: 400px;
+            min-width: 300px;
+        }
+        .feishu-toast-success {
+            background: #00d6b9;
+            color: white;
+            border-left: 4px solid #00bfa5;
+        }
+        .feishu-toast-error {
+            background: #f54a45;
+            color: white;
+            border-left: 4px solid #e53935;
+        }
+        .feishu-toast-info {
+            background: #3370ff;
+            color: white;
+            border-left: 4px solid #2968ff;
+        }
+        .feishu-toast-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .feishu-toast.show {
+            transform: translateX(0);
+        }
+    `;
+    
+    if (!document.querySelector('#feishu-toast-style')) {
+        style.id = 'feishu-toast-style';
+        document.head.appendChild(style);
+    }
+    
+    // 显示动画
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // 3秒后移除
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// 飞书风格确认对话框
+function showConfirmDialog(title, message, onConfirm) {
+    const modal = document.createElement('div');
+    modal.className = 'feishu-modal';
+    modal.innerHTML = `
+        <div class="feishu-modal-overlay"></div>
+        <div class="feishu-modal-content">
+            <div class="feishu-modal-header">
+                <h3>${title}</h3>
+                <button class="feishu-modal-close">&times;</button>
+            </div>
+            <div class="feishu-modal-body">
+                <p>${message}</p>
+            </div>
+            <div class="feishu-modal-footer">
+                <button class="feishu-btn feishu-btn-secondary" id="cancelBtn">取消</button>
+                <button class="feishu-btn feishu-btn-primary" id="confirmBtn">确认</button>
+            </div>
+        </div>
+    `;
+    
+    // 添加样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .feishu-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feishu-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+        .feishu-modal-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            width: 90%;
+            max-width: 480px;
+            position: relative;
+            z-index: 10000;
+            animation: feishu-modal-in 0.2s ease;
+        }
+        .feishu-modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #e4e6eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feishu-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2329;
+        }
+        .feishu-modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #8f959e;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .feishu-modal-close:hover {
+            background: #f2f3f5;
+            color: #646a73;
+        }
+        .feishu-modal-body {
+            padding: 16px 24px;
+            color: #646a73;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .feishu-modal-footer {
+            padding: 16px 24px 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .feishu-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .feishu-btn-primary {
+            background: #3370ff;
+            color: white;
+            border-color: #3370ff;
+        }
+        .feishu-btn-primary:hover {
+            background: #2968ff;
+            border-color: #2968ff;
+        }
+        .feishu-btn-secondary {
+            background: white;
+            color: #1f2329;
+            border-color: #e4e6eb;
+        }
+        .feishu-btn-secondary:hover {
+            background: #f7f8fa;
+            border-color: #d0d3da;
+        }
+        @keyframes feishu-modal-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    `;
+    
+    if (!document.querySelector('#feishu-modal-style')) {
+        style.id = 'feishu-modal-style';
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(modal);
+    
+    // 事件处理
+    const closeModal = () => {
+        modal.style.animation = 'feishu-modal-out 0.2s ease';
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 200);
+    };
+    
+    modal.querySelector('.feishu-modal-close').onclick = closeModal;
+    modal.querySelector('#cancelBtn').onclick = closeModal;
+    modal.querySelector('#confirmBtn').onclick = () => {
+        closeModal();
+        onConfirm();
+    };
+    
+    // 点击遮罩关闭
+    modal.querySelector('.feishu-modal-overlay').onclick = closeModal;
+}
+
 // 表单提交处理
 document.getElementById('dispatchForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -409,11 +643,11 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
         const maxVolume = weightVolumeMap[weight].next;
         
         if (volume < minVolume) {
-            alert(`容积必须大于等于 ${minVolume} 立方米`);
+            showToast(`容积必须大于等于 ${minVolume} 立方米`, 'error');
             return;
         }
         if (maxVolume && volume >= maxVolume) {
-            alert(`容积必须小于 ${maxVolume} 立方米`);
+            showToast(`容积必须小于 ${maxVolume} 立方米`, 'error');
             return;
         }
     }
@@ -424,7 +658,7 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
     
     for (const field of requiredFields) {
         if (!data[field]) {
-            alert(`请填写 ${field} 字段！`);
+            showToast(`请填写 ${field} 字段！`, 'error');
             return;
         }
     }
@@ -480,41 +714,41 @@ document.getElementById('dispatchForm').addEventListener('submit', function(e) {
         // 使用AJAX工具创建任务
         $ajax.post('/api/dispatch/tasks', apiData)
             .then(result => {
-                if (result.success) {
-                    showToast('派车任务创建成功！', 'success');
-                    this.reset();
-                    // 重置容积输入状态
-                    document.getElementById('volumeInput').disabled = true;
-                    document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
-                    
-                } else {
-                    // 显示具体的错误信息
-                    const errorMessage = result.error?.message || '未知错误';
-                    showToast('创建失败: ' + errorMessage, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (error.message && error.message.includes('401')) {
-                    showToast('请先登录系统', 'error');
-                    // 可以重定向到登录页面
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else {
-                    // 尝试解析错误响应中的具体信息
-                    if (error.response) {
-                        error.response.json().then(errorData => {
-                            const errorMessage = errorData.error?.message || '网络错误，请稍后重试';
-                            showToast('创建失败: ' + errorMessage, 'error');
-                        }).catch(() => {
-                            showToast('网络错误，请稍后重试', 'error');
-                        });
-                    } else {
+            if (result.success) {
+                showToast('派车任务创建成功！', 'success');
+                this.reset();
+                // 重置容积输入状态
+                document.getElementById('volumeInput').disabled = true;
+                document.getElementById('volumeHint').textContent = '请先选择重量，容积必须大于等于对应最小值';
+                
+            } else {
+                // 显示具体的错误信息
+                const errorMessage = result.error?.message || '未知错误';
+                showToast('创建失败: ' + errorMessage, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.message && error.message.includes('401')) {
+                showToast('请先登录系统', 'error');
+                // 可以重定向到登录页面
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                // 尝试解析错误响应中的具体信息
+                if (error.response) {
+                    error.response.json().then(errorData => {
+                        const errorMessage = errorData.error?.message || '网络错误，请稍后重试';
+                        showToast('创建失败: ' + errorMessage, 'error');
+                    }).catch(() => {
                         showToast('网络错误，请稍后重试', 'error');
-                    }
+                    });
+                } else {
+                    showToast('网络错误，请稍后重试', 'error');
                 }
-            })
+            }
+        })
             .finally(() => {
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 创建派车任务';
                 submitBtn.disabled = false;

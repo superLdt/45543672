@@ -384,13 +384,7 @@ except Exception as e:
     traceback.print_exc(file=sys.stderr)
 
 # 新增 AJAX 演示路由
-@app.route('/ajax-demo')
-def ajax_demo():
-    return render_template('ajax-demo.html')
 
-@app.route('/test/supplier_modal')
-def test_supplier_modal():
-    return render_template('test_supplier_modal.html')
 
 
 

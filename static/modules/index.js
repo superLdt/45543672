@@ -297,44 +297,148 @@ class TaskManagementApp {
     }
 
     /**
-     * 显示审批确认对话框
+     * 显示审批确认对话框 - 飞书风格
      */
     async showApprovalDialog(title, message) {
         return new Promise((resolve) => {
-            const confirmed = confirm(`${title}\n\n${message}`);
-            resolve(confirmed);
+            // 创建模态对话框
+            const modal = document.createElement('div');
+            modal.className = 'feishu-modal';
+            modal.innerHTML = `
+                <div class="feishu-modal-content" style="max-width: 400px;">
+                    <div class="feishu-modal-header">
+                        <h5 class="feishu-modal-title">${title}</h5>
+                        <button type="button" class="feishu-modal-close" onclick="this.closest('.feishu-modal').remove()">&times;</button>
+                    </div>
+                    <div class="feishu-modal-body">
+                        <p style="margin: 0; color: var(--feishu-text-primary); font-size: 14px; line-height: 1.5;">${message}</p>
+                    </div>
+                    <div class="feishu-modal-footer">
+                        <button type="button" class="feishu-btn feishu-btn-secondary" onclick="this.closest('.feishu-modal').remove(); window.__approvalResolve(false)">
+                            取消
+                        </button>
+                        <button type="button" class="feishu-btn feishu-btn-primary" onclick="this.closest('.feishu-modal').remove(); window.__approvalResolve(true)">
+                            确认
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 设置全局resolve函数
+            window.__approvalResolve = resolve;
+            
+            // 点击背景关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
         });
     }
 
     /**
-     * 显示拒绝对话框
+     * 显示拒绝对话框 - 飞书风格
      */
     async showRejectDialog() {
         return new Promise((resolve) => {
-            const note = prompt('请输入拒绝原因：');
-            if (note && note.trim()) {
-                resolve(note.trim());
-            } else if (note === '') {
-                alert('拒绝原因不能为空');
-                resolve(null);
-            } else {
-                resolve(null);
-            }
+            const modal = document.createElement('div');
+            modal.className = 'feishu-modal';
+            modal.innerHTML = `
+                <div class="feishu-modal-content" style="max-width: 400px;">
+                    <div class="feishu-modal-header">
+                        <h5 class="feishu-modal-title">拒绝审批</h5>
+                        <button type="button" class="feishu-modal-close" onclick="this.closest('.feishu-modal').remove()">&times;</button>
+                    </div>
+                    <div class="feishu-modal-body">
+                        <div class="form-group">
+                            <label class="form-label">拒绝原因 <span class="form-required">*</span></label>
+                            <textarea id="rejectReason" class="feishu-input reason-textarea" placeholder="请输入拒绝原因..." rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="feishu-modal-footer">
+                        <button type="button" class="feishu-btn feishu-btn-secondary" onclick="this.closest('.feishu-modal').remove(); window.__rejectResolve(null)">
+                            取消
+                        </button>
+                        <button type="button" class="feishu-btn feishu-btn-primary" onclick="this.closest('.feishu-modal').remove(); window.__rejectResolve(document.getElementById('rejectReason').value)">
+                            确认拒绝
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 设置全局resolve函数
+            window.__rejectResolve = resolve;
+            
+            // 聚焦输入框
+            setTimeout(() => {
+                const textarea = modal.querySelector('#rejectReason');
+                if (textarea) textarea.focus();
+            }, 100);
+            
+            // 点击背景关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(null);
+                }
+            });
+            
+            // 按ESC键关闭
+            const escHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    resolve(null);
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
         });
     }
 
     /**
-     * 显示成功消息
+     * 显示成功消息 - 飞书风格Toast
      */
     showSuccessMessage(message) {
-        alert(message); // 可以替换为更好的通知组件
+        this.showToast(message, 'success');
     }
 
     /**
-     * 显示错误消息
+     * 显示错误消息 - 飞书风格Toast
      */
     showErrorMessage(message) {
-        alert(message); // 可以替换为更好的通知组件
+        this.showToast(message, 'error');
+    }
+
+    /**
+     * 显示飞书风格Toast通知
+     */
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const typeClass = `feishu-toast-${type}`;
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+        
+        toast.className = `feishu-toast ${typeClass}`;
+        toast.innerHTML = `
+            <span>${icon}</span>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
     }
     
     /**
@@ -396,7 +500,13 @@ export async function initTaskManagement(options = {}) {
         finalConfirmation: (taskId) => app.finalConfirmation(taskId),
         showTaskDetail: (taskId) => app.showTaskDetail(taskId),
         showSupplierConfirmDialog: (taskId) => app.taskManager.showSupplierConfirmDialog(taskId),
-        showApprovalDialog: (taskId, action) => app.taskManager.showApprovalDialog(taskId, action),
+        showApprovalDialog: (taskId, action) => {
+            if (action === 'approve') {
+                return app.confirmApproval(taskId);
+            } else if (action === 'reject') {
+                return app.rejectApproval(taskId);
+            }
+        },
         submitSupplierConfirm: (taskId) => app.taskManager.submitSupplierConfirm(taskId),
         submitApproval: (taskId, action) => app.taskManager.submitApproval(taskId, action)
     };

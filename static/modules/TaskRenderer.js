@@ -445,7 +445,7 @@ export class TaskRenderer {
         else if (userRole === '供应商') {
             if (task.status === '待供应商响应') {
                 buttons.push(`
-                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="window.SupplierVehicleModal ? window.SupplierVehicleModal.show({task_id:'${task.task_id || task.id}',carrier_company:'${task.carrier_company || ''}',start_bureau:'${task.start_bureau || ''}',route_name:'${task.route_name || ''}',required_date:'${task.required_date || ''}',tonnage:'${task.tonnage || ''}',volume:'${task.volume || ''}'}) : taskManagement.showSupplierConfirmDialog('${task.task_id || task.id}')">
+                    <button class="feishu-btn feishu-btn-primary" style="padding:8px 12px;font-size:13px;" onclick="window.SupplierVehicleModal ? window.SupplierVehicleModal.show({task_id:'${task.task_id || task.id}',carrier_company:'${task.carrier_company || ''}',start_bureau:'${task.start_bureau || ''}',route_name:'${task.route_name || ''}',required_date:'${task.required_date || ''}',weight:'${task.weight || ''}',volume:'${task.volume || ''}'}, null, { returnUrl: encodeURIComponent('/scheduling/task-management') }) : taskManagement.showSupplierConfirmDialog('${task.task_id || task.id}')">
                         <i class="fas fa-check"></i> 确认响应
                     </button>
                 `);
@@ -537,7 +537,14 @@ export class TaskRenderer {
             
             // 根据当前状态索引设置步骤状态
             if (task.dispatch_track === '轨道A') {
-                if (index < currentStatusIndex) {
+                // 对于轨道A，当状态为"供应商已响应"时，前三个步骤应显示为已完成
+                if (task.status === '供应商已响应') {
+                    if (index <= 2) {
+                        status = 'completed';
+                    } else if (index === 3) {
+                        status = 'in_progress';
+                    }
+                } else if (index < currentStatusIndex) {
                     status = 'completed';
                 } else if (index === currentStatusIndex) {
                     status = 'in_progress';
@@ -550,6 +557,14 @@ export class TaskRenderer {
                 // 对于轨道B，当状态为"待供应商响应"时，"供应商响应"步骤应显示为进行中
                 else if (task.status === '待供应商响应' && index === 1) {
                     status = 'in_progress';
+                }
+                // 对于轨道B，当状态为"供应商已响应"时，前两个步骤都应显示为已完成
+                else if (task.status === '供应商已响应') {
+                    if (index <= 1) {
+                        status = 'completed';
+                    } else if (index === 2) {
+                        status = 'in_progress';
+                    }
                 } else if (index < currentStatusIndex) {
                     status = 'completed';
                 } else if (index === currentStatusIndex) {
