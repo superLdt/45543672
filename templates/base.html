@@ -277,11 +277,14 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- 供应商车辆确认模态框模板 -->
+    {% include 'partials/supplier_vehicle_modal.html' %}
+
     <!-- 供应商车辆确认模态框模块 -->
     <script type="module">
-        import { SupplierVehicleModal } from '{{ url_for('static', filename='modules/SupplierVehicleModal.js') }}';
+        import { SupplierVehicleModal } from '../static/modules/SupplierVehicleModal.js';
         window.SupplierVehicleModal = SupplierVehicleModal;
-    </script>
+        </script>
 </body>
 {% block scripts %}
 

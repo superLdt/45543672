@@ -1,12 +1,13 @@
 <!-- 供应商车辆信息确认模板 -->
-<div class="feishu-modal" id="supplierVehicleModal">
+<script type="text/template" id="supplierVehicleModalTemplate" style="display:none">
+<div class="feishu-modal supplier-vehicle-modal">
     <div class="feishu-modal-content supplier-modal-content">
         <div class="feishu-modal-header">
             <h3 class="feishu-modal-title">
                 <i class="fas fa-truck" style="color:var(--feishu-success);margin-right:8px;"></i>
                 车辆信息确认
             </h3>
-            <button class="feishu-modal-close" onclick="this.closest('.feishu-modal').remove()">&times;</button>
+            <button class="feishu-modal-close" data-action="close">&times;</button>
         </div>
         
         <div class="feishu-modal-body">
@@ -151,17 +152,18 @@
         </div>
         
         <div class="feishu-modal-footer">
-            <button type="button" class="feishu-btn feishu-btn-secondary" onclick="SupplierVehicleModal.close()">
+            <button type="button" class="feishu-btn feishu-btn-secondary" data-action="close">
                 <i class="fas fa-times"></i>
                 取消
             </button>
-            <button type="button" class="feishu-btn feishu-btn-primary" onclick="SupplierVehicleModal.submit()">
+            <button type="button" class="feishu-btn feishu-btn-primary" data-action="submit">
                 <i class="fas fa-check"></i>
                 确认响应
             </button>
         </div>
     </div>
 </div>
+</script>
 
 <style>
 /* 供应商车辆信息确认模态框样式 */

@@ -81,8 +81,28 @@ export class SupplierVehicleModal {
     
     /**
      * 获取模态框模板
+     * 从模板文件加载HTML内容
      */
     getModalTemplate() {
+        // 创建模板容器，使用模板文件的内容
+        const templateContainer = document.createElement('div');
+        
+        // 查找已加载的模板内容
+        const existingTemplate = document.getElementById('supplierVehicleModalTemplate');
+        if (existingTemplate) {
+            templateContainer.innerHTML = existingTemplate.innerHTML;
+        } else {
+            // 如果没有预加载模板，使用基本结构
+            templateContainer.innerHTML = this.getBasicTemplate();
+        }
+        
+        return templateContainer.innerHTML;
+    }
+    
+    /**
+     * 获取基础模板（备用方案）
+     */
+    getBasicTemplate() {
         return `
             <div class="feishu-modal supplier-vehicle-modal">
                 <div class="feishu-modal-content supplier-modal-content">
