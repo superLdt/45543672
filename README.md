@@ -519,11 +519,14 @@ d:\智能运力系统\45543672_backup\
 ├── 📄 README.md                     # 项目说明文档（当前文件）
 ├── 📄 DATABASE_DESIGN.md            # 数据库设计文档（2025-01-15更新）
 ├── 📄 DATABASE_MIGRATION_GUIDE.md   # 数据库迁移指南
+├── 📄 AJAX使用指南.md               # AJAX开发指南
 ├── 📄 app.py                        # 主应用入口文件
 ├── 📄 config.py                     # 配置文件
+├── 📄 constants.py                  # 常量定义
 ├── 📄 db_manager.py                 # 数据库管理器
 ├── 📄 requirements.txt              # Python依赖列表
 ├── 📄 transport.db                  # SQLite数据库文件
+├── 📄 测试文件.py                   # 测试脚本
 
 ├── 📁 api/                         # API接口模块
 │   ├── __init__.py
@@ -531,25 +534,87 @@ d:\智能运力系统\45543672_backup\
 │   ├── dispatch.py                 # 派车API路由（2025-01-15更新）
 │   ├── utils.py                    # API工具函数
 │   ├── audit.py                    # 审计日志API
-│   └── validators.py               # 数据验证工具
+│   ├── company.py                  # 公司相关API
+│   ├── validators.py               # 数据验证工具
+│   └── ...
 
 ├── 📁 modules/                     # 功能模块
+│   ├── 📁 basic_data/              # 基础数据模块
+│   │   ├── __init__.py
+│   │   └── 📁 templates/
+│   ├── 📁 cost_analysis/           # 成本分析模块
+│   │   ├── __init__.py
+│   │   └── 📁 templates/
+│   ├── 📁 planning/                # 规划模块
+│   │   ├── __init__.py
+│   │   └── 📁 templates/
+│   ├── 📁 reconciliation/           # 对账模块
+│   │   ├── __init__.py
+│   │   └── 📁 templates/
 │   ├── 📁 scheduling/              # 调度模块
 │   │   ├── __init__.py
-│   │   └── 📁 templates/           # 调度模块模板
+│   │   └── 📁 templates/
 │   │       └── 📁 scheduling/
 │   │           ├── manual_dispatch.html
 │   │           └── vehicle_requirements.html
+│   ├── 📁 system/                  # 系统模块
+│   │   ├── __init__.py
+│   │   └── 📁 templates/
 │   └── 📁 user_management/         # 用户管理模块
-│       └── __init__.py
+│       ├── __init__.py
+│       └── 📁 templates/
 
 ├── 📁 static/                      # 静态资源
+│   ├── 📄 FEISHU_STYLES_GUIDE.md   # 飞书样式指南
 │   ├── 📄 ajax-utils.js            # AJAX工具函数
 │   ├── 📄 dashboard-ajax.js        # 仪表盘AJAX功能
-│   └── 📄 feishu-styles.css        # 飞书样式表
+│   ├── 📄 feishu-styles.css        # 飞书样式表
+│   ├── 📄 script.js                # 全局脚本
+│   ├── 📄 styles.css               # 全局样式
+│   ├── 📁 css/                     # CSS文件
+│   │   └── supplier-modal.css      # 供应商模态框样式
+│   ├── 📁 docs/                    # 文档
+│   ├── 📁 modules/                 # 前端模块
+│   │   ├── Pagination.js          # 分页组件
+│   │   ├── SupplierVehicleModal.js # 供应商车辆模态框
+│   │   ├── TaskManager.js          # 任务管理
+│   │   ├── TaskRenderer.js         # 任务渲染
+│   │   ├── companySelector.js      # 公司选择器
+│   │   ├── index.js                # 模块入口
+│   │   └── manualDispatch.js      # 手动派车
+│   └── 📁 utils/                   # 工具类
+│       ├── Debug.js                # 调试工具
+│       └── ErrorHandler.js         # 错误处理
 
 └── 📁 templates/                   # HTML模板
     ├── 📄 base.html                # 基础模板
     ├── 📄 dashboard.html           # 仪表盘
-    └── 📄 dispatch_form.html       # 派车表单
+    ├── 📄 dispatch_form.html       # 派车表单
+    ├── 📄 error.html               # 错误页面
+    ├── 📄 login.html               # 登录页面
+    ├── 📄 under_development.html   # 开发中页面
+    └── 📁 partials/                # 局部模板
+        ├── full_menu.html          # 完整菜单
+        └── supplier_vehicle_modal.html # 供应商车辆模态框
 ```
+
+## 代码索引
+
+### 主要功能模块
+- **调度模块**：`modules/scheduling/` 和 `api/dispatch.py`
+- **任务管理**：`static/modules/TaskManager.js` 和 `static/modules/TaskRenderer.js`
+- **权限系统**：`api/decorators.py` 和 `api/validators.py`
+
+### 核心工具类
+- **调试工具**：`static/utils/Debug.js`
+- **错误处理**：`static/utils/ErrorHandler.js`
+- **AJAX工具**：`static/ajax-utils.js`
+
+### 数据库相关
+- **数据库管理**：`db_manager.py`
+- **模型定义**：`api/` 目录下各API文件
+
+### 前端组件
+- **分页组件**：`static/modules/Pagination.js`
+- **公司选择器**：`static/modules/companySelector.js`
+- **供应商车辆模态框**：`static/modules/SupplierVehicleModal.js`

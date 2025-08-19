@@ -52,6 +52,9 @@
 | dispatch_number | TEXT | 派车单号 | NOT NULL |
 | license_plate | TEXT | 车牌号 | 必选 |
 | carriage_number | TEXT | 车厢号 | 可选 |
+| actual_volume | REAL | 实际容积方数 | 可选 |
+| volume_photo_url | TEXT | 容积照片URL | 可选 |
+| volume_modified_by | INTEGER | 容积修改人ID | 可选 (外键关联User表id字段) |
 | created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
 
 ### 3. dispatch_status_history - 派车状态历史表
@@ -110,6 +113,22 @@
 |--------|------|------|------|
 | role_id | INTEGER | 角色ID | FOREIGN KEY REFERENCES Role(id) |
 | permission_id | INTEGER | 权限ID | FOREIGN KEY REFERENCES Permission(id) |
+
+### 车辆容积参考表 (vehicle_capacity_reference)
+
+用于存储不同车型的标准容积参考数据，供派车任务创建时使用。
+
+| 字段名 | 类型 | 说明 | 约束 |
+|--------|------|------|------|
+| id | INTEGER | 主键 | PRIMARY KEY AUTOINCREMENT |
+| vehicle_type | TEXT | 车辆类型(仅分：单车、挂车，默认单车) | NOT NULL |
+| standard_volume | REAL | 标准容积(立方米) | NOT NULL |
+| license_plate | TEXT | 车牌号 | NOT NULL UNIQUE |
+| suppliers | TEXT | 供应商列表(JSON格式) | NOT NULL |
+| created_at | TEXT | 创建时间 | NOT NULL |
+| updated_at | TEXT | 更新时间 | NOT NULL |
+| INDEX(vehicle_type) |  | 车辆类型索引 |  |
+| INDEX(license_plate) |  | 车牌号索引 |  |
 
 ## 双轨派车状态流转（更新后清晰命名）
 
@@ -281,7 +300,19 @@ python -c "from db_manager import DatabaseManager; db = DatabaseManager(); db.co
 ### 字段验证
 ```bash
 # 验证双轨派车字段
-python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM pragma_table_info(\"manual_dispatch_tasks\") WHERE name LIKE \"%dispatch_track%\" OR name LIKE \"%initiator_%\" OR name LIKE \"%audit_%\" OR name LIKE \"%current_handler_%\"'); print('双轨派车字段数量:', cursor.fetchone()[0]); conn.close()"
+python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM pragma_table_info(\"manual_dispatch_tasks\") WHERE name LIKE "%dispatch_track%" OR name LIKE "%initiator_%" OR name LIKE "%audit_%" OR name LIKE "%current_handler_%"'); print('双轨派车字段数量:', cursor.fetchone()[0]); conn.close()"
+```
+
+### 车辆容积参考表测试
+```bash
+# 验证vehicle_capacity_reference表是否存在
+python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.cursor(); cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\" AND name=\"vehicle_capacity_reference\"'); result = cursor.fetchone(); print('vehicle_capacity_reference表存在:', result is not None); conn.close()"
+
+# 验证vehicle_capacity_reference表示例数据
+python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM vehicle_capacity_reference'); count = cursor.fetchone()[0]; print('vehicle_capacity_reference表数据数量:', count); conn.close()"
+
+# 验证vehicle_capacity_reference表结构
+python -c "import sqlite3; conn = sqlite3.connect('database.db'); cursor = conn.cursor(); cursor.execute('PRAGMA table_info(vehicle_capacity_reference)'); columns = cursor.fetchall(); print('vehicle_capacity_reference表字段:'); for col in columns: print(f'  - {col[1]} ({col[2]})'); conn.close()"
 ```
 
 ## 文件说明

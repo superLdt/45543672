@@ -146,7 +146,8 @@ class DatabaseManager:
             # 检查vehicles表是否需要更新（移除manifest_serial字段）
             self.cursor.execute("PRAGMA table_info(vehicles)")
             columns = [col[1] for col in self.cursor.fetchall()]
-            
+            # 检查字段
+            existing_data = None
             if 'manifest_serial' in columns:
                 # 需要重建表来移除manifest_serial字段
                 print("检测到vehicles表包含manifest_serial字段，正在重建表...")
@@ -167,18 +168,23 @@ class DatabaseManager:
                     dispatch_number TEXT,
                     license_plate TEXT NOT NULL,
                     carriage_number TEXT,
+                    actual_volume REAL,
+                    volume_photo_url TEXT,
+                    volume_modified_by INTEGER,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id),
+                    FOREIGN KEY (volume_modified_by) REFERENCES User(id)
                 )
                 ''')
                 
                 # 重新插入数据（跳过manifest_serial字段）
                 if existing_data:
                     for row in existing_data:
-                        new_row = [row[0], row[1], row[2], row[4], row[5], row[6]]  # 跳过manifest_serial
+                        # 为新增字段设置默认值：actual_volume默认为NULL，volume_photo_url默认为NULL，volume_modified_by默认为NULL
+                        new_row = [row[0], row[1], row[2], row[4], row[5], row[6], None, None, None, row[7]]  # 跳过manifest_serial
                         self.cursor.execute('''
-                        INSERT INTO vehicles (id, task_id, manifest_number, dispatch_number, license_plate, carriage_number, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO vehicles (id, task_id, manifest_number, dispatch_number, license_plate, carriage_number, actual_volume, volume_photo_url, volume_modified_by, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', new_row)
                     print(f"已迁移{len(existing_data)}条车辆记录到新表结构")
             else:
@@ -192,11 +198,15 @@ class DatabaseManager:
                     license_plate TEXT NOT NULL,
                     carriage_number TEXT,
                     notes TEXT,
+                    actual_volume REAL,
+                    volume_photo_url TEXT,
+                    volume_modified_by INTEGER,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id)
+                    FOREIGN KEY (task_id) REFERENCES manual_dispatch_tasks(task_id),
+                    FOREIGN KEY (volume_modified_by) REFERENCES User(id)
                 )
                 ''')
-
+            
             # 创建派车状态历史表
             self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS dispatch_status_history (
@@ -210,11 +220,26 @@ class DatabaseManager:
             )
             ''')
 
+            # 创建车辆容积参考表
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS vehicle_capacity_reference (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_type TEXT NOT NULL,
+                    standard_volume REAL NOT NULL,
+                    license_plate TEXT UNIQUE NOT NULL,
+                    suppliers TEXT,  -- JSON格式存储多个供应商信息
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
             # 创建索引
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_tasks_date ON manual_dispatch_tasks(required_date)')
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON manual_dispatch_tasks(status)')
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_history_task ON dispatch_status_history(task_id)')
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicles_task ON vehicles(task_id)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_license_plate ON vehicle_capacity_reference(license_plate)')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_type ON vehicle_capacity_reference(vehicle_type)')
 
             self.conn.commit()
             print('人工派车相关表创建成功')
@@ -282,6 +307,26 @@ class DatabaseManager:
             INSERT INTO vehicles (task_id, manifest_number, dispatch_number, license_plate, carriage_number)
             VALUES (?, ?, ?, ?, ?)
             ''', sample_vehicles)
+
+            # 插入示例车辆容积参考数据
+            sample_capacity_data = [
+                ('单车', 35.0, '京A12345', '["供应商A", "供应商B"]', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+                ('挂车', 85.0, '沪B67890', '["供应商C"]', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+                ('单车', 55.0, '粤C11111', '["供应商A", "供应商D"]', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+                ('挂车', 110.0, '浙D22222', '["供应商B", "供应商E"]', '2024-01-01 00:00:00', '2024-01-01 00:00:00')
+            ]
+
+            # 检查vehicle_capacity_reference表是否已有数据
+            self.cursor.execute('SELECT COUNT(*) FROM vehicle_capacity_reference')
+            if self.cursor.fetchone()[0] == 0:
+                self.cursor.executemany('''
+                INSERT INTO vehicle_capacity_reference 
+                (vehicle_type, standard_volume, license_plate, suppliers, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', sample_capacity_data)
+                print('车辆容积参考表示例数据插入成功')
+            else:
+                print('车辆容积参考表中已有数据，跳过插入示例数据')
 
             self.conn.commit()
             print('示例数据插入成功')
@@ -376,7 +421,119 @@ class DatabaseManager:
         except Exception as e:
             self.conn.rollback()
             return {'success': False, 'error': f'创建任务失败: {str(e)}'}
+    
+    def get_vehicle_capacity_reference(self, vehicle_type=None, license_plate=None):
+        """获取车辆容积参考数据
+        
+        Args:
+            vehicle_type (str, optional): 车辆类型（单车、挂车）
+            license_plate (str, optional): 车牌号
+            
+        Returns:
+            list: 车辆容积参考数据列表
+        """
+        if not self.cursor:
+            return []
 
+        try:
+            query = 'SELECT * FROM vehicle_capacity_reference WHERE 1=1'
+            params = []
+            
+            if vehicle_type:
+                query += ' AND vehicle_type = ?'
+                params.append(vehicle_type)
+                
+            if license_plate:
+                query += ' AND license_plate = ?'
+                params.append(license_plate)
+            
+            query += ' ORDER BY vehicle_type'
+            
+            self.cursor.execute(query, params)
+            columns = [description[0] for description in self.cursor.description]
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+        except Exception as e:
+            print(f'获取车辆容积参考数据失败: {str(e)}')
+            return []
+    
+    def upsert_vehicle_capacity_reference(self, vehicle_type, standard_volume, license_plate, suppliers):
+        """更新或插入车辆容积参考数据
+        
+        Args:
+            vehicle_type (str): 车辆类型（仅支持：单车、挂车）
+            standard_volume (float): 标准容积
+            license_plate (str): 车牌号
+            suppliers (list): 供应商列表
+            
+        Returns:
+            dict: 操作结果
+        """
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接'}
+
+        # 验证车辆类型
+        valid_vehicle_types = {'单车', '挂车'}
+        if vehicle_type not in valid_vehicle_types:
+            return {'success': False, 'error': f'车辆类型必须是"单车"或"挂车"，当前值：{vehicle_type}'}
+
+        try:
+            # 检查记录是否存在
+            self.cursor.execute('SELECT id FROM vehicle_capacity_reference WHERE license_plate = ?', (license_plate,))
+            existing_record = self.cursor.fetchone()
+            
+            import json
+            suppliers_json = json.dumps(suppliers, ensure_ascii=False)
+            
+            if existing_record:
+                # 更新现有记录
+                self.cursor.execute('''
+                UPDATE vehicle_capacity_reference 
+                SET vehicle_type = ?, standard_volume = ?, suppliers = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE license_plate = ?
+                ''', (vehicle_type, standard_volume, suppliers_json, license_plate))
+                message = f'车辆容积参考数据已更新: {license_plate}'
+            else:
+                # 插入新记录
+                self.cursor.execute('''
+                INSERT INTO vehicle_capacity_reference 
+                (vehicle_type, standard_volume, license_plate, suppliers, created_at, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ''', (vehicle_type, standard_volume, license_plate, suppliers_json))
+                message = f'车辆容积参考数据已插入: {license_plate}'
+            
+            self.conn.commit()
+            return {'success': True, 'message': message}
+            
+        except Exception as e:
+            self.conn.rollback()
+            return {'success': False, 'error': f'操作失败: {str(e)}'}
+    
+    def delete_vehicle_capacity_reference(self, license_plate):
+        """删除车辆容积参考数据
+        
+        Args:
+            license_plate (str): 车牌号
+            
+        Returns:
+            dict: 操作结果
+        """
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接'}
+
+        try:
+            self.cursor.execute('DELETE FROM vehicle_capacity_reference WHERE license_plate = ?', (license_plate,))
+            
+            if self.cursor.rowcount > 0:
+                self.conn.commit()
+                return {'success': True, 'message': f'车辆容积参考数据已删除: {license_plate}'}
+            else:
+                return {'success': False, 'message': f'未找到车牌号为 {license_plate} 的车辆容积参考数据'}
+                
+        except Exception as e:
+            self.conn.rollback()
+            return {'success': False, 'error': f'删除失败: {str(e)}'}
+            
     def get_dispatch_tasks(self, status=None, date_from=None, date_to=None):
         """获取派车任务列表"""
         if not self.cursor:
@@ -520,8 +677,8 @@ class DatabaseManager:
         try:
             db_manager = DatabaseManager()
             if db_manager.connect():
-                # 创建人工派车相关表
-                db_manager.create_manual_dispatch_tables()
+                # 初始化所有数据库表
+                db_manager.create_tables()
                 print("✅ 数据库初始化完成")
                 db_manager.disconnect()
                 return True

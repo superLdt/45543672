@@ -124,6 +124,55 @@
                                    maxlength="10">
                             <span class="form-hint">如有多个车厢请填写</span>
                         </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-cube"></i>
+                                实际容积
+                            </label>
+                            <input type="number" 
+                                   class="form-input" 
+                                   name="actual_volume" 
+                                   placeholder="请输入实际容积"
+                                   min="0"
+                                   step="0.1">
+                            <span class="form-hint">请输入车辆的实际容积方数</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统字段说明 -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-info-circle"></i>
+                        系统字段说明
+                        <span class="section-subtitle">以下字段由系统处理或限制</span>
+                    </h4>
+                    
+                    <div class="form-group">
+                        <div class="info-alert info-alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="alert-content">
+                                <strong>实际容积方数说明：</strong>
+                                <p>此字段默认等于需求容积，供应商无法修改。车间发车时可修改实际容积。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-alert info-alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="alert-content">
+                                <strong>容积照片说明：</strong>
+                                <p>容积照片由车间上传，用于记录车辆实际容积情况。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-alert info-alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="alert-content">
+                                <strong>修改人说明：</strong>
+                                <p>此字段由系统自动记录，记录最后修改容积信息的用户。</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -302,6 +351,50 @@
     margin-top: 4px;
     font-size: 12px;
     color: #6b7280;
+}
+
+/* 信息提示框样式 */
+.info-alert {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+}
+
+.info-alert-info {
+    background-color: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.info-alert i {
+    font-size: 16px;
+    margin-right: 8px;
+    margin-top: 2px;
+}
+
+.info-alert-info i {
+    color: #0ea5e9;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-content strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #0c4a6e;
+    font-weight: 600;
+}
+
+.alert-content p {
+    margin: 0;
+    color: #0c4a6e;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 /* 响应式设计 */

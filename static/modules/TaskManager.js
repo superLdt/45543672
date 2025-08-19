@@ -56,22 +56,41 @@ export class TaskManager {
     
     /**
      * 加载任务列表
-     * 使用dispatchApiClient进行统一API调用
      */
     async loadTasks(filters = {}) {
         try {
             this.state.isLoading = true;
             this.emit('loading-start');
             
-            const params = {
+            const params = new URLSearchParams({
                 page: this.state.currentPage,
                 limit: this.options.pageSize,
                 ...filters
-            };
+            });
             
-            this.debug.log('Loading tasks with params:', params);
+            this.debug.log('Loading tasks with params:', params.toString());
             
-            const result = await dispatchApiClient.get('/tasks', params);
+            // 添加超时控制和重试机制
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+            
+            const response = await fetch(`${this.options.apiEndpoint}?${params}`, {
+                credentials: 'include',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
             
             if (result.success) {
                 // 适配API返回格式：可能是数组或包含list的对象
@@ -105,13 +124,11 @@ export class TaskManager {
         } catch (error) {
             this.debug.error('Failed to load tasks:', error);
             
-            // 401错误处理由ApiClient统一处理
-            if (error.status === 401) {
-                window.location.href = '/login';
-                return;
+            // 网络错误时的友好提示
+            if (error.name === 'AbortError' || error.message.includes('fetch')) {
+                error.message = '网络连接超时，请检查网络后重试';
             }
             
-            // 网络错误时的友好提示 - ApiClient已处理
             this.errorHandler.handle(error);
             this.emit('error', error);
             
@@ -136,26 +153,32 @@ export class TaskManager {
     
     /**
      * 获取任务详情
-     * 使用dispatchApiClient进行统一API调用
      */
     async getTaskDetail(taskId) {
         try {
             this.debug.log(`Fetching task detail for ID: ${taskId}`);
+            const response = await fetch(`${this.options.apiEndpoint}/${taskId}`, {
+                credentials: 'include'
+            });
             
-            const result = await dispatchApiClient.get(`/tasks/${taskId}`);
+            this.debug.log(`Task detail response status: ${response.status}`);
             
+            // 处理401未认证错误，重定向到登录页面
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
             this.debug.log('Task detail result:', result);
             return result.success ? result.data : null;
             
         } catch (error) {
             this.debug.error('Failed to get task detail:', error);
-            
-            // 401错误处理由ApiClient统一处理
-            if (error.status === 401) {
-                window.location.href = '/login';
-                return null;
-            }
-            
             this.errorHandler.handle(error);
             throw error;
         }
@@ -163,26 +186,32 @@ export class TaskManager {
     
     /**
      * 获取当前用户信息
-     * 使用dispatchApiClient进行统一API调用
      */
     async getCurrentUserInfo() {
         try {
             this.debug.log('Fetching current user info');
+            const response = await fetch('/api/dispatch/user/info', {
+                credentials: 'include'
+            });
             
-            const result = await dispatchApiClient.get('/user/info');
+            this.debug.log(`User info response status: ${response.status}`);
             
-            this.debug.log('User info result:', result);
-            return result.success ? result.data : null;
-            
-        } catch (error) {
-            this.debug.error('Failed to get current user info:', error);
-            
-            // 401错误处理由ApiClient统一处理
-            if (error.status === 401) {
+            // 处理401未认证错误，重定向到登录页面
+            if (response.status === 401) {
                 window.location.href = '/login';
                 return null;
             }
             
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            this.debug.log('User info result:', result);
+            return result.success ? result.data : null;
+            
+        } catch (error) {
+            this.debug.error('Failed to get user info:', error);
             this.errorHandler.handle(error);
             throw error;
         }

@@ -1,7 +1,6 @@
 /**
  * 承运公司选择框组件
  * 提供从数据库获取公司列表、搜索和选择功能
- * 使用ApiClient进行统一API调用
  */
 
 // 公司数据缓存
@@ -15,42 +14,33 @@ let currentSelectedCompany = '';
 export async function initializeCompanySelector(inputElementId) {
     const inputElement = document.getElementById(inputElementId);
     if (!inputElement) {
-        Debug.error('CompanySelector', `未找到ID为${inputElementId}的元素`);
+        console.error(`未找到ID为${inputElementId}的元素`);
         return;
     }
 
-    try {
-        // 获取公司数据
-        await loadCompanies();
-        
-        // 填充选项
-        populateOptions(inputElement);
-        
-        // 添加事件监听器
-        addEventListeners(inputElement);
-        
-        Debug.log('CompanySelector', '公司选择框初始化完成');
-    } catch (error) {
-        ErrorHandler.handle(error, {
-            title: '公司选择框初始化失败',
-            fallbackMessage: '无法初始化公司选择框，请刷新页面重试'
-        });
-    }
+    // 获取公司数据
+    await loadCompanies();
+    
+    // 填充选项
+    populateOptions(inputElement);
+    
+    // 添加事件监听器
+    addEventListeners(inputElement);
 }
 
 /**
  * 从API加载公司数据
- * 使用companyApiClient进行统一API调用
  */
 async function loadCompanies() {
     try {
-        const companies = await companyApiClient.get('');
+        const response = await fetch('/api/companies');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const companies = await response.json();
         companyCache = companies;
-        Debug.log('CompanySelector', `成功加载 ${companies.length} 个公司数据`);
     } catch (error) {
-        Debug.error('CompanySelector', '加载公司数据失败:', error);
-        // 使用ApiClient的错误处理，这里不需要额外处理
-        throw error;
+        console.error('加载公司数据失败:', error);
     }
 }
 

@@ -541,20 +541,8 @@ export class SupplierVehicleModal {
             return;
         }
         
-        // 额外检查：向服务器查询任务的最新状态
-        try {
-            const statusResponse = await fetch(`/api/dispatch/tasks/${taskId}`);
-            if (statusResponse.ok) {
-                const statusResult = await statusResponse.json();
-                if (statusResult.data && statusResult.data.status === '供应商已响应') {
-                    this.showError('该任务已经确认响应，请勿重复提交');
-                    return;
-                }
-            }
-        } catch (error) {
-            // 如果无法获取最新状态，继续执行原逻辑
-            this.debug.warn('无法获取任务最新状态:', error);
-        }
+        // 移除了额外的服务器状态检查以提高响应速度
+        // 原代码：向服务器查询任务的最新状态
         
         try {
             // 显示加载状态

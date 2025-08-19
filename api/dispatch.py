@@ -207,18 +207,18 @@ def get_tasks():
                     """
                     params = [current_user_id, limit, offset]
             else:
-                # 车间地调只能看到自己创建的任务
-                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE initiator_user_id = ?"
+                # 车间地调可以看到所有状态为'供应商已响应'的任务
+                total_query = "SELECT COUNT(*) FROM manual_dispatch_tasks WHERE status = '供应商已响应'"
                 query = """
                     SELECT task_id, required_date, start_bureau, route_name, carrier_company, 
                            transport_type, requirement_type, volume, weight, status, 
                            created_at, updated_at, special_requirements
                     FROM manual_dispatch_tasks 
-                    WHERE initiator_user_id = ? 
+                    WHERE status = '供应商已响应' 
                     ORDER BY created_at DESC 
                     LIMIT ? OFFSET ?
                 """
-                params = [current_user_id, limit, offset]
+                params = [limit, offset]
             
             # 执行总数查询
             if current_user_role in ['超级管理员', '区域调度员']:
@@ -231,6 +231,9 @@ def get_tasks():
                 else:
                     # 当无公司信息时，只传递一个参数
                     db_manager.cursor.execute(total_query, [current_user_id])
+            elif current_user_role == '车间地调':
+                # 车间地调角色查询不需要参数
+                db_manager.cursor.execute(total_query)
             else:
                 db_manager.cursor.execute(total_query, [current_user_id])
             total = db_manager.cursor.fetchone()[0]
@@ -552,6 +555,19 @@ def confirm_supplier_response_with_vehicle(task_id):
                 'message': '任务不存在或状态不正确'
             }), 404
         
+        # 检查是否已经存在车辆信息，避免重复提交
+        db_manager.cursor.execute('''
+            SELECT COUNT(*) as count FROM vehicles 
+            WHERE task_id = ?
+        ''', (task_id,))
+        
+        vehicle_count = db_manager.cursor.fetchone()['count']
+        if vehicle_count > 0:
+            return create_response(success=False, error={
+                'code': 4003,
+                'message': '该任务已存在车辆信息，不能重复提交'
+            }), 400
+        
         # 获取当前用户信息
         current_user_id = session.get('user_id')
         if not current_user_id:
@@ -581,8 +597,9 @@ def confirm_supplier_response_with_vehicle(task_id):
         try:
             db_manager.cursor.execute('''
                 INSERT INTO vehicles (task_id, manifest_number, dispatch_number, license_plate, 
-                                    carriage_number, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    carriage_number, notes, actual_volume, volume_photo_url, 
+                                    volume_modified_by, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 data['manifest_number'],
@@ -590,6 +607,9 @@ def confirm_supplier_response_with_vehicle(task_id):
                 data['license_plate'],
                 data.get('carriage_number'),
                 data.get('notes'),
+                data.get('actual_volume'),
+                data.get('volume_photo_url'),
+                current_user_id,  # volume_modified_by设置为当前用户ID
                 datetime.datetime.now()
             ))
         except sqlite3.IntegrityError as e:
@@ -636,6 +656,134 @@ def confirm_supplier_response_with_vehicle(task_id):
         }), 500
     finally:
         db_manager.disconnect()
+
+
+@dispatch_bp.route('/vehicle-capacity', methods=['GET'])
+@require_role(['车间地调', '区域调度员', '超级管理员'])
+def get_vehicle_capacity_reference():
+    """获取车辆容积参考数据"""
+    try:
+        # 获取查询参数
+        vehicle_type = request.args.get('vehicle_type')
+        license_plate = request.args.get('license_plate')
+        
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 调用数据库管理类的方法获取车辆容积参考数据
+            result = db_manager.get_vehicle_capacity_reference(vehicle_type, license_plate)
+            
+            if not result['success']:
+                return create_response(success=False, error={
+                    'code': 5001,
+                    'message': f'获取车辆容积参考数据失败: {result.get("error", "未知错误")}'
+                }), 500
+                
+            return create_response(data={
+                'list': result['data']
+            })
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'获取车辆容积参考数据失败: {str(e)}'
+        }), 500
+
+
+@dispatch_bp.route('/vehicle-capacity', methods=['POST'])
+@require_role(['区域调度员', '超级管理员'])
+def upsert_vehicle_capacity_reference():
+    """更新或插入车辆容积参考数据"""
+    try:
+        data = request.get_json()
+        
+        # 验证必填字段
+        required_fields = ['license_plate', 'vehicle_type', 'standard_volume']
+        for field in required_fields:
+            if field not in data:
+                return create_response(success=False, error={
+                    'code': 4001,
+                    'message': f'{field}不能为空'
+                }), 400
+        
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 调用数据库管理类的方法更新或插入车辆容积参考数据
+            result = db_manager.upsert_vehicle_capacity_reference(
+                data['vehicle_type'],
+                data['standard_volume'],
+                data['license_plate'],
+                data.get('suppliers', [])
+            )
+            
+            if not result['success']:
+                return create_response(success=False, error={
+                    'code': 5001,
+                    'message': f'更新或插入车辆容积参考数据失败: {result.get("error", "未知错误")}'
+                }), 500
+                
+            return create_response(data={
+                'message': result['message']
+            })
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'更新或插入车辆容积参考数据失败: {str(e)}'
+        }), 500
+
+
+@dispatch_bp.route('/vehicle-capacity/<license_plate>', methods=['DELETE'])
+@require_role(['区域调度员', '超级管理员'])
+def delete_vehicle_capacity_reference(license_plate):
+    """删除车辆容积参考数据"""
+    try:
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 调用数据库管理类的方法删除车辆容积参考数据
+            result = db_manager.delete_vehicle_capacity_reference(license_plate)
+            
+            if not result['success']:
+                return create_response(success=False, error={
+                    'code': 5001,
+                    'message': f'删除车辆容积参考数据失败: {result.get("error", "未知错误")}'
+                }), 500
+                
+            return create_response(data={
+                'message': result['message']
+            })
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'删除车辆容积参考数据失败: {str(e)}'
+        }), 500
 
 
 @dispatch_bp.route('/statistics', methods=['GET'])

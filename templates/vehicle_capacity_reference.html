@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>车辆容积参考数据管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='feishu-styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* 页面特定样式 */
+        .module-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e4e7ed;
+        }
+        
+        .capacity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .capacity-table th,
+        .capacity-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e4e7ed;
+        }
+        
+        .capacity-table th {
+            background-color: #f5f7fa;
+            font-weight: 600;
+        }
+        
+        .capacity-table tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            margin-right: 5px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid #dcdfe6;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .edit-btn {
+            color: #409eff;
+            border-color: #409eff;
+        }
+        
+        .delete-btn {
+            color: #f56c6c;
+            border-color: #f56c6c;
+        }
+        
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e4e7ed;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+        
+        .modal-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e4e7ed;
+            text-align: right;
+        }
+        
+        .btn-primary {
+            background-color: #409eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-secondary {
+            background-color: #f5f7fa;
+            color: #606266;
+            border: 1px solid #dcdfe6;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        .btn-primary:hover {
+            background-color: #66b1ff;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e4e7ed;
+        }
+        
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+        }
+        
+        .search-bar button {
+            padding: 10px 20px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .search-bar button:hover {
+            background-color: #66b1ff;
+        }
+    </style>
+</head>
+<body>
+    {% extends 'base.html' %}
+    
+    {% block title %}车辆容积参考数据管理{% endblock %}
+    
+    {% block content %}
+    <div class="module-header">
+        <h2><i class="fas fa-truck-loading"></i> 车辆容积参考数据管理</h2>
+        <p>管理不同车型的标准容积信息，用于派车任务的容积计算参考</p>
+    </div>
+    
+    <div class="search-bar">
+        <input type="text" id="searchVehicleType" placeholder="搜索车型...">
+        <input type="text" id="searchLicensePlate" placeholder="搜索车牌号...">
+        <button onclick="searchCapacityData()"><i class="fas fa-search"></i> 搜索</button>
+        <button onclick="openAddModal()" class="btn-primary"><i class="fas fa-plus"></i> 添加车辆容积</button>
+    </div>
+    
+    <table class="capacity-table">
+        <thead>
+            <tr>
+                <th>车牌号</th>
+                <th>车型</th>
+                <th>标准容积(立方米)</th>
+                <th>推荐供应商</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="capacityTableBody">
+            <!-- 数据将通过JavaScript动态加载 -->
+        </tbody>
+    </table>
+    
+    <!-- 添加/编辑车辆容积模态框 -->
+    <div id="capacityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加车辆容积参考数据</h3>
+            </div>
+            <form id="capacityForm">
+                <input type="hidden" id="editLicensePlate">
+                <div class="form-group">
+                    <label for="licensePlate">车牌号 *</label>
+                    <input type="text" id="licensePlate" required>
+                </div>
+                <div class="form-group">
+                    <label for="vehicleType">车型 *</label>
+                    <select id="vehicleType" required>
+                        <option value="">请选择车型</option>
+                        <option value="5吨车">5吨车</option>
+                        <option value="8吨车">8吨车</option>
+                        <option value="12吨车">12吨车</option>
+                        <option value="平板车">平板车</option>
+                        <option value="高栏车">高栏车</option>
+                        <option value="厢式货车">厢式货车</option>
+                        <option value="冷藏车">冷藏车</option>
+                        <option value="罐车">罐车</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="standardVolume">标准容积(立方米) *</label>
+                    <input type="number" id="standardVolume" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="suppliers">推荐供应商(逗号分隔)</label>
+                    <input type="text" id="suppliers" placeholder="供应商1,供应商2,供应商3">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCapacityData();
+            
+            // 绑定表单提交事件
+            document.getElementById('capacityForm').addEventListener('submit', saveCapacityData);
+        });
+        
+        // 加载车辆容积参考数据
+        function loadCapacityData() {
+            fetch('/api/vehicle-capacity')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderCapacityTable(data.data.list);
+                    } else {
+                        alert('加载数据失败: ' + data.error.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('加载数据时发生错误');
+                });
+        }
+        
+        // 渲染车辆容积表格
+        function renderCapacityTable(data) {
+            const tbody = document.getElementById('capacityTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.license_plate}</td>
+                    <td>${item.vehicle_type}</td>
+                    <td>${item.standard_volume}</td>
+                    <td>${item.suppliers ? item.suppliers.join(', ') : ''}</td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="openEditModal('${item.license_plate}', '${item.vehicle_type}', ${item.standard_volume}, ${JSON.stringify(item.suppliers || [])})">
+                            <i class="fas fa-edit"></i> 编辑
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteCapacityData('${item.license_plate}')">
+                            <i class="fas fa-trash"></i> 删除
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 搜索车辆容积数据
+        function searchCapacityData() {
+            const vehicleType = document.getElementById('searchVehicleType').value;
+            const licensePlate = document.getElementById('searchLicensePlate').value;
+            
+            let url = '/api/vehicle-capacity';
+            const params = [];
+            
+            if (vehicleType) {
+                params.push(`vehicle_type=${encodeURIComponent(vehicleType)}`);
+            }
+            
+            if (licensePlate) {
+                params.push(`license_plate=${encodeURIComponent(licensePlate)}`);
+            }
+            
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderCapacityTable(data.data.list);
+                    } else {
+                        alert('搜索失败: ' + data.error.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('搜索时发生错误');
+                });
+        }
+        
+        // 打开添加模态框
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '添加车辆容积参考数据';
+            document.getElementById('editLicensePlate').value = '';
+            document.getElementById('licensePlate').value = '';
+            document.getElementById('vehicleType').value = '';
+            document.getElementById('standardVolume').value = '';
+            document.getElementById('suppliers').value = '';
+            document.getElementById('licensePlate').disabled = false;
+            document.getElementById('capacityModal').style.display = 'flex';
+        }
+        
+        // 打开编辑模态框
+        function openEditModal(licensePlate, vehicleType, standardVolume, suppliers) {
+            document.getElementById('modalTitle').textContent = '编辑车辆容积参考数据';
+            document.getElementById('editLicensePlate').value = licensePlate;
+            document.getElementById('licensePlate').value = licensePlate;
+            document.getElementById('vehicleType').value = vehicleType;
+            document.getElementById('standardVolume').value = standardVolume;
+            document.getElementById('suppliers').value = suppliers.join(', ');
+            document.getElementById('licensePlate').disabled = true;
+            document.getElementById('capacityModal').style.display = 'flex';
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('capacityModal').style.display = 'none';
+        }
+        
+        // 保存车辆容积数据
+        function saveCapacityData(event) {
+            event.preventDefault();
+            
+            const editLicensePlate = document.getElementById('editLicensePlate').value;
+            const licensePlate = document.getElementById('licensePlate').value;
+            const vehicleType = document.getElementById('vehicleType').value;
+            const standardVolume = parseFloat(document.getElementById('standardVolume').value);
+            const suppliers = document.getElementById('suppliers').value.split(',').map(s => s.trim()).filter(s => s);
+            
+            if (!licensePlate || !vehicleType || isNaN(standardVolume)) {
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            const data = {
+                license_plate: licensePlate,
+                vehicle_type: vehicleType,
+                standard_volume: standardVolume,
+                suppliers: suppliers
+            };
+            
+            const url = '/api/vehicle-capacity';
+            const method = editLicensePlate ? 'PUT' : 'POST';
+            
+            // 如果是编辑，需要修改URL
+            const requestUrl = editLicensePlate ? `${url}/${editLicensePlate}` : url;
+            
+            fetch(requestUrl, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('保存成功');
+                        closeModal();
+                        loadCapacityData();
+                    } else {
+                        alert('保存失败: ' + data.error.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('保存时发生错误');
+                });
+        }
+        
+        // 删除车辆容积数据
+        function deleteCapacityData(licensePlate) {
+            if (!confirm(`确定要删除车牌号为 ${licensePlate} 的车辆容积数据吗？`)) {
+                return;
+            }
+            
+            fetch(`/api/vehicle-capacity/${licensePlate}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('删除成功');
+                        loadCapacityData();
+                    } else {
+                        alert('删除失败: ' + data.error.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除时发生错误');
+                });
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('capacityModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+    {% endblock %}
+</body>
+</html>
