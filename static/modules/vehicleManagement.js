@@ -132,9 +132,10 @@ export class VehicleManager {
     /**
      * 加载车辆数据
      */
-    async loadVehicles() {
+    async loadVehicles(page = 1) {
         try {
             this.showLoading();
+            this.currentPage = page;
             
             const params = new URLSearchParams({
                 page: this.currentPage,

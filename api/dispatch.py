@@ -661,11 +661,21 @@ def confirm_supplier_response_with_vehicle(task_id):
 @dispatch_bp.route('/vehicle-capacity', methods=['GET'])
 @require_role(['车间地调', '区域调度员', '超级管理员'])
 def get_vehicle_capacity_reference():
-    """获取车辆容积参考数据"""
+    """获取车辆容积参考数据（支持分页）"""
     try:
         # 获取查询参数
         vehicle_type = request.args.get('vehicle_type')
         license_plate = request.args.get('license_plate')
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 10))
+        
+        # 参数验证
+        if page < 1:
+            page = 1
+        if limit < 1 or limit > 100:
+            limit = 10
+            
+        offset = (page - 1) * limit
         
         db_manager = DatabaseManager()
         if not db_manager.connect():
@@ -675,8 +685,10 @@ def get_vehicle_capacity_reference():
             }), 500
         
         try:
-            # 调用数据库管理类的方法获取车辆容积参考数据
-            result = db_manager.get_vehicle_capacity_reference(vehicle_type, license_plate)
+            # 调用数据库管理类的方法获取分页数据
+            result = db_manager.get_vehicle_capacity_reference_paginated(
+                vehicle_type, license_plate, page, limit, offset
+            )
             
             if not result['success']:
                 return create_response(success=False, error={
@@ -684,13 +696,16 @@ def get_vehicle_capacity_reference():
                     'message': f'获取车辆容积参考数据失败: {result.get("error", "未知错误")}'
                 }), 500
                 
-            return create_response(data={
-                'list': result['data']
-            })
+            return create_response(data=result)
             
         finally:
             db_manager.disconnect()
             
+    except ValueError as e:
+        return create_response(success=False, error={
+            'code': 4001,
+            'message': '分页参数格式错误'
+        }), 400
     except Exception as e:
         return create_response(success=False, error={
             'code': 5001,

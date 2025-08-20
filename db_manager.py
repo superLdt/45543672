@@ -423,7 +423,7 @@ class DatabaseManager:
             return {'success': False, 'error': f'创建任务失败: {str(e)}'}
     
     def get_vehicle_capacity_reference(self, vehicle_type=None, license_plate=None):
-        """获取车辆容积参考数据
+        """获取车辆容积参考数据（不分页）
         
         Args:
             vehicle_type (str, optional): 车辆类型（单车、挂车）
@@ -458,6 +458,69 @@ class DatabaseManager:
         except Exception as e:
             print(f'获取车辆容积参考数据失败: {str(e)}')
             return {'success': False, 'error': str(e), 'data': []}
+
+    def get_vehicle_capacity_reference_paginated(self, vehicle_type=None, license_plate=None, page=1, limit=10, offset=0):
+        """获取车辆容积参考数据（支持分页）
+        
+        Args:
+            vehicle_type (str, optional): 车辆类型（单车、挂车）
+            license_plate (str, optional): 车牌号
+            page (int): 当前页码
+            limit (int): 每页条数
+            offset (int): 偏移量
+            
+        Returns:
+            dict: 包含分页信息和数据列表的字典
+        """
+        if not self.cursor:
+            return {'success': False, 'error': '数据库未连接', 'list': [], 'total': 0, 'page': 1, 'limit': 10}
+
+        try:
+            # 构建基础查询条件
+            where_clause = ' WHERE 1=1'
+            params = []
+            count_params = []
+            
+            if vehicle_type:
+                where_clause += ' AND vehicle_type = ?'
+                params.append(vehicle_type)
+                count_params.append(vehicle_type)
+                
+            if license_plate:
+                where_clause += ' AND license_plate = ?'
+                params.append(license_plate)
+                count_params.append(license_plate)
+            
+            # 获取总记录数
+            count_query = f'SELECT COUNT(*) FROM vehicle_capacity_reference{where_clause}'
+            self.cursor.execute(count_query, count_params)
+            total = self.cursor.fetchone()[0]
+            
+            # 获取分页数据
+            query = f'''
+                SELECT * FROM vehicle_capacity_reference
+                {where_clause}
+                ORDER BY vehicle_type, license_plate
+                LIMIT ? OFFSET ?
+            '''
+            params.extend([limit, offset])
+            
+            self.cursor.execute(query, params)
+            columns = [description[0] for description in self.cursor.description]
+            data = [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+            return {
+                'success': True,
+                'list': data,
+                'total': total,
+                'page': page,
+                'limit': limit,
+                'totalPages': (total + limit - 1) // limit  # 向上取整计算总页数
+            }
+            
+        except Exception as e:
+            print(f'获取分页车辆容积参考数据失败: {str(e)}')
+            return {'success': False, 'error': str(e), 'list': [], 'total': 0, 'page': 1, 'limit': 10}
     
     def upsert_vehicle_capacity_reference(self, vehicle_type, standard_volume, license_plate, suppliers):
         """更新或插入车辆容积参考数据
