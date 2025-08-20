@@ -6,6 +6,7 @@
 import { TaskManager } from './TaskManager.js';
 import { TaskRenderer } from './TaskRenderer.js';
 import { Pagination } from './Pagination.js';
+import { VehicleManager } from './vehicleManagement.js';
 import { Debug } from '../utils/Debug.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
 
@@ -21,6 +22,7 @@ class TaskManagementApp {
         this.taskManager = new TaskManager(options.taskManager);
         this.taskRenderer = new TaskRenderer(options.taskRenderer);
         this.pagination = new Pagination(options.pagination);
+        this.vehicleManager = new VehicleManager(options.vehicleManager);
         
         // 绑定模块间通信
         this.setupModuleCommunication();
@@ -514,11 +516,25 @@ export async function initTaskManagement(options = {}) {
     return app;
 }
 
+/**
+ * 车辆管理初始化函数
+ */
+export async function initVehicleManagement(options = {}) {
+    const vehicleManager = new VehicleManager(options);
+    await vehicleManager.init();
+    
+    // 暴露到全局
+    window.vehicleManager = vehicleManager;
+    
+    return vehicleManager;
+}
+
 // 导出所有模块
 export {
     TaskManager,
     TaskRenderer,
     Pagination,
+    VehicleManager,
     Debug,
     ErrorHandler,
     TaskManagementApp

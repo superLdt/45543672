@@ -282,7 +282,7 @@ class DatabaseManager:
              created_at, updated_at, dispatch_track, initiator_role, initiator_user_id, initiator_department, 
              audit_required, auditor_role, auditor_user_id, audit_status, audit_time, audit_note,
              current_handler_role, current_handler_user_id, assigned_supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', processed_tasks)
 
             # 插入示例状态历史
@@ -374,7 +374,7 @@ class DatabaseManager:
              transport_type, requirement_type, volume, weight, special_requirements,
              dispatch_track, initiator_role, initiator_user_id, initiator_department,
              audit_required, current_handler_role, current_handler_user_id, status, assigned_supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 task_data['required_date'],
@@ -430,10 +430,10 @@ class DatabaseManager:
             license_plate (str, optional): 车牌号
             
         Returns:
-            list: 车辆容积参考数据列表
+            dict: 包含success标志和数据列表的字典
         """
         if not self.cursor:
-            return []
+            return {'success': False, 'error': '数据库未连接', 'data': []}
 
         try:
             query = 'SELECT * FROM vehicle_capacity_reference WHERE 1=1'
@@ -451,11 +451,13 @@ class DatabaseManager:
             
             self.cursor.execute(query, params)
             columns = [description[0] for description in self.cursor.description]
-            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            data = [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+            
+            return {'success': True, 'data': data}
             
         except Exception as e:
             print(f'获取车辆容积参考数据失败: {str(e)}')
-            return []
+            return {'success': False, 'error': str(e), 'data': []}
     
     def upsert_vehicle_capacity_reference(self, vehicle_type, standard_volume, license_plate, suppliers):
         """更新或插入车辆容积参考数据

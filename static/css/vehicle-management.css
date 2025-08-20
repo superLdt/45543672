@@ -1,0 +1,256 @@
+/* 车辆管理页面样式 - 基于飞书设计系统 */
+:root {
+    --vehicle-hover-bg: rgba(51, 112, 255, 0.04);
+    --status-badge-padding: 4px 8px;
+}
+
+.vehicle-management-container {
+    padding: var(--feishu-spacing-md);
+    background: var(--feishu-bg);
+    min-height: 100vh;
+}
+
+.page-header-card {
+    background: linear-gradient(135deg, var(--feishu-white) 0%, #f8faff 100%);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-md);
+    border: 1px solid var(--feishu-border);
+    padding: var(--feishu-spacing-xl);
+    margin-bottom: var(--feishu-spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s ease;
+}
+
+.page-header-card:hover {
+    box-shadow: var(--feishu-shadow-lg);
+}
+
+.page-title-section h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+    margin: 0 0 var(--feishu-spacing-sm) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-sm);
+}
+
+.page-subtitle {
+    color: var(--feishu-text-secondary);
+    font-size: 14px;
+    margin: 0;
+}
+
+.search-filter-card {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-sm);
+    border: 1px solid var(--feishu-border);
+    padding: var(--feishu-spacing-lg);
+    margin-bottom: var(--feishu-spacing-lg);
+}
+
+.search-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto auto auto;
+    gap: var(--feishu-spacing-md);
+    align-items: end;
+}
+
+.search-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--feishu-spacing-xs);
+}
+
+.search-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--feishu-text-primary);
+}
+
+.table-container {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-sm);
+    border: 1px solid var(--feishu-border);
+    overflow: hidden;
+}
+
+.vehicle-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vehicle-table th {
+    background: var(--feishu-bg);
+    color: var(--feishu-text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--feishu-border);
+}
+
+.vehicle-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--feishu-border);
+    color: var(--feishu-text-primary);
+    font-size: 14px;
+}
+
+.vehicle-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.vehicle-table tbody tr:hover {
+    background: var(--vehicle-hover-bg);
+    transform: translateX(2px);
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--feishu-spacing-xl);
+    color: var(--feishu-text-secondary);
+    display: none;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    color: var(--feishu-text-tertiary);
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--feishu-spacing-xs);
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--status-badge-padding);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.status-available {
+    background: rgba(0, 214, 185, 0.1);
+    color: #00d6b9;
+    border: 1px solid rgba(0, 214, 185, 0.3);
+}
+
+.status-maintenance {
+    background: rgba(255, 143, 31, 0.1);
+    color: #ff8f1f;
+    border: 1px solid rgba(255, 143, 31, 0.3);
+}
+
+.status-inactive {
+    background: rgba(245, 74, 69, 0.1);
+    color: #f54a45;
+    border: 1px solid rgba(245, 74, 69, 0.3);
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .vehicle-management-container {
+        padding: var(--feishu-spacing-sm);
+    }
+
+    .page-header-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--feishu-spacing-md);
+        padding: var(--feishu-spacing-lg);
+    }
+
+    .search-form {
+        grid-template-columns: 1fr;
+        gap: var(--feishu-spacing-sm);
+    }
+
+    .search-filter-card {
+        padding: var(--feishu-spacing-md);
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: var(--feishu-spacing-xs);
+    }
+
+    .vehicle-table {
+        font-size: 13px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .vehicle-table th,
+    .vehicle-table td {
+        padding: 12px 8px;
+    }
+
+    .status-badge {
+        padding: 3px 6px;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .page-title-section h1 {
+        font-size: 20px;
+    }
+
+    .page-subtitle {
+        font-size: 12px;
+    }
+
+    .search-input-group {
+        gap: 2px;
+    }
+
+    .search-label {
+        font-size: 12px;
+    }
+}
+
+/* 模态框样式 */
+.feishu-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+.feishu-modal-content {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    box-shadow: var(--feishu-shadow-xl);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

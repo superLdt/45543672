@@ -825,6 +825,142 @@
     justify-content: flex-end;
 }
 
+/* ========== 导入导出模态框专用样式 ========== */
+
+/* 导入模态框样式 */
+.import-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.import-modal-content {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    padding: var(--feishu-spacing-xl);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--feishu-shadow-lg);
+}
+
+.import-section {
+    margin-bottom: var(--feishu-spacing-lg);
+}
+
+.import-section h4 {
+    color: var(--feishu-text-primary);
+    margin-bottom: var(--feishu-spacing-sm);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.import-section p {
+    color: var(--feishu-text-secondary);
+    font-size: 14px;
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.file-upload-area {
+    border: 2px dashed var(--feishu-border);
+    border-radius: var(--feishu-radius-md);
+    padding: var(--feishu-spacing-xl);
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: var(--feishu-primary);
+    background: rgba(51, 112, 255, 0.02);
+}
+
+.file-upload-area.dragover {
+    border-color: var(--feishu-primary);
+    background: rgba(51, 112, 255, 0.05);
+}
+
+.file-upload-icon {
+    font-size: 48px;
+    color: var(--feishu-text-tertiary);
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.file-upload-text {
+    color: var(--feishu-text-primary);
+    font-weight: 500;
+    margin-bottom: var(--feishu-spacing-xs);
+}
+
+.file-upload-hint {
+    color: var(--feishu-text-secondary);
+    font-size: 13px;
+}
+
+.template-download {
+    background: var(--feishu-bg);
+    border-radius: var(--feishu-radius-md);
+    padding: var(--feishu-spacing-md);
+    margin-top: var(--feishu-spacing-md);
+}
+
+.template-download a {
+    color: var(--feishu-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.template-download a:hover {
+    text-decoration: underline;
+}
+
+/* 导出选项模态框 */
+.export-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.export-modal-content {
+    background: var(--feishu-white);
+    border-radius: var(--feishu-radius-lg);
+    padding: var(--feishu-spacing-xl);
+    width: 90%;
+    max-width: 400px;
+    box-shadow: var(--feishu-shadow-lg);
+}
+
+.export-option {
+    margin-bottom: var(--feishu-spacing-md);
+}
+
+.export-option label {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-sm);
+    cursor: pointer;
+    padding: var(--feishu-spacing-sm);
+    border-radius: var(--feishu-radius-sm);
+    transition: background 0.2s ease;
+}
+
+.export-option label:hover {
+    background: var(--feishu-bg);
+}
+
 /* ========== 供应商确认表单样式 ========== */
 .supplier-form {
     display: flex;

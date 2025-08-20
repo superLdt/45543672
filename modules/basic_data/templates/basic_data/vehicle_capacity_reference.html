@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}车辆信息管理{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='feishu-styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/supplier-modal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vehicle-management.css') }}">
+    <style>
+        /* 调试样式 */
+        .debug-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+        }
+        .debug-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10001;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<!-- 调试面板 -->
+<button class="debug-toggle" onclick="toggleDebug()">调试</button>
+<div class="debug-panel" id="debugPanel"></div>
+
+<div class="vehicle-management-container">
+    <!-- 页面标题 -->
+    <div class="page-header-card">
+        <div class="page-title-section">
+            <h1>
+                <span>🚛</span>
+                车辆信息管理
+            </h1>
+            <p class="page-subtitle">管理车辆基本信息，包括车辆类型、标准容积、车牌号等数据</p>
+        </div>
+        <button type="button" class="feishu-btn feishu-btn-primary" id="addVehicleBtn">
+            <i class="fas fa-plus"></i>
+            新增车辆
+        </button>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="search-filter-card">
+        <form class="search-form" id="searchForm">
+            <div class="search-input-group">
+                <label class="search-label">车辆类型</label>
+                <select class="feishu-select" id="searchVehicleType">
+                    <option value="">全部类型</option>
+                    <option value="单车">单车</option>
+                    <option value="挂车">挂车</option>
+                </select>
+            </div>
+            <div class="search-input-group">
+                <label class="search-label">车牌号</label>
+                <input type="text" class="feishu-input" id="searchLicensePlate" placeholder="请输入车牌号">
+            </div>
+            <div class="search-input-group">
+                <label class="search-label">供应商</label>
+                <input type="text" class="feishu-input" id="searchSuppliers" placeholder="请输入供应商">
+            </div>
+            <button type="submit" class="feishu-btn feishu-btn-primary" id="searchBtn">
+                <i class="fas fa-search"></i>
+                搜索
+            </button>
+            <button type="button" class="feishu-btn feishu-btn-secondary" id="resetSearchBtn">
+                <i class="fas fa-undo"></i>
+                重置
+            </button>
+            <div style="display: flex; gap: var(--feishu-spacing-sm);">
+                <button type="button" class="feishu-btn feishu-btn-secondary" id="importBtn" title="批量导入车辆信息">
+                    <i class="fas fa-upload"></i>
+                    导入
+                </button>
+                <button type="button" class="feishu-btn feishu-btn-secondary" id="exportBtn" title="导出车辆信息">
+                    <i class="fas fa-download"></i>
+                    导出
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-container">
+        <table class="vehicle-table">
+            <thead>
+                <tr>
+                    <th>车辆类型</th>
+                    <th>车牌号</th>
+                    <th>标准容积(m³)</th>
+                    <th>供应商</th>
+                    <th>创建时间</th>
+                    <th>更新时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="vehicleTableBody">
+                <!-- 数据将通过JavaScript动态加载 -->
+            </tbody>
+        </table>
+        <div class="empty-state" id="emptyState">
+            <div class="empty-state-icon">🚛</div>
+            <h3>暂无车辆信息</h3>
+            <p>点击"新增车辆"按钮添加第一条车辆信息</p>
+            <button type="button" class="feishu-btn feishu-btn-primary" id="emptyAddBtn">
+                <i class="fas fa-plus"></i>
+                添加车辆
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑模态框 -->
+<div id="vehicleModal" class="feishu-modal">
+    <div class="feishu-modal-content">
+        <div class="feishu-modal-header">
+            <h3 class="feishu-modal-title" id="modalTitle">添加车辆</h3>
+            <button type="button" class="feishu-modal-close" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="feishu-modal-body">
+            <form id="vehicleForm">
+                <input type="hidden" id="vehicleId">
+                
+                <div class="form-group">
+                    <label class="form-label form-required">车辆类型</label>
+                    <select class="feishu-select" id="vehicleType" required>
+                        <option value="">请选择车辆类型</option>
+                        <option value="单车">单车</option>
+                        <option value="挂车">挂车</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-required">车牌号</label>
+                    <input type="text" class="feishu-input" id="licensePlate" required maxlength="10" placeholder="例如：皖A12345">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label form-required">标准容积(m³)</label>
+                    <input type="number" class="feishu-input" id="standardVolume" required min="0" step="0.1" placeholder="例如：50.0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">供应商</label>
+                    <input type="text" class="feishu-input" id="suppliers" placeholder="请输入供应商信息(JSON格式)">
+                    <small class="form-hint">例如：["供应商A", "供应商B"]</small>
+                </div>
+            </form>
+        </div>
+        <div class="feishu-modal-footer">
+            <button type="button" class="feishu-btn feishu-btn-secondary" id="cancelModalBtn">取消</button>
+            <button type="button" class="feishu-btn feishu-btn-primary" id="saveVehicleBtn">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 批量导入模态框 -->
+<div class="import-modal" id="importModal">
+    <div class="import-modal-content">
+        <div class="feishu-modal-header">
+            <h3 class="feishu-modal-title">批量导入车辆信息</h3>
+            <button type="button" class="feishu-modal-close" id="closeImportModalBtn">&times;</button>
+        </div>
+        
+        <div class="import-section">
+            <h4><i class="fas fa-info-circle" style="color: var(--feishu-primary);"></i> 导入说明</h4>
+            <p>请使用Excel文件(.xlsx)格式导入车辆信息，文件需包含以下列：车辆类型、车牌号、标准容积、供应商。</p>
+            
+            <div class="template-download">
+                <i class="fas fa-file-excel" style="color: #217346;"></i>
+                <a href="#" id="downloadTemplateLink" style="margin-left: 8px;">
+                    下载导入模板
+                </a>
+            </div>
+        </div>
+
+        <div class="import-section">
+            <h4><i class="fas fa-upload" style="color: var(--feishu-primary);"></i> 选择文件</h4>
+            <div class="file-upload-area" id="fileUploadArea">
+                <div class="file-upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="file-upload-text">点击或拖拽文件到此处上传</div>
+                <div class="file-upload-hint">支持 .xlsx 格式，最大 10MB</div>
+                <div id="selectedFileName" style="margin-top: 8px; color: var(--feishu-primary); font-weight: 500; display: none;"></div>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx" style="display: none;">
+        </div>
+
+        <div class="feishu-modal-footer">
+            <button type="button" class="feishu-btn feishu-btn-secondary" id="cancelImportBtn">取消</button>
+            <button type="button" class="feishu-btn feishu-btn-primary" id="startImportBtn" disabled>
+                <i class="fas fa-spinner fa-spin" style="display: none;" id="importSpinner"></i>
+                开始导入
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 导出选项模态框 -->
+<div id="exportModal" class="export-modal">
+    <div class="export-modal-content">
+        <div class="feishu-modal-header">
+            <h3 class="feishu-modal-title">导出车辆信息</h3>
+            <button type="button" class="feishu-modal-close" id="closeExportModalBtn">&times;</button>
+        </div>
+        
+        <div class="import-section">
+            <h4><i class="fas fa-cog" style="color: var(--feishu-primary);"></i> 导出选项</h4>
+            
+            <div class="export-option">
+                <label>
+                    <input type="radio" name="exportFormat" value="excel" checked>
+                    <i class="fas fa-file-excel" style="color: #217346;"></i>
+                    Excel格式 (.xlsx)
+                </label>
+            </div>
+            <div class="export-option">
+                <label>
+                    <input type="radio" name="exportFormat" value="csv">
+                    <i class="fas fa-file-csv" style="color: #28a745;"></i>
+                    CSV格式 (.csv)
+                </label>
+            </div>
+            <div class="export-option">
+                <label>
+                    <input type="checkbox" id="applyFilters" checked>
+                    <span>应用当前筛选条件</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="feishu-modal-footer">
+            <button type="button" class="feishu-btn feishu-btn-secondary" id="cancelExportBtn">取消</button>
+            <button type="button" class="feishu-btn feishu-btn-primary" id="exportDataBtn">导出</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block  scripts%}
+<script type="module">
+    import { initVehicleManagement } from '../../../../static/modules/index.js';
+    
+    // 初始化车辆管理
+    initVehicleManagement();
+</script>
+{% endblock %}

@@ -20,7 +20,9 @@ def index():
 @basic_data_bp.route('/vehicle_info')
 @login_required
 def vehicle_information():
-    return render_template('basic_data/vehicle_info.html', title='车辆信息管理')
+    return render_template('basic_data/vehicle_capacity_reference.html', title='车辆信息管理',user=current_user)
+
+
 
 @basic_data_bp.route('/route_info')
 @login_required
