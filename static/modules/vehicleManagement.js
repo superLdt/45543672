@@ -329,31 +329,42 @@ export class VehicleManager {
 
     /**
      * 格式化供应商显示
+     * 显示供应商名字而非序号
      */
     formatSuppliers(suppliers) {
         if (!suppliers) return '-';
         try {
+            // 处理JSON字符串或数组格式
             const supplierList = typeof suppliers === 'string' ? JSON.parse(suppliers) : suppliers;
-            return Array.isArray(supplierList) ? supplierList.join(', ') : String(supplierList);
+            
+            if (Array.isArray(supplierList)) {
+                // 如果是数组，直接返回逗号分隔的字符串
+                return supplierList.join(', ');
+            } else if (typeof supplierList === 'string') {
+                // 如果已经是字符串，直接返回
+                return supplierList;
+            } else {
+                // 其他情况转换为字符串
+                return String(supplierList);
+            }
         } catch {
+            // JSON解析失败时，直接返回原始字符串
             return String(suppliers);
         }
     }
 
     /**
      * 格式化日期时间显示
+     * 格式：2025/08/20
      */
     formatDateTime(dateTimeStr) {
         if (!dateTimeStr) return '-';
         try {
             const date = new Date(dateTimeStr);
-            return date.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
         } catch {
             return dateTimeStr;
         }
