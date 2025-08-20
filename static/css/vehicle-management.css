@@ -268,3 +268,91 @@
     display: flex;
     justify-content: center;
 }
+
+/* 飞书风格分页组件 */
+.feishu-pagination {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-sm);
+    background: var(--feishu-white);
+    border: 1px solid var(--feishu-border);
+    border-radius: var(--feishu-radius-md);
+    padding: var(--feishu-spacing-sm) var(--feishu-spacing-md);
+    box-shadow: var(--feishu-shadow-sm);
+}
+
+.feishu-page-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-xs);
+    padding: 8px 12px;
+    border: 1px solid var(--feishu-border);
+    background: var(--feishu-white);
+    color: var(--feishu-text-primary);
+    border-radius: var(--feishu-radius-sm);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 32px;
+}
+
+.feishu-page-btn:hover:not(:disabled) {
+    background: var(--feishu-bg);
+    border-color: var(--feishu-primary);
+    color: var(--feishu-primary);
+}
+
+.feishu-page-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--feishu-bg-secondary);
+    color: var(--feishu-text-tertiary);
+}
+
+.feishu-page-numbers {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-xs);
+}
+
+.feishu-page-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--feishu-border);
+    background: var(--feishu-white);
+    color: var(--feishu-text-primary);
+    border-radius: var(--feishu-radius-sm);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.feishu-page-number:hover {
+    background: var(--feishu-bg);
+    border-color: var(--feishu-primary);
+    color: var(--feishu-primary);
+}
+
+.feishu-page-number-active {
+    background: var(--feishu-primary);
+    border-color: var(--feishu-primary);
+    color: var(--feishu-white);
+}
+
+.feishu-page-info {
+    display: flex;
+    align-items: center;
+    gap: var(--feishu-spacing-md);
+    color: var(--feishu-text-secondary);
+    font-size: 13px;
+    margin-left: var(--feishu-spacing-md);
+    padding-left: var(--feishu-spacing-md);
+    border-left: 1px solid var(--feishu-border);
+}
+
+.feishu-page-info span {
+    font-weight: 500;
+}

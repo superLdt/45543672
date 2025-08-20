@@ -99,6 +99,7 @@ export class Pagination {
     
     /**
      * 生成分页HTML
+     * 使用统一的飞书样式类名
      */
     generatePaginationHTML() {
         const { currentPage, totalPages, hasPrev, hasNext } = this.getPaginationInfo();
