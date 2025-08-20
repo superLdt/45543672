@@ -5,6 +5,7 @@
 
 import { Debug } from '../utils/Debug.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { Pagination } from './Pagination.js';
 
 /**
  * 车辆管理器类
@@ -24,6 +25,7 @@ export class VehicleManager {
         this.sortOrder = 'asc';
         this.filters = {};
         this.currentEditingVehicle = null;
+        
         
         // 绑定方法
         this.bindMethods();
@@ -55,6 +57,18 @@ export class VehicleManager {
         try {
             this.debug.log('开始初始化车辆管理器...');
             await this.checkAuth();
+            
+            // 初始化分页
+            this.pagination = new Pagination({
+                containerId: 'paginationContainer',
+                pageSize: 10
+            });
+            
+            this.pagination.onPageChange(async (page) => {
+                this.currentPage = page;
+                await this.loadVehicles();
+            });
+            
             await this.loadVehicles();
             this.bindEvents();
             this.debug.log('车辆管理器初始化完成');
@@ -284,53 +298,11 @@ export class VehicleManager {
 
     /**
      * 更新分页
+     * 使用Pagination.js进行分页管理
      */
     updatePagination(totalItems) {
-        this.totalPages = Math.ceil(totalItems / this.pageSize);
-        
-        const pagination = document.querySelector('.pagination');
-        if (!pagination || this.totalPages <= 1) return;
-        
-        pagination.innerHTML = '';
-        
-        // 上一页
-        const prevBtn = document.createElement('li');
-        prevBtn.className = `page-item ${this.currentPage === 1 ? 'disabled' : ''}`;
-        prevBtn.innerHTML = `<a class="page-link" href="#">上一页</a>`;
-        prevBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (this.currentPage > 1) {
-                this.currentPage--;
-                this.loadVehicles();
-            }
-        });
-        pagination.appendChild(prevBtn);
-        
-        // 页码
-        for (let i = 1; i <= this.totalPages; i++) {
-            const pageBtn = document.createElement('li');
-            pageBtn.className = `page-item ${i === this.currentPage ? 'active' : ''}`;
-            pageBtn.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-            pageBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.currentPage = i;
-                this.loadVehicles();
-            });
-            pagination.appendChild(pageBtn);
-        }
-        
-        // 下一页
-        const nextBtn = document.createElement('li');
-        nextBtn.className = `page-item ${this.currentPage === this.totalPages ? 'disabled' : ''}`;
-        nextBtn.innerHTML = `<a class="page-link" href="#">下一页</a>`;
-        nextBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (this.currentPage < this.totalPages) {
-                this.currentPage++;
-                this.loadVehicles();
-            }
-        });
-        pagination.appendChild(nextBtn);
+        this.pagination.setData(totalItems, this.currentPage);
+        this.pagination.render();
     }
 
     /**

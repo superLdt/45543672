@@ -254,3 +254,10 @@
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* 分页容器样式 */
+.pagination-container {
+    margin-top: var(--feishu-spacing-lg);
+    display: flex;
+    justify-content: center;
+}
