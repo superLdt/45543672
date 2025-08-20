@@ -44,6 +44,8 @@ export class VehicleManager {
         this.deleteVehicle = this.deleteVehicle.bind(this);
         this.handleResponse = this.handleResponse.bind(this);
         this.showToast = this.showToast.bind(this);
+        this.formatSuppliers = this.formatSuppliers.bind(this);
+        this.formatDateTime = this.formatDateTime.bind(this);
     }
 
     /**
@@ -242,7 +244,7 @@ export class VehicleManager {
      * 渲染车辆列表
      */
     renderVehicles(vehicles) {
-        const tbody = document.querySelector('#vehicleTable tbody');
+        const tbody = document.querySelector('#vehicleTableBody');
         const emptyState = document.querySelector('.empty-state');
         
         if (!tbody) return;
@@ -257,11 +259,12 @@ export class VehicleManager {
         
         tbody.innerHTML = vehicles.map(vehicle => `
             <tr>
-                <td>${vehicle.id || ''}</td>
                 <td>${vehicle.vehicle_type || ''}</td>
-                <td>${vehicle.standard_volume || ''}</td>
                 <td>${vehicle.license_plate || ''}</td>
+                <td>${vehicle.standard_volume || ''}</td>
                 <td>${this.formatSuppliers(vehicle.suppliers)}</td>
+                <td>${this.formatDateTime(vehicle.created_at)}</td>
+                <td>${this.formatDateTime(vehicle.updated_at)}</td>
                 <td>
                     <button class="btn btn-sm btn-primary edit-vehicle-btn" 
                             data-license-plate="${vehicle.license_plate}">
@@ -340,6 +343,25 @@ export class VehicleManager {
             return Array.isArray(supplierList) ? supplierList.join(', ') : String(supplierList);
         } catch {
             return String(suppliers);
+        }
+    }
+
+    /**
+     * 格式化日期时间显示
+     */
+    formatDateTime(dateTimeStr) {
+        if (!dateTimeStr) return '-';
+        try {
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return dateTimeStr;
         }
     }
 
