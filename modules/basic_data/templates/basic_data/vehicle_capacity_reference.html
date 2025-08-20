@@ -6,51 +6,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='feishu-styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/supplier-modal.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/vehicle-management.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='import-export-modal.css') }}">
     <style>
-        /* 调试样式 */
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10000;
-            display: none;
-        }
-        .debug-toggle {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: #1890ff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 10001;
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
     </style>
 {% endblock %}
 
 {% block content %}
-<!-- 调试面板 -->
-<button class="debug-toggle" onclick="toggleDebug()">调试</button>
-<div class="debug-panel" id="debugPanel"></div>
-
 <div class="vehicle-management-container">
     <!-- 页面标题 -->
     <div class="page-header-card">
@@ -186,7 +147,7 @@
 </div>
 
 <!-- 批量导入模态框 -->
-<div class="import-modal" id="importModal">
+<div class="feishu-modal import-modal" id="importModal">
     <div class="import-modal-content">
         <div class="feishu-modal-header">
             <h3 class="feishu-modal-title">批量导入车辆信息</h3>
@@ -229,7 +190,7 @@
 </div>
 
 <!-- 导出选项模态框 -->
-<div id="exportModal" class="export-modal">
+<div id="exportModal" class="feishu-modal export-modal">
     <div class="export-modal-content">
         <div class="feishu-modal-header">
             <h3 class="feishu-modal-title">导出车辆信息</h3>

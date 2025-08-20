@@ -532,6 +532,17 @@
     animation: zoomIn 0.3s ease;
 }
 
+/* 导入导出模态框动画 */
+.import-modal,
+.export-modal {
+    animation: fadeIn 0.3s ease;
+}
+
+.import-modal-content,
+.export-modal-content {
+    animation: zoomIn 0.3s ease;
+}
+
 /* 响应式模态框 */
 @media (max-width: 768px) {
     .feishu-modal-content {

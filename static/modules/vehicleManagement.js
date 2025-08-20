@@ -58,6 +58,9 @@ export class VehicleManager {
             this.debug.log('开始初始化车辆管理器...');
             await this.checkAuth();
             
+            // 获取公司名称映射
+            await this.fetchCompanyNames();
+            
             // 初始化分页
             this.pagination = new Pagination({
                 containerId: 'paginationContainer',
@@ -65,8 +68,7 @@ export class VehicleManager {
             });
             
             this.pagination.onPageChange(async (page) => {
-                this.currentPage = page;
-                await this.loadVehicles();
+                await this.loadVehicles(page);
             });
             
             await this.loadVehicles();
@@ -138,7 +140,7 @@ export class VehicleManager {
             this.currentPage = page;
             
             const params = new URLSearchParams({
-                page: this.currentPage,
+                page: page,
                 limit: this.pageSize,
                 search: this.searchTerm,
                 sort: this.sortField,
@@ -302,8 +304,7 @@ export class VehicleManager {
             </tr>
         `).join('');
         
-        // 绑定按钮事件
-        this.bindButtonEvents();
+        // 按钮事件已经在bindEvents中绑定
     }
 
     /**
@@ -329,42 +330,57 @@ export class VehicleManager {
 
     /**
      * 格式化供应商显示
-     * 显示供应商名字而非序号
      */
     formatSuppliers(suppliers) {
         if (!suppliers) return '-';
         try {
-            // 处理JSON字符串或数组格式
             const supplierList = typeof suppliers === 'string' ? JSON.parse(suppliers) : suppliers;
-            
             if (Array.isArray(supplierList)) {
-                // 如果是数组，直接返回逗号分隔的字符串
-                return supplierList.join(', ');
-            } else if (typeof supplierList === 'string') {
-                // 如果已经是字符串，直接返回
-                return supplierList;
-            } else {
-                // 其他情况转换为字符串
-                return String(supplierList);
+                // 将ID数组转换为公司名称数组
+                return supplierList.map(id => this.companyMap[id] || id).join(', ');
             }
+            return String(supplierList);
         } catch {
-            // JSON解析失败时，直接返回原始字符串
             return String(suppliers);
         }
     }
 
     /**
+     * 获取公司名称
+     */
+    async fetchCompanyNames() {
+        try {
+            const response = await fetch('/api/companies', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const companies = await response.json();
+                // 创建ID到名称的映射
+                this.companyMap = {};
+                companies.forEach(company => {
+                    this.companyMap[company.id] = company.name;
+                });
+            }
+        } catch (error) {
+            console.error('获取公司名称失败:', error);
+        }
+    }
+
+    /**
      * 格式化日期时间显示
-     * 格式：2025/08/20
      */
     formatDateTime(dateTimeStr) {
         if (!dateTimeStr) return '-';
         try {
             const date = new Date(dateTimeStr);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}/${month}/${day}`;
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+          
+            });
         } catch {
             return dateTimeStr;
         }
@@ -404,48 +420,160 @@ export class VehicleManager {
     /**
      * 绑定事件
      */
+    /**
+     * 初始化事件绑定
+     */
     bindEvents() {
-        // 搜索框
-        const searchInput = document.querySelector('#searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(() => {
-                    this.searchVehicles(e.target.value);
-                }, 300);
+        // 搜索按钮
+        const searchBtn = document.getElementById('searchBtn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => this.handleSearch());
+        }
+        
+        // 重置按钮
+        const resetBtn = document.getElementById('resetSearchBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.handleReset());
+        }
+        
+        // 新增车辆按钮
+        const addBtn = document.getElementById('addVehicleBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.showAddModal());
+        }
+        
+        // 空状态添加按钮
+        const emptyAddBtn = document.getElementById('emptyAddBtn');
+        if (emptyAddBtn) {
+            emptyAddBtn.addEventListener('click', () => this.showAddModal());
+        }
+        
+        // 导入按钮
+        const importBtn = document.getElementById('importBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => this.showImportModal());
+        }
+        
+        // 导出按钮
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.showExportModal());
+        }
+        
+        // 表格操作事件委托
+        const tableBody = document.getElementById('vehicleTableBody');
+        if (tableBody) {
+            tableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+                
+                const licensePlate = row.dataset.licensePlate;
+                if (!licensePlate) return;
+                
+                // 编辑按钮
+                if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
+                    this.editVehicle(licensePlate);
+                }
+                // 删除按钮
+                else if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
+                    this.deleteVehicle(licensePlate);
+                }
             });
         }
         
-        // 添加按钮
-        const addBtn = document.querySelector('#addVehicleBtn');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                this.showAddModal();
+        // 回车搜索
+        const searchInputs = document.querySelectorAll('#searchVehicleType, #searchLicensePlate, #searchSuppliers');
+        searchInputs.forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.handleSearch();
+                }
             });
+        });
+        
+        // 导入模态框关闭按钮
+        const closeImportModalBtn = document.getElementById('closeImportModalBtn');
+        const cancelImportBtn = document.getElementById('cancelImportBtn');
+        const importModal = document.getElementById('importModal');
+        
+        const closeImportModal = () => {
+            if (importModal) {
+                importModal.style.display = 'none';
+            }
+        };
+        
+        if (closeImportModalBtn) {
+            closeImportModalBtn.addEventListener('click', closeImportModal);
+        }
+        
+        if (cancelImportBtn) {
+            cancelImportBtn.addEventListener('click', closeImportModal);
+        }
+        
+        // 点击导入模态框背景关闭
+        if (importModal) {
+            importModal.addEventListener('click', (e) => {
+                if (e.target === importModal) {
+                    closeImportModal();
+                }
+            });
+        }
+        
+        // 导出模态框关闭按钮
+        const closeExportModalBtn = document.getElementById('closeExportModalBtn');
+        const cancelExportBtn = document.getElementById('cancelExportBtn');
+        const exportModal = document.getElementById('exportModal');
+        
+        const closeExportModal = () => {
+            if (exportModal) {
+                exportModal.style.display = 'none';
+            }
+        };
+        
+        if (closeExportModalBtn) {
+            closeExportModalBtn.addEventListener('click', closeExportModal);
+        }
+        
+        if (cancelExportBtn) {
+            cancelExportBtn.addEventListener('click', closeExportModal);
+        }
+        
+        // 点击导出模态框背景关闭
+        if (exportModal) {
+            exportModal.addEventListener('click', (e) => {
+                if (e.target === exportModal) {
+                    closeExportModal();
+                }
+            });
+        }
+        
+        // ESC键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImportModal();
+                closeExportModal();
+            }
+        });
+    }
+
+    /**
+     * 显示导入模态框
+     */
+    showImportModal() {
+        const importModal = document.getElementById('importModal');
+        if (importModal) {
+            importModal.style.display = 'flex';
         }
     }
 
     /**
-     * 绑定按钮事件
+     * 显示导出模态框
      */
-    bindButtonEvents() {
-        // 编辑按钮
-        document.querySelectorAll('.edit-vehicle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const licensePlate = e.target.dataset.licensePlate;
-                this.editVehicle(licensePlate);
-            });
-        });
-        
-        // 删除按钮
-        document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const licensePlate = e.target.dataset.licensePlate;
-                this.deleteVehicle(licensePlate);
-            });
-        });
+    showExportModal() {
+        const exportModal = document.getElementById('exportModal');
+        if (exportModal) {
+            exportModal.style.display = 'flex';
+        }
     }
 
     /**

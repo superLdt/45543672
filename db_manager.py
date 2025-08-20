@@ -374,7 +374,7 @@ class DatabaseManager:
              transport_type, requirement_type, volume, weight, special_requirements,
              dispatch_track, initiator_role, initiator_user_id, initiator_department,
              audit_required, current_handler_role, current_handler_user_id, status, assigned_supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 task_data['required_date'],
@@ -671,6 +671,19 @@ class DatabaseManager:
             return row[0] if row else None
         except Exception as e:
             print(f'获取公司ID失败: {str(e)}')
+            return None
+
+    def get_company_name_by_id(self, company_id):
+        """根据公司ID获取公司名称"""
+        if not self.cursor:
+            return None
+
+        try:
+            self.cursor.execute("SELECT name FROM Company WHERE id = ?", (company_id,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            print(f'获取公司名称失败: {str(e)}')
             return None
 
     def assign_vehicle(self, task_id, vehicle_data):

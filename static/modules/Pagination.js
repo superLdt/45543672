@@ -22,6 +22,7 @@ export class Pagination {
         };
         
         this.callbacks = new Map();
+        this.boundEventHandler = null;
     }
     
     /**
@@ -176,13 +177,22 @@ export class Pagination {
      * 绑定分页事件
      */
     bindEvents(container) {
-        container.addEventListener('click', (e) => {
+        // 移除之前的事件监听器
+        if (this.boundEventHandler) {
+            container.removeEventListener('click', this.boundEventHandler);
+        }
+        
+        // 定义新的事件处理函数并保存引用
+        this.boundEventHandler = (e) => {
             const button = e.target.closest('[data-page]');
             if (button && !button.disabled) {
                 const page = parseInt(button.dataset.page);
                 this.goToPage(page);
             }
-        });
+        };
+        
+        // 绑定新的事件监听器
+        container.addEventListener('click', this.boundEventHandler);
     }
     
     /**
