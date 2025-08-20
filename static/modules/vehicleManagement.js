@@ -266,13 +266,22 @@ export class VehicleManager {
         if (!vehicles || vehicles.length === 0) {
             tbody.innerHTML = '';
             if (emptyState) emptyState.style.display = 'block';
+            // 确保分页容器也被清空
+            if (this.pagination) {
+                this.pagination.setData(0, 1);
+                this.pagination.render();
+            }
             return;
         }
         
         if (emptyState) emptyState.style.display = 'none';
         
-        tbody.innerHTML = vehicles.map(vehicle => `
+        // 计算序号：基于当前页码和页大小
+        const startIndex = (this.currentPage - 1) * this.pageSize + 1;
+        
+        tbody.innerHTML = vehicles.map((vehicle, index) => `
             <tr>
+                <td>${startIndex + index}</td>
                 <td>${vehicle.vehicle_type || ''}</td>
                 <td>${vehicle.license_plate || ''}</td>
                 <td>${vehicle.standard_volume || ''}</td>
@@ -301,8 +310,20 @@ export class VehicleManager {
      * 使用Pagination.js进行分页管理
      */
     updatePagination(totalItems) {
+        this.debug.log(`更新分页: 总记录数=${totalItems}, 当前页=${this.currentPage}, 页大小=${this.pageSize}`);
+        
+        // 确保分页容器存在
+        const container = document.getElementById('paginationContainer');
+        if (!container) {
+            this.debug.error('分页容器未找到: #paginationContainer');
+            return;
+        }
+        
         this.pagination.setData(totalItems, this.currentPage);
         this.pagination.render();
+        
+        // 确保分页容器可见
+        container.style.display = totalItems > 0 ? 'flex' : 'none';
     }
 
     /**
