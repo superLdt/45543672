@@ -35,12 +35,19 @@
 | audit_required | BOOLEAN | 是否需要审核 | NOT NULL |
 | auditor_role | TEXT | 审核人角色 | 可选 |
 | auditor_user_id | INTEGER | 审核人用户ID | 可选 |
-| audit_status | TEXT | 审核状态 | DEFAULT '待审核' |
+| audit_status | TEXT | 审核状态 | DEFAULT '待审核' CHECK(audit_status IN ('待审核', '已通过', '已拒绝')) |
 | audit_time | TEXT | 审核时间 | 可选 |
 | audit_note | TEXT | 审核备注 | 可选 |
 | current_handler_role | TEXT | 当前处理人角色 | 可选 |
 | current_handler_user_id | INTEGER | 当前处理人用户ID | 可选 |
 | assigned_supplier_id | INTEGER | 指定供应商用户ID | 可选 (外键关联User表id字段) |
+| INDEX(required_date) |  | 用车时间索引 |  |
+| INDEX(status) |  | 任务状态索引 |  |
+| INDEX(initiator_user_id) |  | 发起者用户ID索引 |  |
+| INDEX(auditor_user_id) |  | 审核人用户ID索引 |  |
+| INDEX(current_handler_user_id) |  | 当前处理人用户ID索引 |  |
+| INDEX(dispatch_track) |  | 流程轨道索引 |  |
+| INDEX(assigned_supplier_id) |  | 指定供应商用户ID索引 |  |
 
 ### 2. vehicles - 车辆信息表
 
@@ -49,13 +56,32 @@
 | id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
 | task_id | TEXT | 关联任务ID | FOREIGN KEY REFERENCES manual_dispatch_tasks(task_id) |
 | manifest_number | TEXT | 路单流水号 | NOT NULL |
+| manifest_serial | TEXT | 路单序号 | NOT NULL |
 | dispatch_number | TEXT | 派车单号 | NOT NULL |
 | license_plate | TEXT | 车牌号 | 必选 |
 | carriage_number | TEXT | 车厢号 | 可选 |
+| notes | TEXT | 备注信息 | 可选 |
 | actual_volume | REAL | 实际容积方数 | 可选 |
+| required_volume | REAL | 需求容积方数（从任务传递） | 可选 |
+| confirmed_volume | REAL | 车间地调确认容积方数 | 可选 |
 | volume_photo_url | TEXT | 容积照片URL | 可选 |
 | volume_modified_by | INTEGER | 容积修改人ID | 可选 (外键关联User表id字段) |
 | created_at | TEXT | 创建时间 | DEFAULT CURRENT_TIMESTAMP |
+| updated_at | TEXT | 更新时间 | DEFAULT CURRENT_TIMESTAMP |
+| INDEX(task_id) |  | 任务索引 |  |
+| INDEX(license_plate) |  | 车牌号索引 |  |
+
+### 3. dispatch_status_history - 派车状态历史表
+
+| 字段名 | 类型 | 说明 | 约束 |
+|--------|------|------|------|
+| id | INTEGER | 记录ID（主键） | PRIMARY KEY AUTOINCREMENT |
+| task_id | TEXT | 关联任务ID | FOREIGN KEY REFERENCES manual_dispatch_tasks(task_id) |
+| status_change | TEXT | 状态变更 | NOT NULL |
+| operator | TEXT | 操作人 | NOT NULL |
+| timestamp | TEXT | 时间戳 | DEFAULT CURRENT_TIMESTAMP |
+| note | TEXT | 备注 | 可选 |
+| INDEX(task_id) |  | 任务索引 |  |
 
 ### 3. dispatch_status_history - 派车状态历史表
 
@@ -124,7 +150,7 @@
 | vehicle_type | TEXT | 车辆类型(仅分：单车、挂车，默认单车) | NOT NULL |
 | standard_volume | REAL | 标准容积(立方米) | NOT NULL |
 | license_plate | TEXT | 车牌号 | NOT NULL UNIQUE |
-| suppliers | TEXT | 供应商列表(JSON格式) | NOT NULL |
+| suppliers | TEXT | 供应商列表(JSON格式) | 可选 |
 | created_at | TEXT | 创建时间 | NOT NULL |
 | updated_at | TEXT | 更新时间 | NOT NULL |
 | INDEX(vehicle_type) |  | 车辆类型索引 |  |
@@ -185,50 +211,8 @@
 - 自动添加双轨派车所需字段
 - 位于 `app.py` 中的 `init_database()` 函数
 
-### 核心方法
+### 核心方法 见api设计文档
 
-#### 创建任务（支持双轨派车）
-```python
-# 轨道A：车间地调发起
-task_data = {
-    'required_date': '2024-01-15',
-    'start_bureau': '北京局',
-    'route_direction': '北京-上海',
-    'carrier_company': '中国邮政',
-    'route_name': '京沪线',
-    'transport_type': '单程',
-    'requirement_type': '正班',
-    'volume': 45,
-    'weight': 8.5,
-    'special_requirements': '需要冷链',
-    'initiator_role': '车间地调',
-    'initiator_user_id': 1,
-    'initiator_department': '北京中心局',
-    'audit_required': True,
-    'auditor_role': '区域调度员',
-    'auditor_user_id': 2
-}
-
-# 轨道B：区域调度直接派车
-task_data = {
-    'required_date': '2024-01-15',
-    'start_bureau': '北京局',
-    'route_direction': '北京-上海',
-    'carrier_company': '中国邮政',
-    'route_name': '京沪线',
-    'transport_type': '单程',
-    'requirement_type': '正班',
-    'volume': 45,
-    'weight': 8.5,
-    'special_requirements': '需要冷链',
-    'initiator_role': '区域调度员',
-    'initiator_user_id': 2,
-    'initiator_department': '北京中心局',
-    'audit_required': False
-}
-
-result = db.create_dispatch_task(task_data)
-```
 
 #### 查询任务列表（支持双轨筛选）
 ```python

@@ -593,13 +593,32 @@ def confirm_supplier_response_with_vehicle(task_id):
             WHERE task_id = ?
         ''', (new_status, current_user_id, datetime.datetime.now(), task_id))
         
+        # 获取任务的默认需求容积
+        db_manager.cursor.execute('''
+            SELECT volume FROM manual_dispatch_tasks WHERE task_id = ?
+        ''', (task_id,))
+        task_volume = db_manager.cursor.fetchone()
+        required_volume = task_volume['volume'] if task_volume else None
+        
+        # 获取车辆的确认容积默认值,c
+        confirmed_volume = None
+        db_manager.cursor.execute('''
+            SELECT standard_volume FROM vehicle_capacity_reference 
+            WHERE license_plate = ?
+        ''', (data['license_plate'],))
+        capacity_result = db_manager.cursor.fetchone()
+        if capacity_result:
+            confirmed_volume = capacity_result['standard_volume']
+        elif required_volume:
+            confirmed_volume = required_volume
+            
         # 插入车辆信息，处理唯一约束冲突
         try:
             db_manager.cursor.execute('''
                 INSERT INTO vehicles (task_id, manifest_number, dispatch_number, license_plate, 
-                                    carriage_number, notes, actual_volume, volume_photo_url, 
-                                    volume_modified_by, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    carriage_number, notes, actual_volume, required_volume, 
+                                    confirmed_volume, volume_photo_url, volume_modified_by, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 data['manifest_number'],
@@ -608,6 +627,8 @@ def confirm_supplier_response_with_vehicle(task_id):
                 data.get('carriage_number'),
                 data.get('notes'),
                 data.get('actual_volume'),
+                required_volume,
+                confirmed_volume,
                 data.get('volume_photo_url'),
                 current_user_id,  # volume_modified_by设置为当前用户ID
                 datetime.datetime.now()
@@ -915,5 +936,324 @@ def get_statistics():
     except Exception as e:
         return create_response(success=False, error={
             'code': 5001,
-            'message': f'获取统计信息失败: {str(e)}'
+            'message': f'批量导入失败: {str(e)}'
+        }), 500
+
+
+@dispatch_bp.route('/vehicle-info/search', methods=['GET'])
+@require_role(['车间地调', '区域调度员', '超级管理员', '供应商'])
+def search_vehicle_info():
+    """车辆信息搜索接口 - 支持车牌号和车厢号模糊查询
+    
+    功能说明：
+    - 支持车牌号（license_plate）模糊查询
+    - 支持车厢号（carriage_number）模糊查询
+    - 返回简化格式的车辆信息，用于前端自动完成
+    - 结果按车牌号排序，限制返回数量
+    
+    查询参数：
+    - query: 搜索关键词
+    - type: 搜索类型 ('license_plate' 或 'carriage_number', 默认 'license_plate')
+    - limit: 返回结果数量限制 (默认10, 最大50)
+    """
+    try:
+        # 获取查询参数
+        query = request.args.get('query', '').strip()
+        search_type = request.args.get('type', 'license_plate')
+        limit = min(int(request.args.get('limit', 10)), 50)
+        
+        if not query:
+            return create_response(success=False, error={
+                'code': 4001,
+                'message': '搜索关键词不能为空'
+            }), 400
+        
+        # 验证搜索类型
+        if search_type not in ['license_plate', 'carriage_number']:
+            search_type = 'license_plate'
+        
+        # 连接数据库
+        db_manager = DatabaseManager()
+        if not db_manager.connect():
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': '数据库连接失败'
+            }), 500
+        
+        try:
+            # 构建搜索SQL
+            if search_type == 'license_plate':
+                # 搜索车牌号（只搜索单车类型）
+                sql = """
+                    SELECT DISTINCT 
+                        v.license_plate,
+                        v.vehicle_type,
+                        v.standard_volume as actual_volume,
+                        COALESCE(c.name, '未知供应商') as supplier,
+                        v.suppliers
+                    FROM vehicle_capacity_reference v
+                    LEFT JOIN Company c ON c.name IN (
+                        SELECT value FROM json_each(v.suppliers)
+                        LIMIT 1
+                    )
+                    WHERE v.license_plate LIKE ? AND v.vehicle_type = '单车'
+                    ORDER BY v.license_plate
+                    LIMIT ?
+                """
+                params = [f'%{query}%', limit]
+            else:
+                # 搜索车厢号（从vehicle_capacity_reference表中查询，只搜索挂车类型）
+                sql = """
+                    SELECT DISTINCT 
+                        v.license_plate,
+                        v.license_plate as carriage_number,
+                        v.standard_volume as actual_volume,
+                        v.vehicle_type,
+                        COALESCE(c.name, '未知供应商') as supplier,
+                        v.suppliers
+                    FROM vehicle_capacity_reference v
+                    LEFT JOIN Company c ON c.name IN (
+                        SELECT value FROM json_each(v.suppliers)
+                        LIMIT 1
+                    )
+                    WHERE v.vehicle_type = '挂车' AND v.license_plate LIKE ?
+                    ORDER BY v.license_plate
+                    LIMIT ?
+                """
+                params = [f'%{query}%', limit]
+            
+            # 执行查询
+            db_manager.cursor.execute(sql, params)
+            rows = db_manager.cursor.fetchall()
+            
+            # 处理结果
+            results = []
+            for row in rows:
+                if search_type == 'license_plate':
+                    result = {
+                        'license_plate': row[0],
+                        'vehicle_type': row[1],
+                        'actual_volume': float(row[2]) if row[2] else 0.0,
+                        'supplier': row[3],
+                        'carriage_number': ''  # 主车牌搜索时车厢号为空
+                    }
+                else:
+                    # 解析供应商信息
+                    suppliers_str = row[5] or '[]'
+                    try:
+                        import json
+                        suppliers = json.loads(suppliers_str)
+                        supplier = suppliers[0] if suppliers else '未知供应商'
+                    except:
+                        supplier = '未知供应商'
+                    
+                    result = {
+                        'license_plate': row[0],
+                        'carriage_number': row[1] or '',
+                        'actual_volume': float(row[2]) if row[2] else 0.0,
+                        'vehicle_type': row[3] or '挂车',
+                        'supplier': supplier
+                    }
+                results.append(result)
+            
+            # 如果没有找到结果，尝试从车辆容积参考表中获取基础信息
+            if not results and search_type == 'license_plate':
+                # 从车辆容积参考表中查找
+                sql = """
+                    SELECT license_plate, vehicle_type, standard_volume, suppliers
+                    FROM vehicle_capacity_reference
+                    WHERE license_plate LIKE ?
+                    ORDER BY license_plate
+                    LIMIT ?
+                """
+                db_manager.cursor.execute(sql, [f'%{query}%', limit])
+                rows = db_manager.cursor.fetchall()
+                
+                for row in rows:
+                    # 解析供应商信息
+                    suppliers_str = row[3] or '[]'
+                    try:
+                        import json
+                        suppliers = json.loads(suppliers_str)
+                        supplier = suppliers[0] if suppliers else '未知供应商'
+                    except:
+                        supplier = '未知供应商'
+                    
+                    results.append({
+                        'license_plate': row[0],
+                        'vehicle_type': row[1],
+                        'actual_volume': float(row[2]) if row[2] else 0.0,
+                        'supplier': supplier,
+                        'carriage_number': ''
+                    })
+            
+            return create_response(data=results)
+            
+        finally:
+            db_manager.disconnect()
+            
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'搜索失败: {str(e)}'
+        }), 500
+
+
+@dispatch_bp.route('/vehicle-capacity/batch-import', methods=['POST'])
+@require_role(['区域调度员', '超级管理员'])
+def batch_import_vehicle_capacity():
+    """批量导入车辆容积参考数据"""
+    try:
+        # 检查是否有文件上传
+        if 'file' not in request.files:
+            return create_response(success=False, error={
+                'code': 4001,
+                'message': '未选择文件'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return create_response(success=False, error={
+                'code': 4001,
+                'message': '未选择文件'
+            }), 400
+        
+        # 验证文件类型
+        if not file.filename.endswith('.xlsx'):
+            return create_response(success=False, error={
+                'code': 4001,
+                'message': '请上传.xlsx格式的Excel文件'
+            }), 400
+        
+        # 读取Excel文件
+        import pandas as pd
+        import io
+        
+        try:
+            # 读取Excel文件到DataFrame
+            df = pd.read_excel(io.BytesIO(file.read()))
+            
+            # 验证必要的列
+            required_columns = ['车辆类型', '标准容积', '车牌号']
+            # 兼容模板中的列名"标准容积(m³)"
+            if '标准容积(m³)' in df.columns and '标准容积' not in df.columns:
+                df.rename(columns={'标准容积(m³)': '标准容积'}, inplace=True)
+            
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return create_response(success=False, error={
+                    'code': 4001,
+                    'message': f'Excel缺少必要列: {", ".join(missing_columns)}'
+                }), 400
+            
+            # 数据验证和转换
+            errors = []
+            valid_records = []
+            
+            for index, row in df.iterrows():
+                row_num = index + 2  # Excel行号（从2开始，因为第1行是表头）
+                
+                # 验证必填字段
+                if pd.isna(row['车辆类型']) or str(row['车辆类型']).strip() == '':
+                    errors.append(f'第{row_num}行: 车辆类型不能为空')
+                    continue
+                
+                if pd.isna(row['车牌号']) or str(row['车牌号']).strip() == '':
+                    errors.append(f'第{row_num}行: 车牌号不能为空')
+                    continue
+                
+                try:
+                    standard_volume = float(row['标准容积'])
+                    if standard_volume <= 0:
+                        errors.append(f'第{row_num}行: 标准容积必须是正数')
+                        continue
+                except (ValueError, TypeError):
+                    errors.append(f'第{row_num}行: 标准容积格式错误')
+                    continue
+                
+                # 处理供应商字段（可选）
+                suppliers = []
+                if '供应商' in df.columns and not pd.isna(row['供应商']):
+                    suppliers_str = str(row['供应商']).strip()
+                    if suppliers_str:
+                        suppliers = [s.strip() for s in suppliers_str.split(',') if s.strip()]
+                
+                valid_records.append({
+                    'vehicle_type': str(row['车辆类型']).strip(),
+                    'standard_volume': standard_volume,
+                    'license_plate': str(row['车牌号']).strip().upper(),
+                    'suppliers': suppliers
+                })
+            
+            if errors:
+                return create_response(success=False, error={
+                    'code': 4001,
+                    'message': '数据验证失败',
+                    'details': errors
+                }), 400
+            
+            if not valid_records:
+                return create_response(success=False, error={
+                    'code': 4001,
+                    'message': '没有有效的数据需要导入'
+                }), 400
+            
+            # 批量导入数据
+            db_manager = DatabaseManager()
+            if not db_manager.connect():
+                return create_response(success=False, error={
+                    'code': 5001,
+                    'message': '数据库连接失败'
+                }), 500
+            
+            try:
+                success_count = 0
+                error_count = 0
+                import_errors = []
+                
+                for record in valid_records:
+                    try:
+                        result = db_manager.upsert_vehicle_capacity_reference(
+                            record['vehicle_type'],
+                            record['standard_volume'],
+                            record['license_plate'],
+                            record['suppliers']
+                        )
+                        
+                        if result['success']:
+                            success_count += 1
+                        else:
+                            error_count += 1
+                            import_errors.append(f"车牌号 {record['license_plate']}: {result.get('error', '导入失败')}")
+                    
+                    except Exception as e:
+                        error_count += 1
+                        import_errors.append(f"车牌号 {record['license_plate']}: {str(e)}")
+                
+                db_manager.conn.commit()
+                
+                return create_response(data={
+                    'message': f'批量导入完成: 成功{success_count}条, 失败{error_count}条',
+                    'success_count': success_count,
+                    'error_count': error_count,
+                    'errors': import_errors,
+                    'total_records': len(valid_records)
+                })
+                
+            except Exception as e:
+                db_manager.conn.rollback()
+                raise
+            finally:
+                db_manager.disconnect()
+        
+        except Exception as e:
+            return create_response(success=False, error={
+                'code': 5001,
+                'message': f'文件读取失败: {str(e)}'
+            }), 500
+    
+    except Exception as e:
+        return create_response(success=False, error={
+            'code': 5001,
+            'message': f'批量导入失败: {str(e)}'
         }), 500

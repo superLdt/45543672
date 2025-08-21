@@ -199,6 +199,8 @@ class DatabaseManager:
                     carriage_number TEXT,
                     notes TEXT,
                     actual_volume REAL,
+                    required_volume REAL,
+                    confirmed_volume REAL,
                     volume_photo_url TEXT,
                     volume_modified_by INTEGER,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -692,16 +694,26 @@ class DatabaseManager:
             return {'success': False, 'error': '数据库未连接'}
 
         try:
+            # 获取任务的需求容积作为默认值
+            self.cursor.execute('SELECT volume FROM manual_dispatch_tasks WHERE task_id = ?', (task_id,))
+            task_result = self.cursor.fetchone()
+            default_required_volume = task_result[0] if task_result else None
+            
             self.cursor.execute('''
-            INSERT INTO vehicles (task_id, manifest_number, manifest_serial, dispatch_number, license_plate, carriage_number)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO vehicles (task_id, manifest_number, manifest_serial, dispatch_number, license_plate, 
+                                carriage_number, actual_volume, required_volume, confirmed_volume, volume_modified_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task_id,
                 vehicle_data['manifest_number'],
-                vehicle_data['manifest_serial'],
+                vehicle_data.get('manifest_serial'),
                 vehicle_data['dispatch_number'],
                 vehicle_data['license_plate'],
-                vehicle_data.get('carriage_number')
+                vehicle_data.get('carriage_number'),
+                vehicle_data.get('actual_volume'),
+                vehicle_data.get('required_volume', default_required_volume),
+                vehicle_data.get('confirmed_volume'),
+                vehicle_data.get('volume_modified_by')
             ))
 
             self.conn.commit()
@@ -749,6 +761,48 @@ class DatabaseManager:
             print(f'获取状态历史失败: {str(e)}')
             return []
 
+    def get_vehicle_default_volumes(self, task_id, license_plate=None):
+        """
+        获取车辆的默认容积值
+        
+        参数:
+            task_id: 任务ID
+            license_plate: 车牌号（可选）
+        
+        返回:
+            dict: 包含required_volume和confirmed_volume的默认值
+        """
+        if not self.cursor:
+            return {'required_volume': None, 'confirmed_volume': None}
+
+        try:
+            # 获取任务的需求容积
+            self.cursor.execute('SELECT volume FROM manual_dispatch_tasks WHERE task_id = ?', (task_id,))
+            task_result = self.cursor.fetchone()
+            required_volume = task_result[0] if task_result else None
+            
+            # 如果有车牌号，尝试从参考表获取标准容积
+            confirmed_volume = None
+            if license_plate:
+                self.cursor.execute('SELECT standard_volume FROM vehicle_capacity_reference WHERE license_plate = ?', (license_plate,))
+                capacity_result = self.cursor.fetchone()
+                if capacity_result:
+                    confirmed_volume = capacity_result[0]
+                else:
+                    # 如果没有参考数据，使用任务容积作为默认值
+                    confirmed_volume = required_volume
+            else:
+                confirmed_volume = required_volume
+            
+            return {
+                'required_volume': required_volume,
+                'confirmed_volume': confirmed_volume
+            }
+            
+        except Exception as e:
+            print(f'获取默认容积值失败: {str(e)}')
+            return {'required_volume': None, 'confirmed_volume': None}
+
     @staticmethod
     def init_database():
         """静态方法：初始化数据库，创建所有缺失的表"""
@@ -793,6 +847,22 @@ class DatabaseManager:
                 ("current_handler_role", "TEXT"),
                 ("current_handler_user_id", "INTEGER")
             ]
+            
+            # 检查vehicles表结构并添加新字段
+            self.cursor.execute("PRAGMA table_info(vehicles)")
+            vehicle_columns = [row[1] for row in self.cursor.fetchall()]
+            
+            vehicle_new_columns = [
+                ("required_volume", "REAL"),
+                ("confirmed_volume", "REAL")
+            ]
+            
+            for column_name, column_def in vehicle_new_columns:
+                if column_name not in vehicle_columns:
+                    self.cursor.execute(f"ALTER TABLE vehicles ADD COLUMN {column_name} {column_def}")
+                    print(f"✅ 添加vehicles表字段: {column_name}")
+                else:
+                    print(f"⏭️ vehicles表字段已存在: {column_name}")
             
             for column_name, column_def in new_columns:
                 if column_name not in existing_columns:

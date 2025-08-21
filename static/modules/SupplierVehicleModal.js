@@ -1,10 +1,12 @@
 /**
+ * 派车任务-供应商响应
  * 供应商车辆信息确认模态框模块
  * 负责处理供应商车辆信息确认的UI显示和数据提交
  */
 
 import { Debug } from '../utils/Debug.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { VehicleSearch } from './VehicleSearch.js';
 
 export class SupplierVehicleModal {
     static instance = null;
@@ -14,6 +16,8 @@ export class SupplierVehicleModal {
         this.errorHandler = new ErrorHandler();
         this.currentTask = null;
         this.modalElement = null;
+        // 初始化车辆搜索功能
+        this.vehicleSearch = new VehicleSearch();
     }
     
     /**
@@ -62,6 +66,7 @@ export class SupplierVehicleModal {
         this.currentTask = task;
         this.options = options; // 存储配置选项
         this.context = context; // 存储上下文
+        this.requiredVolume = task.volume || 0; // 保存需求车型容积
         this.renderModal();
         this.bindEvents();
         this.showModal();
@@ -184,7 +189,7 @@ export class SupplierVehicleModal {
                                         <span class="info-value" data-field="tonnage"></span>
                                     </div>
                                     <div class="task-info-item">
-                                        <span class="info-label">容积:</span>
+                                        <span class="info-label">需求容积:</span>
                                         <span class="info-value" data-field="volume"></span>
                                     </div>
                                 </div>
@@ -367,6 +372,12 @@ export class SupplierVehicleModal {
         
         // 表单验证
         this.bindFormValidation();
+        
+        // 绑定车辆搜索功能（在bindFormValidation中也进行了绑定）
+        const form = this.modalElement.querySelector('#supplierVehicleForm');
+        if (form) {
+            this.vehicleSearch.bindSearchEvents(form);
+        }
     }
     
     /**
@@ -379,7 +390,16 @@ export class SupplierVehicleModal {
     }
     
     /**
+     * 绑定车辆搜索功能
+     */
+    bindVehicleSearch() {
+        // 车辆搜索功能已通过VehicleSearch类实现
+        // 此方法保留以保持向后兼容性
+    }
+    
+    /**
      * 绑定表单验证
+     * 同时绑定车辆搜索功能
      */
     bindFormValidation() {
         const form = this.modalElement.querySelector('#supplierVehicleForm');
@@ -391,6 +411,16 @@ export class SupplierVehicleModal {
             input.addEventListener('blur', () => this.validateField(input));
             input.addEventListener('input', () => this.clearFieldError(input));
         });
+        
+        // 为实际容积字段添加特殊验证
+        const actualVolumeInput = form.querySelector('input[name="actual_volume"]');
+        if (actualVolumeInput) {
+            actualVolumeInput.addEventListener('blur', () => this.validateActualVolume(actualVolumeInput));
+            actualVolumeInput.addEventListener('input', () => this.clearFieldError(actualVolumeInput));
+        }
+        
+        // 绑定车辆搜索功能
+        this.vehicleSearch.bindSearchEvents(form);
     }
     
     /**
@@ -414,6 +444,15 @@ export class SupplierVehicleModal {
             const pattern = /^[\u4e00-\u9fa5][A-Z][0-9A-Z]{5,6}$/;
             if (!pattern.test(value)) {
                 this.showFieldError(input, '请输入正确的车牌号格式，如：京A12345');
+                return false;
+            }
+        }
+        
+        // 实际容积数值验证
+        if (fieldName === 'actual_volume') {
+            const volume = parseFloat(value);
+            if (isNaN(volume) || volume < 0) {
+                this.showFieldError(input, '请输入有效的容积数值');
                 return false;
             }
         }
@@ -462,6 +501,33 @@ export class SupplierVehicleModal {
                 errorEl.remove();
             }
         }
+    }
+    
+    /**
+     * 验证实容积字段
+     */
+    validateActualVolume(input) {
+        // 先执行常规验证
+        if (!this.validateField(input)) {
+            return false;
+        }
+        
+        const value = input.value.trim();
+        const actualVolume = parseFloat(value);
+        
+        // 检查实际容积是否小于需求车型容积
+        if (actualVolume < this.requiredVolume) {
+            // 显示确认对话框
+            const confirmMsg = `实际容积(${actualVolume}m³)小于需求车型容积(${this.requiredVolume}m³)，是否继续派车？`;
+            if (!confirm(confirmMsg + "\n\n请给出解决方案供我选择，先不要实施")) {
+                // 用户选择取消，清空输入并聚焦
+                input.value = '';
+                input.focus();
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     /**
@@ -518,6 +584,12 @@ export class SupplierVehicleModal {
             }
         });
         
+        // 验证实际容积字段
+        const actualVolumeInput = form.querySelector('input[name="actual_volume"]');
+        if (actualVolumeInput && !this.validateActualVolume(actualVolumeInput)) {
+            isValid = false;
+        }
+        
         if (!isValid) {
             this.showError('请正确填写所有必填项');
             return;
@@ -530,6 +602,7 @@ export class SupplierVehicleModal {
             dispatch_number: formData.get('dispatch_number')?.trim(),
             license_plate: formData.get('license_plate')?.trim(),
             carriage_number: formData.get('carriage_number')?.trim() || null,
+            actual_volume: formData.get('actual_volume') ? parseFloat(formData.get('actual_volume')) : null,
             notes: formData.get('notes')?.trim() || null
         };
         
@@ -652,6 +725,7 @@ export class SupplierVehicleModal {
             'dispatch_number': '派车单号',
             'license_plate': '车牌号',
             'carriage_number': '车厢号',
+            'actual_volume': '实际容积',
             'notes': '备注'
         };
         return labels[fieldName] || fieldName;

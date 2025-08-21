@@ -1,5 +1,5 @@
 /**
- * 车辆管理模块 - 重构版
+ * 基础管理-车辆管理模块 - 重构版
  * 基于ES6模块化架构，与TaskManagementApp保持一致
  */
 
@@ -454,6 +454,18 @@ export class VehicleManager {
             importBtn.addEventListener('click', () => this.showImportModal());
         }
         
+        // 下载模板链接
+        const downloadTemplateLink = document.getElementById('downloadTemplateLink');
+        if (downloadTemplateLink) {
+            downloadTemplateLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.downloadImportTemplate();
+            });
+        }
+
+        // 文件上传功能
+        this.initFileUpload();
+        
         // 导出按钮
         const exportBtn = document.getElementById('exportBtn');
         if (exportBtn) {
@@ -573,6 +585,250 @@ export class VehicleManager {
         const exportModal = document.getElementById('exportModal');
         if (exportModal) {
             exportModal.style.display = 'flex';
+        }
+    }
+
+    /**
+     * 下载车辆信息导入模板
+     */
+    downloadImportTemplate() {
+        this.debug.log('开始下载车辆信息导入模板');
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = '/basic_data/vehicle_import_template';
+        link.download = '车辆信息导入模板.xlsx';
+        link.style.display = 'none';
+        
+        // 添加到DOM并触发下载
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理
+        setTimeout(() => {
+            document.body.removeChild(link);
+            this.debug.log('车辆信息导入模板下载已启动');
+        }, 100);
+    }
+
+    /**
+     * 初始化文件上传功能
+     * 支持拖拽上传和点击选择文件
+     */
+    initFileUpload() {
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const startImportBtn = document.getElementById('startImportBtn');
+
+        if (!fileInput || !fileUploadArea) {
+            this.debug.warn('文件上传元素未找到');
+            return;
+        }
+
+        // 点击上传区域触发文件选择
+        fileUploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 文件选择事件
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            this.handleFileSelection(file);
+        });
+
+        // 拖拽上传功能
+        this.setupDragAndDrop(fileUploadArea, selectedFileName, startImportBtn);
+    }
+
+    /**
+     * 设置拖拽上传功能
+     */
+    setupDragAndDrop(uploadArea, fileNameDisplay, importBtn) {
+        // 防止默认拖拽行为
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        // 拖拽进入时的视觉反馈
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('drag-over');
+                uploadArea.style.borderColor = 'var(--feishu-primary)';
+                uploadArea.style.backgroundColor = 'rgba(51, 112, 255, 0.05)';
+            });
+        });
+
+        // 拖拽离开时的视觉反馈
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('drag-over');
+                uploadArea.style.borderColor = '';
+                uploadArea.style.backgroundColor = '';
+            });
+        });
+
+        // 文件放置事件
+        uploadArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                this.handleFileSelection(file);
+            }
+        });
+    }
+
+    /**
+     * 处理文件选择
+     */
+    handleFileSelection(file) {
+        const selectedFileName = document.getElementById('selectedFileName');
+        const startImportBtn = document.getElementById('startImportBtn');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+
+        if (!file) {
+            this.resetFileSelection();
+            return;
+        }
+
+        // 验证文件类型
+        const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+        if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx')) {
+            this.showToast('请选择Excel文件(.xlsx)', 'error');
+            this.resetFileSelection();
+            return;
+        }
+
+        // 验证文件大小（最大10MB）
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            this.showToast('文件大小不能超过10MB', 'error');
+            this.resetFileSelection();
+            return;
+        }
+
+        // 显示文件名和启用导入按钮
+        if (selectedFileName) {
+            selectedFileName.textContent = `已选择: ${file.name}`;
+            selectedFileName.style.display = 'block';
+        }
+
+        if (startImportBtn) {
+            startImportBtn.disabled = false;
+            startImportBtn.addEventListener('click', () => this.handleFileImport(file));
+        }
+
+        // 更新上传区域样式
+        if (fileUploadArea) {
+            fileUploadArea.style.borderColor = 'var(--feishu-success)';
+            fileUploadArea.style.backgroundColor = 'rgba(82, 196, 26, 0.05)';
+        }
+
+        this.debug.log(`文件选择完成: ${file.name}, 大小: ${(file.size / 1024).toFixed(2)}KB`);
+    }
+
+    /**
+     * 重置文件选择状态
+     */
+    resetFileSelection() {
+        const selectedFileName = document.getElementById('selectedFileName');
+        const startImportBtn = document.getElementById('startImportBtn');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        if (selectedFileName) {
+            selectedFileName.style.display = 'none';
+            selectedFileName.textContent = '';
+        }
+
+        if (startImportBtn) {
+            startImportBtn.disabled = true;
+            startImportBtn.replaceWith(startImportBtn.cloneNode(true)); // 移除事件监听器
+        }
+
+        if (fileUploadArea) {
+            fileUploadArea.style.borderColor = '';
+            fileUploadArea.style.backgroundColor = '';
+        }
+
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+
+    /**
+     * 处理文件导入
+     */
+    async handleFileImport(file) {
+        const startImportBtn = document.getElementById('startImportBtn');
+        const importSpinner = document.getElementById('importSpinner');
+
+        if (!file) {
+            this.showToast('请选择文件', 'error');
+            return;
+        }
+
+        try {
+            // 显示加载状态
+            if (startImportBtn) {
+                startImportBtn.disabled = true;
+            }
+            if (importSpinner) {
+                importSpinner.style.display = 'inline-block';
+            }
+
+            this.debug.log(`开始导入文件: ${file.name}`);
+
+            // 创建FormData对象
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 发送导入请求
+            const response = await fetch('/api/dispatch/vehicle-capacity/batch-import', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            const data = await this.handleResponse(response);
+            
+            this.showToast(`导入成功: ${data.message || '文件导入完成'}`, 'success');
+            this.debug.log('文件导入成功');
+
+            // 关闭导入模态框并刷新数据
+            this.closeImportModal();
+            await this.loadVehicles();
+
+        } catch (error) {
+            this.errorHandler.handle(error, '文件导入失败');
+            this.showToast(`导入失败: ${error.message}`, 'error');
+            
+            // 恢复按钮状态
+            if (startImportBtn) {
+                startImportBtn.disabled = false;
+            }
+        } finally {
+            // 隐藏加载状态
+            if (importSpinner) {
+                importSpinner.style.display = 'none';
+            }
+            if (startImportBtn) {
+                startImportBtn.disabled = false;
+            }
+        }
+    }
+
+    /**
+     * 关闭导入模态框
+     */
+    closeImportModal() {
+        const importModal = document.getElementById('importModal');
+        if (importModal) {
+            importModal.style.display = 'none';
+            this.resetFileSelection();
         }
     }
 

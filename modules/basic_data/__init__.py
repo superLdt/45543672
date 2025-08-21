@@ -350,3 +350,62 @@ def company_import_template():
         as_attachment=True,
         download_name=filename
     )
+
+@basic_data_bp.route('/vehicle_import_template')
+def vehicle_import_template():
+    """下载车辆信息导入模板"""
+    # 创建一个包含必要列的空DataFrame作为模板
+    template_columns = ['车辆类型', '车牌号', '标准容积(m³)', '供应商']
+    df = pd.DataFrame(columns=template_columns)
+    
+    # 添加示例数据，帮助用户理解格式
+    example_data = [
+        ['单车', '皖A12345', '50.0', '供应商A'],
+        ['挂车', '皖B67890', '80.0', '供应商B,供应商C'],
+        ['单车', '苏C54321', '45.5', '供应商D']
+    ]
+    
+    for i, data in enumerate(example_data, 1):
+        df.loc[i] = data
+
+    # 创建Excel文件
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='车辆信息模板')
+        
+        # 获取工作表对象，添加样式
+        worksheet = writer.sheets['车辆信息模板']
+        
+        # 设置列宽
+        column_widths = {
+            'A': 15,  # 车辆类型
+            'B': 15,  # 车牌号
+            'C': 15,  # 标准容积
+            'D': 20   # 供应商
+        }
+        
+        for col, width in column_widths.items():
+            worksheet.column_dimensions[col].width = width
+            
+        # 设置标题行样式
+        from openpyxl.styles import Font, PatternFill, Alignment
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        for col_num in range(1, len(template_columns) + 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+    output.seek(0)
+
+    # 设置响应头并返回文件
+    filename = "车辆信息导入模板.xlsx"
+    return send_file(
+        BytesIO(output.getvalue()),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )

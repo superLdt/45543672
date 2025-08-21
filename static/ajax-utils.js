@@ -84,6 +84,7 @@ class AjaxUtils {
                 ...this.defaultHeaders,
                 ...options.headers
             },
+            credentials: 'include',
             ...options
         };
 
