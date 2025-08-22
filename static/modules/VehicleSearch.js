@@ -280,7 +280,7 @@ export class VehicleSearch {
             resultItem.dataset.vehicleInfo = JSON.stringify(item);
 
             // 点击选择结果
-            resultItem.addEventListener('click', (e) => {
+            resultItem.addEventListener('click', async (e) => {
                 // 阻止事件冒泡，防止触发输入框的blur事件
                 e.stopPropagation();
                 
@@ -293,8 +293,8 @@ export class VehicleSearch {
                 }
                 container.style.display = 'none';
                 
-                // 直接设置实际容积，避免重新搜索
-                this.setActualVolume(vehicleInfo.actual_volume);
+                // 智能设置容积 - 根据车厢号优先原则
+                await this.setVolumeIntelligently(vehicleInfo);
                 
                 // 手动触发失焦，确保输入框失去焦点
                 inputElement.blur();
@@ -322,9 +322,88 @@ export class VehicleSearch {
      */
     setActualVolume(volume) {
         // 查找当前页面中的容积显示元素
-        const volumeValueElement = document.querySelector('[name="actual_volume"] .volume-value');
+        const volumeValueElement = document.querySelector('.volume-value');
         if (volumeValueElement) {
             volumeValueElement.textContent = volume || '-';
+        }
+        
+        // 同时尝试查找其他可能的容积显示元素
+        const volumeDisplay = document.querySelector('[name="actual_volume"] .volume-value');
+        if (volumeDisplay) {
+            volumeDisplay.textContent = volume || '-';
+        }
+
+        // 触发容积更新事件，通知其他模块
+        const volumeUpdateEvent = new CustomEvent('volumeUpdated', {
+            detail: { volume: volume || '-' },
+            bubbles: true
+        });
+        document.dispatchEvent(volumeUpdateEvent);
+    }
+
+    /**
+     * 获取当前车厢号值
+     * @returns {string} 当前车厢号
+     */
+    getCurrentCarriageNumber() {
+        const carriageNumberInput = document.querySelector('input[name="carriage_number"]');
+        return carriageNumberInput ? carriageNumberInput.value.trim() : '';
+    }
+
+    /**
+     * 获取当前车牌号值
+     * @returns {string} 当前车牌号
+     */
+    getCurrentLicensePlate() {
+        const licensePlateInput = document.querySelector('input[name="license_plate"]');
+        return licensePlateInput ? licensePlateInput.value.trim() : '';
+    }
+
+    /**
+     * 智能设置容积 - 根据车厢号优先原则
+     * @param {Object} vehicleInfo - 车辆信息对象
+     */
+    async setVolumeIntelligently(vehicleInfo) {
+        // 获取当前表单中的车厢号和车牌号
+        const currentCarriageNumber = this.getCurrentCarriageNumber();
+        const currentLicensePlate = this.getCurrentLicensePlate();
+        
+        // 如果当前车厢号有值，优先使用车厢号查询容积
+        if (currentCarriageNumber) {
+            await this.fetchVolumeByCarriageNumber(currentCarriageNumber);
+        } else {
+            // 车厢号为空时，使用当前选择的车辆信息
+            this.setActualVolume(vehicleInfo.actual_volume);
+        }
+    }
+
+    /**
+     * 根据车厢号获取容积
+     * 使用现有的搜索API接口来获取车厢号对应的容积信息
+     * @param {string} carriageNumber - 车厢号
+     */
+    async fetchVolumeByCarriageNumber(carriageNumber) {
+        if (!carriageNumber) return;
+        
+        try {
+            const response = await fetch(`/api/dispatch/vehicle-info/search?query=${encodeURIComponent(carriageNumber)}&type=carriage_number&limit=1`, {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data && result.data.length > 0) {
+                    const vehicle = result.data[0];
+                    this.setActualVolume(vehicle.actual_volume);
+                } else {
+                    this.setActualVolume('-');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('根据车厢号获取容积失败:', error);
+            this.setActualVolume('-');
         }
     }
 }

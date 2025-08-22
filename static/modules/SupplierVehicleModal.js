@@ -761,8 +761,14 @@ export class SupplierVehicleModal {
      * 3. 两个字段都为空时，清空容积显示
      */
     async fetchVolume() {
-        const carriageNumber = this.elements.carriageNumber?.value?.trim();
-        const licensePlate = this.elements.licensePlate?.value?.trim();
+        const form = this.modalElement?.querySelector('#supplierVehicleForm');
+        if (!form) return;
+        
+        const carriageNumberInput = form.querySelector('input[name="carriage_number"]');
+        const licensePlateInput = form.querySelector('input[name="license_plate"]');
+        
+        const carriageNumber = carriageNumberInput?.value?.trim();
+        const licensePlate = licensePlateInput?.value?.trim();
         
         // 如果两个字段都为空，清空容积显示
         if (!carriageNumber && !licensePlate) {
@@ -834,78 +840,182 @@ export class SupplierVehicleModal {
     }
     
     /**
-     * 根据车牌号或车厢号获取容积信息
-     * 逻辑规则：
-     * 1. 如果车厢号为空，则使用车牌号查询容积
-     * 2. 如果车厢号有值，则优先使用车厢号查询容积
+     * 根据车牌号或车厢号获取车辆信息
+     * 查询优先级：1. 车厢号（精确匹配）2. 车牌号（精确匹配）3. 车牌号（模糊匹配）
+     * @param {string} licensePlate - 车牌号
+     * @param {string} carriageNumber - 车厢号
      */
-    async fetchVolume() {
-        if (!this.modalElement) return;
+    async fetchVehicleInfo(licensePlate, carriageNumber) {
+        // 如果车厢号有值，优先使用车厢号查询
+        const effectiveCarriageNumber = carriageNumber || this.getCurrentCarriageNumber();
+        const effectiveLicensePlate = licensePlate || this.getCurrentLicensePlate();
         
-        const form = this.modalElement.querySelector('#supplierVehicleForm');
-        if (!form) return;
-        
-        const licensePlate = form.querySelector('input[name="license_plate"]').value.trim();
-        const carriageNumber = form.querySelector('input[name="carriage_number"]').value.trim();
-        
-        // 如果两个字段都为空，清空容积显示
-        if (!licensePlate && !carriageNumber) {
-            const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
-            if (volumeValueElement) {
-                volumeValueElement.textContent = '-';
-            }
+        if (!effectiveLicensePlate && !effectiveCarriageNumber) {
+            this.clearVehicleInfo();
             return;
         }
-        
+
         try {
-            // 构造查询参数
-            const params = new URLSearchParams();
+            let url = '/api/dispatch/vehicle-info';
+            let params = new URLSearchParams();
             
-            // 根据车厢号是否为空决定查询逻辑
-            if (carriageNumber) {
-                // 如果车厢号有值，优先使用车厢号查询
-                params.append('query', carriageNumber);
-                params.append('type', 'carriage_number');
-            } else if (licensePlate) {
-                // 如果车厢号为空，使用车牌号查询
-                params.append('query', licensePlate);
-                params.append('type', 'license_plate');
+            // 根据优先级构建查询参数：车厢号优先
+            if (effectiveCarriageNumber) {
+                // 优先级1：车厢号精确匹配
+                params.append('carriage_number', effectiveCarriageNumber);
+            } else if (effectiveLicensePlate) {
+                // 优先级2：车牌号精确匹配（仅当车厢号为空时）
+                params.append('license_plate', effectiveLicensePlate);
             }
             
-            const response = await fetch(`/api/dispatch/vehicle-info/search?${params.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            url += '?' + params.toString();
+
+            const response = await fetch(url, {
                 credentials: 'include'
             });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success && result.data && result.data.length > 0) {
-                // 取第一个匹配的结果
-                const vehicleInfo = result.data[0];
-                const volume = vehicleInfo.actual_volume || '-';
-                
-                // 更新实际容积显示
-                const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
-                if (volumeValueElement) {
-                    volumeValueElement.textContent = volume;
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data && result.data.length > 0) {
+                    const vehicle = result.data[0];
+                    this.populateVehicleInfo(vehicle);
+                } else {
+                    // 如果精确匹配未找到，尝试模糊匹配车牌号
+                    if (!effectiveCarriageNumber && effectiveLicensePlate) {
+                        await this.searchByLicensePlate(effectiveLicensePlate);
+                    } else {
+                        this.clearVehicleInfo();
+                    }
                 }
             } else {
-                // 没有找到匹配的车辆信息，显示默认值
-                const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
-                if (volumeValueElement) {
-                    volumeValueElement.textContent = '-';
-                }
+                throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
-            console.error('获取容积信息失败:', error);
-            // 出错时显示默认值
-            const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
-            if (volumeValueElement) {
-                volumeValueElement.textContent = '-';
+            this.errorHandler.handle(error, '获取车辆信息失败');
+            this.clearVehicleInfo();
+        }
+    }
+
+    /**
+     * 通过车牌号进行模糊搜索
+     * @param {string} licensePlate - 车牌号
+     */
+    async searchByLicensePlate(licensePlate) {
+        try {
+            const response = await fetch(`/api/dispatch/vehicle-info/search?query=${encodeURIComponent(licensePlate)}&type=license_plate&limit=1`, {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data && result.data.length > 0) {
+                    const vehicle = result.data[0];
+                    this.populateVehicleInfo(vehicle);
+                } else {
+                    this.clearVehicleInfo();
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
             }
+        } catch (error) {
+            this.errorHandler.handle(error, '搜索车辆信息失败');
+            this.clearVehicleInfo();
+        }
+    }
+
+    /**
+     * 获取当前车厢号值
+     * @returns {string} 当前车厢号
+     */
+    getCurrentCarriageNumber() {
+        const form = this.modalElement?.querySelector('#supplierVehicleForm');
+        if (!form) return '';
+        const carriageNumberInput = form.querySelector('input[name="carriage_number"]');
+        return carriageNumberInput ? carriageNumberInput.value.trim() : '';
+    }
+
+    /**
+     * 获取当前车牌号值
+     * @returns {string} 当前车牌号
+     */
+    getCurrentLicensePlate() {
+        const form = this.modalElement?.querySelector('#supplierVehicleForm');
+        if (!form) return '';
+        const licensePlateInput = form.querySelector('input[name="license_plate"]');
+        return licensePlateInput ? licensePlateInput.value.trim() : '';
+    }
+
+    /**
+     * 填充车辆信息到表单
+     * @param {Object} vehicle - 车辆信息对象
+     */
+    populateVehicleInfo(vehicle) {
+        const form = this.modal.querySelector('form');
+        if (!form) return;
+
+        // 只填充空值，不覆盖已有值
+        const licensePlateInput = form.querySelector('input[name="license_plate"]');
+        if (licensePlateInput && !licensePlateInput.value.trim()) {
+            licensePlateInput.value = vehicle.license_plate || '';
+        }
+
+        const carriageNumberInput = form.querySelector('input[name="carriage_number"]');
+        if (carriageNumberInput && !carriageNumberInput.value.trim()) {
+            carriageNumberInput.value = vehicle.carriage_number || '';
+        }
+
+        // 始终更新容积显示，但遵循车厢号优先原则
+        this.setVolumeDisplay(vehicle.actual_volume);
+
+        const vehicleTypeInput = form.querySelector('input[name="vehicle_type"]');
+        if (vehicleTypeInput && !vehicleTypeInput.value.trim()) {
+            vehicleTypeInput.value = vehicle.vehicle_type || '';
+        }
+
+        const supplierInput = form.querySelector('input[name="supplier"]');
+        if (supplierInput && !supplierInput.value.trim()) {
+            supplierInput.value = vehicle.supplier || '';
+        }
+    }
+
+    /**
+     * 设置实际容积显示值
+     * @param {string|number} volume - 实际容积值
+     */
+    setVolumeDisplay(volume) {
+        const volumeValueElement = document.querySelector('[name="actual_volume"] .volume-value');
+        if (volumeValueElement) {
+            volumeValueElement.textContent = volume || '-';
+        }
+    }
+
+    /**
+     * 清空车辆信息
+     */
+    clearVehicleInfo() {
+        const form = this.modal.querySelector('form');
+        if (!form) return;
+
+        const licensePlateInput = form.querySelector('input[name="license_plate"]');
+        if (licensePlateInput) {
+            licensePlateInput.value = '';
+        }
+
+        const carriageNumberInput = form.querySelector('input[name="carriage_number"]');
+        if (carriageNumberInput) {
+            carriageNumberInput.value = '';
+        }
+
+        this.setVolumeDisplay('-');
+
+        const vehicleTypeInput = form.querySelector('input[name="vehicle_type"]');
+        if (vehicleTypeInput) {
+            vehicleTypeInput.value = '';
+        }
+
+        const supplierInput = form.querySelector('input[name="supplier"]');
+        if (supplierInput) {
+            supplierInput.value = '';
         }
     }
     
