@@ -56,6 +56,7 @@ export class VehicleSearch {
 
         // 创建搜索结果容器
         const resultsContainer = this.createResultsContainer(inputElement);
+        let isSelectingResult = false; // 标志：是否正在选择结果
         
         // 绑定输入事件
         inputElement.addEventListener('input', (e) => {
@@ -67,16 +68,26 @@ export class VehicleSearch {
 
         // 失去焦点时隐藏结果
         inputElement.addEventListener('blur', () => {
+            // 添加一个短暂的延迟，确保点击事件能先执行
             setTimeout(() => {
-                resultsContainer.style.display = 'none';
-            }, 200);
+                if (!isSelectingResult) {
+                    resultsContainer.style.display = 'none';
+                }
+                isSelectingResult = false; // 重置标志
+            }, 150);
         });
 
         // 获得焦点时显示结果（如果有内容）
         inputElement.addEventListener('focus', () => {
-            if (inputElement.value && resultsContainer.children.length > 0) {
+            if (inputElement.value && resultsContainer.children.length > 0 && !isSelectingResult) {
                 resultsContainer.style.display = 'block';
             }
+        });
+
+        // 为容器添加mousedown事件，防止触发blur
+        resultsContainer.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // 防止触发blur事件
+            isSelectingResult = true;
         });
     }
 
@@ -89,6 +100,7 @@ export class VehicleSearch {
 
         // 创建搜索结果容器
         const resultsContainer = this.createResultsContainer(inputElement);
+        let isSelectingResult = false; // 标志：是否正在选择结果
         
         // 绑定输入事件
         inputElement.addEventListener('input', (e) => {
@@ -100,16 +112,26 @@ export class VehicleSearch {
 
         // 失去焦点时隐藏结果
         inputElement.addEventListener('blur', () => {
+            // 添加一个短暂的延迟，确保点击事件能先执行
             setTimeout(() => {
-                resultsContainer.style.display = 'none';
-            }, 200);
+                if (!isSelectingResult) {
+                    resultsContainer.style.display = 'none';
+                }
+                isSelectingResult = false; // 重置标志
+            }, 150);
         });
 
         // 获得焦点时显示结果（如果有内容）
         inputElement.addEventListener('focus', () => {
-            if (inputElement.value && resultsContainer.children.length > 0) {
+            if (inputElement.value && resultsContainer.children.length > 0 && !isSelectingResult) {
                 resultsContainer.style.display = 'block';
             }
+        });
+
+        // 为容器添加mousedown事件，防止触发blur
+        resultsContainer.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // 防止触发blur事件
+            isSelectingResult = true;
         });
     }
 
@@ -254,17 +276,31 @@ export class VehicleSearch {
                 `;
             }
 
+            // 存储车辆信息到DOM元素
+            resultItem.dataset.vehicleInfo = JSON.stringify(item);
+
             // 点击选择结果
-            resultItem.addEventListener('click', () => {
+            resultItem.addEventListener('click', (e) => {
+                // 阻止事件冒泡，防止触发输入框的blur事件
+                e.stopPropagation();
+                
+                const vehicleInfo = JSON.parse(resultItem.dataset.vehicleInfo);
+                
                 if (searchType === 'license_plate') {
-                    inputElement.value = item.license_plate;
+                    inputElement.value = vehicleInfo.license_plate;
                 } else {
-                    inputElement.value = item.carriage_number;
+                    inputElement.value = vehicleInfo.carriage_number;
                 }
                 container.style.display = 'none';
                 
-                // 触发输入事件以便其他监听器可以响应
-                inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                // 直接设置实际容积，避免重新搜索
+                this.setActualVolume(vehicleInfo.actual_volume);
+                
+                // 手动触发失焦，确保输入框失去焦点
+                inputElement.blur();
+                
+                // 触发change事件而不是input事件，避免重新触发搜索
+                inputElement.dispatchEvent(new Event('change', { bubbles: true }));
             });
 
             // 鼠标悬停效果
@@ -278,6 +314,18 @@ export class VehicleSearch {
 
             container.appendChild(resultItem);
         });
+    }
+
+    /**
+     * 设置实际容积显示值
+     * @param {string|number} volume - 实际容积值
+     */
+    setActualVolume(volume) {
+        // 查找当前页面中的容积显示元素
+        const volumeValueElement = document.querySelector('[name="actual_volume"] .volume-value');
+        if (volumeValueElement) {
+            volumeValueElement.textContent = volume || '-';
+        }
     }
 }
 

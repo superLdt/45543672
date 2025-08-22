@@ -274,6 +274,21 @@ export class SupplierVehicleModal {
                                         <span class="form-hint">如有多个车厢请填写</span>
                                     </div>
                                 </div>
+                                
+                                <!-- 实际容积显示 -->
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-cube"></i>
+                                            实际容积
+                                        </label>
+                                        <div class="volume-display" name="actual_volume">
+                                            <span class="volume-value">-</span>
+                                            <span class="volume-unit">m³</span>
+                                        </div>
+                                        <span class="form-hint">系统根据车牌号或车厢号自动获取</span>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- 备注信息 -->
@@ -341,6 +356,12 @@ export class SupplierVehicleModal {
         const weightText = (weight !== null && weight !== undefined && weight !== '' && weight !== 0) ? `${weight}吨` : '未指定';
         this.modalElement.querySelector('[data-field="weight"]').textContent = weightText;
         this.modalElement.querySelector('[data-field="volume"]').textContent = task.volume ? `${task.volume}m³` : '未指定';
+        
+        // 初始化实际容积显示
+        const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
+        if (volumeValueElement) {
+            volumeValueElement.textContent = '-';
+        }
     }
     
     /**
@@ -421,6 +442,24 @@ export class SupplierVehicleModal {
         
         // 绑定车辆搜索功能
         this.vehicleSearch.bindSearchEvents(form);
+        
+        // 添加车牌号和车厢号输入事件监听器来触发容积查询
+        const licensePlateInput = form.querySelector('input[name="license_plate"]');
+        const carriageNumberInput = form.querySelector('input[name="carriage_number"]');
+        
+        if (licensePlateInput) {
+            licensePlateInput.addEventListener('input', () => {
+                this.clearFieldError(licensePlateInput);
+                this.debounceFetchVolume();
+            });
+        }
+        
+        if (carriageNumberInput) {
+            carriageNumberInput.addEventListener('input', () => {
+                this.clearFieldError(carriageNumberInput);
+                this.debounceFetchVolume();
+            });
+        }
     }
     
     /**
@@ -699,6 +738,178 @@ export class SupplierVehicleModal {
     }
     
     /**
+     * 防抖函数 - 用于容积查询
+     */
+    /**
+     * 防抖获取容积信息
+     * 使用防抖机制避免频繁请求，延迟500ms执行
+     */
+    debounceFetchVolume() {
+        clearTimeout(this.volumeTimeout);
+        this.volumeTimeout = setTimeout(() => {
+            this.fetchVolume();
+        }, 500);
+    }
+    
+    /**
+     * 获取车辆容积信息
+     * 根据车厢号和车牌号查询对应车辆的实际容积
+     * 
+     * 查询优先级规则：
+     * 1. 优先使用车厢号查询（如果车厢号有值）
+     * 2. 车厢号为空时，使用车牌号查询
+     * 3. 两个字段都为空时，清空容积显示
+     */
+    async fetchVolume() {
+        const carriageNumber = this.elements.carriageNumber?.value?.trim();
+        const licensePlate = this.elements.licensePlate?.value?.trim();
+        
+        // 如果两个字段都为空，清空容积显示
+        if (!carriageNumber && !licensePlate) {
+            this.setVolumeDisplay('-');
+            return;
+        }
+        
+        try {
+            // 根据优先级选择查询参数
+            let queryParam = '';
+            let queryType = '';
+            
+            if (carriageNumber) {
+                // 优先使用车厢号
+                queryParam = carriageNumber;
+                queryType = 'carriage_number';
+            } else if (licensePlate) {
+                // 车厢号为空时使用车牌号
+                queryParam = licensePlate;
+                queryType = 'license_plate';
+            }
+            
+            if (!queryParam) {
+                this.setVolumeDisplay('-');
+                return;
+            }
+            
+            this.debug.log('查询车辆容积:', { queryParam, queryType });
+            
+            const response = await fetch(
+                `/api/dispatch/vehicle-info/search?query=${encodeURIComponent(queryParam)}&type=${queryType}&limit=1`,
+                {
+                    credentials: 'include' // 确保携带认证信息
+                }
+            );
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // 使用查询到的第一个匹配结果
+                    const vehicle = result.data[0];
+                    const volume = vehicle.actual_volume || '-';
+                    this.setVolumeDisplay(volume);
+                    this.debug.log('获取容积成功:', volume);
+                } else {
+                    // 未找到匹配车辆
+                    this.setVolumeDisplay('-');
+                    this.debug.log('未找到匹配车辆');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            this.errorHandler.handle(error, '获取车辆容积失败');
+            this.setVolumeDisplay('-');
+        }
+    }
+    
+    /**
+     * 设置容积显示值
+     * @param {string|number} volume - 容积值
+     */
+    setVolumeDisplay(volume) {
+        const volumeValue = this.elements.actualVolume?.querySelector('.volume-value');
+        if (volumeValue) {
+            volumeValue.textContent = volume || '-';
+        }
+    }
+    
+    /**
+     * 根据车牌号或车厢号获取容积信息
+     * 逻辑规则：
+     * 1. 如果车厢号为空，则使用车牌号查询容积
+     * 2. 如果车厢号有值，则优先使用车厢号查询容积
+     */
+    async fetchVolume() {
+        if (!this.modalElement) return;
+        
+        const form = this.modalElement.querySelector('#supplierVehicleForm');
+        if (!form) return;
+        
+        const licensePlate = form.querySelector('input[name="license_plate"]').value.trim();
+        const carriageNumber = form.querySelector('input[name="carriage_number"]').value.trim();
+        
+        // 如果两个字段都为空，清空容积显示
+        if (!licensePlate && !carriageNumber) {
+            const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
+            if (volumeValueElement) {
+                volumeValueElement.textContent = '-';
+            }
+            return;
+        }
+        
+        try {
+            // 构造查询参数
+            const params = new URLSearchParams();
+            
+            // 根据车厢号是否为空决定查询逻辑
+            if (carriageNumber) {
+                // 如果车厢号有值，优先使用车厢号查询
+                params.append('query', carriageNumber);
+                params.append('type', 'carriage_number');
+            } else if (licensePlate) {
+                // 如果车厢号为空，使用车牌号查询
+                params.append('query', licensePlate);
+                params.append('type', 'license_plate');
+            }
+            
+            const response = await fetch(`/api/dispatch/vehicle-info/search?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success && result.data && result.data.length > 0) {
+                // 取第一个匹配的结果
+                const vehicleInfo = result.data[0];
+                const volume = vehicleInfo.actual_volume || '-';
+                
+                // 更新实际容积显示
+                const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
+                if (volumeValueElement) {
+                    volumeValueElement.textContent = volume;
+                }
+            } else {
+                // 没有找到匹配的车辆信息，显示默认值
+                const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
+                if (volumeValueElement) {
+                    volumeValueElement.textContent = '-';
+                }
+            }
+        } catch (error) {
+            console.error('获取容积信息失败:', error);
+            // 出错时显示默认值
+            const volumeValueElement = this.modalElement.querySelector('[name="actual_volume"] .volume-value');
+            if (volumeValueElement) {
+                volumeValueElement.textContent = '-';
+            }
+        }
+    }
+    
+    /**
      * 格式化日期时间
      */
     formatDateTime(dateStr) {
@@ -848,6 +1059,29 @@ const styles = `
 .form-input.error:focus {
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* 实际容积显示样式 */
+.volume-display {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.volume-value {
+    font-weight: 600;
+    color: #1f2937;
+    margin-right: 4px;
+}
+
+.volume-unit {
+    color: #6b7280;
+    font-size: 12px;
 }
 </style>
 `;
