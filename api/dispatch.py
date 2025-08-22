@@ -958,10 +958,14 @@ def search_vehicle_info():
     """
     try:
         # 获取查询参数
+        # 从请求参数中获取搜索关键词，去除首尾空格，默认为空字符串
         query = request.args.get('query', '').strip()
+        # 从请求参数中获取搜索类型，默认为 'license_plate'
         search_type = request.args.get('type', 'license_plate')
+        # 从请求参数中获取返回结果数量限制，默认为10，最大不超过50
         limit = min(int(request.args.get('limit', 10)), 50)
         
+        # 检查搜索关键词是否为空，若为空则返回错误响应
         if not query:
             return create_response(success=False, error={
                 'code': 4001,
@@ -969,11 +973,14 @@ def search_vehicle_info():
             }), 400
         
         # 验证搜索类型
+        # 若搜索类型不在允许的范围内，则将其重置为默认值 'license_plate'
         if search_type not in ['license_plate', 'carriage_number']:
             search_type = 'license_plate'
         
         # 连接数据库
+        # 创建数据库管理对象
         db_manager = DatabaseManager()
+        # 尝试连接数据库，若连接失败则返回错误响应
         if not db_manager.connect():
             return create_response(success=False, error={
                 'code': 5001,
@@ -984,6 +991,7 @@ def search_vehicle_info():
             # 构建搜索SQL
             if search_type == 'license_plate':
                 # 搜索车牌号（只搜索单车类型）
+                # 构建查询单车车牌号的SQL语句，使用模糊查询，按车牌号排序并限制返回数量
                 sql = """
                     SELECT DISTINCT 
                         v.license_plate,
@@ -1000,9 +1008,11 @@ def search_vehicle_info():
                     ORDER BY v.license_plate
                     LIMIT ?
                 """
+                # 构建查询参数，包含模糊查询关键词和返回数量限制
                 params = [f'%{query}%', limit]
             else:
                 # 搜索车厢号（从vehicle_capacity_reference表中查询，只搜索挂车类型）
+                # 构建查询挂车车厢号的SQL语句，使用模糊查询，按车牌号排序并限制返回数量
                 sql = """
                     SELECT DISTINCT 
                         v.license_plate,
@@ -1020,45 +1030,61 @@ def search_vehicle_info():
                     ORDER BY v.license_plate
                     LIMIT ?
                 """
+                # 构建查询参数，包含模糊查询关键词和返回数量限制
                 params = [f'%{query}%', limit]
             
             # 执行查询
+            # 使用数据库游标执行SQL查询
             db_manager.cursor.execute(sql, params)
+            # 获取查询结果的所有行
             rows = db_manager.cursor.fetchall()
             
             # 处理结果
+            # 初始化结果列表
             results = []
+            # 遍历查询结果的每一行
             for row in rows:
                 if search_type == 'license_plate':
+                    # 当搜索类型为车牌号时，构建单车信息字典
                     result = {
                         'license_plate': row[0],
                         'vehicle_type': row[1],
+                        # 将标准容积转换为浮点数，若为空则设为0.0
                         'actual_volume': float(row[2]) if row[2] else 0.0,
                         'supplier': row[3],
                         'carriage_number': ''  # 主车牌搜索时车厢号为空
                     }
                 else:
                     # 解析供应商信息
+                    # 获取供应商信息字符串，若为空则设为 '[]'
                     suppliers_str = row[5] or '[]'
                     try:
+                        # 导入json模块用于解析JSON字符串
                         import json
+                        # 将供应商信息字符串解析为列表
                         suppliers = json.loads(suppliers_str)
+                        # 获取列表中的第一个供应商，若列表为空则设为 '未知供应商'
                         supplier = suppliers[0] if suppliers else '未知供应商'
                     except:
+                        # 若解析失败，则设为 '未知供应商'
                         supplier = '未知供应商'
                     
+                    # 当搜索类型为车厢号时，构建挂车信息字典
                     result = {
                         'license_plate': row[0],
                         'carriage_number': row[1] or '',
+                        # 将标准容积转换为浮点数，若为空则设为0.0
                         'actual_volume': float(row[2]) if row[2] else 0.0,
                         'vehicle_type': row[3] or '挂车',
                         'supplier': supplier
                     }
+                # 将处理后的车辆信息添加到结果列表中
                 results.append(result)
             
             # 如果没有找到结果，尝试从车辆容积参考表中获取基础信息
             if not results and search_type == 'license_plate':
                 # 从车辆容积参考表中查找
+                # 构建从车辆容积参考表中查询基础信息的SQL语句
                 sql = """
                     SELECT license_plate, vehicle_type, standard_volume, suppliers
                     FROM vehicle_capacity_reference
@@ -1066,38 +1092,50 @@ def search_vehicle_info():
                     ORDER BY license_plate
                     LIMIT ?
                 """
+                # 执行SQL查询
                 db_manager.cursor.execute(sql, [f'%{query}%', limit])
+                # 获取查询结果的所有行
                 rows = db_manager.cursor.fetchall()
                 
+                # 遍历查询结果的每一行
                 for row in rows:
                     # 解析供应商信息
+                    # 获取供应商信息字符串，若为空则设为 '[]'
                     suppliers_str = row[3] or '[]'
                     try:
+                        # 导入json模块用于解析JSON字符串
                         import json
+                        # 将供应商信息字符串解析为列表
                         suppliers = json.loads(suppliers_str)
+                        # 获取列表中的第一个供应商，若列表为空则设为 '未知供应商'
                         supplier = suppliers[0] if suppliers else '未知供应商'
                     except:
+                        # 若解析失败，则设为 '未知供应商'
                         supplier = '未知供应商'
                     
+                    # 构建基础车辆信息字典并添加到结果列表中
                     results.append({
                         'license_plate': row[0],
                         'vehicle_type': row[1],
+                        # 将标准容积转换为浮点数，若为空则设为0.0
                         'actual_volume': float(row[2]) if row[2] else 0.0,
                         'supplier': supplier,
                         'carriage_number': ''
                     })
             
+            # 返回包含处理结果的响应
             return create_response(data=results)
             
         finally:
+            # 无论查询是否成功，都断开数据库连接
             db_manager.disconnect()
             
     except Exception as e:
+        # 若发生异常，返回包含错误信息的响应
         return create_response(success=False, error={
             'code': 5001,
             'message': f'搜索失败: {str(e)}'
         }), 500
-
 
 @dispatch_bp.route('/vehicle-capacity/batch-import', methods=['POST'])
 @require_role(['区域调度员', '超级管理员'])

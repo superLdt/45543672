@@ -86,6 +86,11 @@ export class SupplierVehicleModal {
         this.modalElement.className = 'feishu-modal-overlay';
         this.modalElement.innerHTML = this.getModalTemplate();
         
+        // 初始化elements属性，存储重要DOM元素的引用
+        this.elements = {
+            actualVolume: this.modalElement.querySelector('[name="actual_volume"]')
+        };
+        
         // 填充任务数据
         this.fillTaskData();
         
@@ -433,12 +438,7 @@ export class SupplierVehicleModal {
             input.addEventListener('input', () => this.clearFieldError(input));
         });
         
-        // 为实际容积字段添加特殊验证
-        const actualVolumeInput = form.querySelector('input[name="actual_volume"]');
-        if (actualVolumeInput) {
-            actualVolumeInput.addEventListener('blur', () => this.validateActualVolume(actualVolumeInput));
-            actualVolumeInput.addEventListener('input', () => this.clearFieldError(actualVolumeInput));
-        }
+        // 实际容积字段是显示元素，不需要输入验证
         
         // 绑定车辆搜索功能
         this.vehicleSearch.bindSearchEvents(form);
@@ -487,14 +487,7 @@ export class SupplierVehicleModal {
             }
         }
         
-        // 实际容积数值验证
-        if (fieldName === 'actual_volume') {
-            const volume = parseFloat(value);
-            if (isNaN(volume) || volume < 0) {
-                this.showFieldError(input, '请输入有效的容积数值');
-                return false;
-            }
-        }
+        // 实际容积字段是显示元素，不需要验证
         
         return true;
     }
@@ -542,44 +535,7 @@ export class SupplierVehicleModal {
         }
     }
     
-    /**
-     * 验证实际容积字段
-     * 当实际容积小于需求容积时，显示详细的确认对话框
-     * @param {HTMLInputElement} input - 实际容积输入框
-     * @returns {boolean} 是否验证通过
-     */
-    validateActualVolume(input) {
-        // 先执行常规验证
-        if (!this.validateField(input)) {
-            return false;
-        }
-        
-        const value = input.value.trim();
-        const actualVolume = parseFloat(value);
-        
-        // 检查实际容积是否小于需求车型容积
-        if (actualVolume < this.requiredVolume) {
-            // 显示详细的确认对话框
-            const confirmMsg = `⚠️ 容积警告
-
-该车实际容积(${actualVolume}m³)小于需求车型容积(${this.requiredVolume}m³)
-
-选择该车将按实际容积(${actualVolume}m³)进行结算
-
-如车辆实际容积与真实情况不符，请及时联系车间地调发车进行量方修改
-
-是否确定选择该车？`;
-            
-            if (!confirm(confirmMsg)) {
-                // 用户选择取消，清空输入并聚焦
-                input.value = '';
-                input.focus();
-                return false;
-            }
-        }
-        
-        return true;
-    }
+    // validateActualVolume方法已移除，实际容积字段现在是显示元素
     
     /**
      * 显示模态框
@@ -635,11 +591,7 @@ export class SupplierVehicleModal {
             }
         });
         
-        // 验证实际容积字段
-        const actualVolumeInput = form.querySelector('input[name="actual_volume"]');
-        if (actualVolumeInput && !this.validateActualVolume(actualVolumeInput)) {
-            isValid = false;
-        }
+        // 实际容积字段是显示元素，不需要验证
         
         if (!isValid) {
             this.showError('请正确填写所有必填项');
@@ -648,12 +600,28 @@ export class SupplierVehicleModal {
         
         // 收集表单数据
         const formData = new FormData(form);
+        
+        // 获取实际容积显示值
+        const actualVolumeElement = this.elements.actualVolume?.querySelector('.volume-value');
+        const actualVolumeText = actualVolumeElement ? actualVolumeElement.textContent : null;
+        const actualVolume = actualVolumeText && actualVolumeText !== '-' ? parseFloat(actualVolumeText) : null;
+        
+        // 检查实际容积是否小于需求容积，显示警告对话框
+        if (actualVolume !== null && actualVolume < this.requiredVolume) {
+            // 使用自定义警告对话框替代原生confirm
+            const userConfirmed = await this.showVolumeWarningDialog(actualVolume, this.requiredVolume);
+            if (!userConfirmed) {
+                // 用户选择取消，不提交表单
+                return;
+            }
+        }
+        
         const vehicleData = {
             manifest_number: formData.get('manifest_number')?.trim(),
             dispatch_number: formData.get('dispatch_number')?.trim(),
             license_plate: formData.get('license_plate')?.trim(),
             carriage_number: formData.get('carriage_number')?.trim() || null,
-            actual_volume: formData.get('actual_volume') ? parseFloat(formData.get('actual_volume')) : null,
+            actual_volume: actualVolume,
             notes: formData.get('notes')?.trim() || null
         };
         
@@ -823,7 +791,7 @@ export class SupplierVehicleModal {
                 if (result.success && result.data && result.data.length > 0) {
                     // 使用查询到的第一个匹配结果
                     const vehicle = result.data[0];
-                    const volume = vehicle.actual_volume || '-';
+                    const volume = vehicle.actual_volume;
                     this.setVolumeDisplay(volume);
                     this.debug.log('获取容积成功:', volume);
                 } else {
@@ -847,8 +815,109 @@ export class SupplierVehicleModal {
     setVolumeDisplay(volume) {
         const volumeValue = this.elements.actualVolume?.querySelector('.volume-value');
         if (volumeValue) {
-            volumeValue.textContent = volume || '-';
+            // 确保显示正确的数值，如果是数字且大于0则显示，否则显示'-'
+            const displayValue = (typeof volume === 'number' && volume > 0) ? volume : '-';
+            volumeValue.textContent = displayValue;
         }
+    }
+
+    /**
+     * 显示容积警告自定义对话框
+     * @param {number} actualVolume - 实际容积
+     * @param {number} requiredVolume - 需求容积
+     * @returns {Promise<boolean>} 用户是否确认继续
+     */
+    showVolumeWarningDialog(actualVolume, requiredVolume) {
+        return new Promise((resolve) => {
+            // 创建遮罩层
+            const overlay = document.createElement('div');
+            overlay.className = 'volume-warning-overlay';
+            
+            // 创建对话框
+            const dialog = document.createElement('div');
+            dialog.className = 'volume-warning-dialog';
+            
+            const volumeDifference = (requiredVolume - actualVolume).toFixed(1);
+            
+            dialog.innerHTML = `
+                <div class="volume-warning-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>容积警告</h3>
+                </div>
+                <div class="volume-warning-content">
+                    <div class="volume-warning-message">
+                        该车实际容积小于需求车型容积，选择该车将按实际容积进行结算。
+                    </div>
+                    <div class="volume-comparison">
+                        <div class="volume-item">
+                            <span class="volume-label">需求容积：</span>
+                            <span class="volume-value">${requiredVolume}m³</span>
+                        </div>
+                        <div class="volume-item">
+                            <span class="volume-label">实际容积：</span>
+                            <span class="volume-value">${actualVolume}m³</span>
+                        </div>
+                        <div class="volume-item">
+                            <span class="volume-label">容积差异：</span>
+                            <span class="volume-difference">-${volumeDifference}m³</span>
+                        </div>
+                    </div>
+                    <div class="volume-warning-message">
+                        如车辆实际容积与真实情况不符，请及时联系车间地调发车进行量方修改。
+                    </div>
+                </div>
+                <div class="volume-warning-footer">
+                    <button class="volume-warning-btn volume-warning-btn-cancel" type="button">
+                        取消选择
+                    </button>
+                    <button class="volume-warning-btn volume-warning-btn-confirm" type="button">
+                        确定选择
+                    </button>
+                </div>
+            `;
+            
+            // 添加事件监听器
+            const cancelBtn = dialog.querySelector('.volume-warning-btn-cancel');
+            const confirmBtn = dialog.querySelector('.volume-warning-btn-confirm');
+            
+            const cleanup = () => {
+                document.body.removeChild(overlay);
+                document.body.removeChild(dialog);
+            };
+            
+            cancelBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+            
+            confirmBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(true);
+            });
+            
+            // 点击遮罩层也取消
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    resolve(false);
+                }
+            });
+            
+            // 添加到页面
+            document.body.appendChild(overlay);
+            document.body.appendChild(dialog);
+            
+            // 添加ESC键支持
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    cleanup();
+                    resolve(false);
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscape);
+        });
     }
     
     /**
@@ -990,16 +1059,7 @@ export class SupplierVehicleModal {
         }
     }
 
-    /**
-     * 设置实际容积显示值
-     * @param {string|number} volume - 实际容积值
-     */
-    setVolumeDisplay(volume) {
-        const volumeValueElement = document.querySelector('[name="actual_volume"] .volume-value');
-        if (volumeValueElement) {
-            volumeValueElement.textContent = volume || '-';
-        }
-    }
+
 
     /**
      * 清空车辆信息

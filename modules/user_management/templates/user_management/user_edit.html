@@ -84,7 +84,7 @@
                 <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
                     <label for="username" style="min-width: 80px;">用户名 *</label>
                     <input type="text" id="username" name="username" value="{{ editing_user.username if editing_user else '' }}" required style="flex: 1;">
-                    {% if editing_user and '管理员' in user.roles %}
+                    {% if editing_user and '超级管理员' in user.roles %}
                     <button type="submit" onclick="document.getElementById('new_password').value='admin123'" class="btn btn-secondary">直接重置密码</button>
                     {% endif %}
                 </div>
