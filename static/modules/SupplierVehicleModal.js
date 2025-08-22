@@ -543,7 +543,10 @@ export class SupplierVehicleModal {
     }
     
     /**
-     * 验证实容积字段
+     * 验证实际容积字段
+     * 当实际容积小于需求容积时，显示详细的确认对话框
+     * @param {HTMLInputElement} input - 实际容积输入框
+     * @returns {boolean} 是否验证通过
      */
     validateActualVolume(input) {
         // 先执行常规验证
@@ -556,9 +559,18 @@ export class SupplierVehicleModal {
         
         // 检查实际容积是否小于需求车型容积
         if (actualVolume < this.requiredVolume) {
-            // 显示确认对话框
-            const confirmMsg = `实际容积(${actualVolume}m³)小于需求车型容积(${this.requiredVolume}m³)，是否继续派车？`;
-            if (!confirm(confirmMsg + "\n\n请给出解决方案供我选择，先不要实施")) {
+            // 显示详细的确认对话框
+            const confirmMsg = `⚠️ 容积警告
+
+该车实际容积(${actualVolume}m³)小于需求车型容积(${this.requiredVolume}m³)
+
+选择该车将按实际容积(${actualVolume}m³)进行结算
+
+如车辆实际容积与真实情况不符，请及时联系车间地调发车进行量方修改
+
+是否确定选择该车？`;
+            
+            if (!confirm(confirmMsg)) {
                 // 用户选择取消，清空输入并聚焦
                 input.value = '';
                 input.focus();
