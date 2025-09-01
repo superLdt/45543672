@@ -35,7 +35,7 @@ app.secret_key = SECRET_KEY
 # 初始化登录管理器
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'  # 设置登录页面路由
+login_manager.login_view = 'login'  # type: ignore # 设置登录页面路由
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600
 # 加载配置到 app 中（关键步骤）
@@ -64,19 +64,23 @@ with app.app_context():
 # 数据库操作函数
 @login_manager.user_loader
 def load_user(user_id):
-    db = get_db()
-    user = db.execute('SELECT id, username, full_name FROM User WHERE id = ? AND is_active = 1', (user_id,)).fetchone()
-    if user:
-        # 获取用户单一角色
-        role = db.execute('''
-            SELECT r.name FROM Role r
-            JOIN UserRole ur ON r.id = ur.role_id
-            WHERE ur.user_id = ?
-        ''', (user_id,)).fetchone()
-        user_role = role['name'] if role else None
-        # 使用单一角色创建用户对象
-        return User(user['id'], user['username'], user['full_name'], [user_role])
-    return None
+    try:
+        db = get_db()
+        user = db.execute('SELECT id, username, full_name FROM User WHERE id = ? AND is_active = 1', (user_id,)).fetchone()
+        if user:
+            # 获取用户单一角色
+            role = db.execute('''
+                SELECT r.name FROM Role r
+                JOIN UserRole ur ON r.id = ur.role_id
+                WHERE ur.user_id = ?
+            ''', (user_id,)).fetchone()
+            user_role = role['name'] if role else None
+            # 使用单一角色创建用户对象
+            return User(user['id'], user['username'], user['full_name'], [user_role])
+        return None
+    except Exception as e:
+        print(f"加载用户失败: {e}")
+        return None
 
 def get_db():
     db_manager = getattr(g, '_db_manager', None)
@@ -84,7 +88,13 @@ def get_db():
         db_manager = g._db_manager = DatabaseManager()
         if not db_manager.connect():
             raise Exception('数据库连接失败')
-        db_manager.conn.row_factory = sqlite3.Row
+        # 检查连接是否成功建立
+        if db_manager.conn is not None:
+            db_manager.conn.row_factory = sqlite3.Row
+        else:
+            raise Exception('数据库连接对象为空')
+    if db_manager.conn is None:
+        raise Exception('数据库连接已断开')
     return db_manager.conn
 
 @app.teardown_appcontext
@@ -110,6 +120,12 @@ def get_user_modules(user_id):
     if not db_manager.connect():
         print("数据库连接失败")
         return []
+    
+    if db_manager.cursor is None:
+        print("数据库游标为空")
+        db_manager.disconnect()
+        return []
+        
     cursor = db_manager.cursor
     try:
         # 获取用户单一角色
@@ -184,6 +200,10 @@ def get_roles():
         db_manager = DatabaseManager()
         if not db_manager.connect():
             return jsonify({'error': '数据库连接失败'}), 500
+        
+        if db_manager.cursor is None:
+            return jsonify({'error': '数据库游标为空'}), 500
+            
         cursor = db_manager.cursor
         cursor.execute('SELECT id, name, description FROM Role ORDER BY id')
         roles = []
@@ -207,6 +227,10 @@ def get_role_permissions(role_id):
         db_manager = DatabaseManager()
         if not db_manager.connect():
             return jsonify({'error': '数据库连接失败'}), 500
+        
+        if db_manager.cursor is None:
+            return jsonify({'error': '数据库游标为空'}), 500
+            
         cursor = db_manager.cursor
         cursor.execute('''
             SELECT m.id, m.name, m.display_name, 
@@ -252,15 +276,14 @@ def login():
         if not username or not password:
             return '用户名和密码不能为空'
         
-        db = get_db()
-        cursor = db.cursor()
         try:
+            db = get_db()
+            cursor = db.cursor()
             cursor.execute('SELECT id, password, full_name FROM User WHERE username = ? AND is_active = 1', (username,))
             user = cursor.fetchone()
+            cursor.close()
         except Exception as e:
             return f'数据库错误: {str(e)}'
-        finally:
-            cursor.close()
         
         if user and check_password_hash(user['password'], password):
             # 获取用户角色（单一角色）
@@ -303,23 +326,26 @@ def debug_user():
 @app.route('/debug/user_roles')
 @login_required
 def debug_user_roles():
-    db = get_db()
-    user_roles = db.execute('''
-        SELECT ur.user_id, u.username, ur.role_id, r.name as role_name
-        FROM UserRole ur
-        JOIN User u ON ur.user_id = u.id
-        JOIN Role r ON ur.role_id = r.id
-        ORDER BY ur.user_id
-    ''').fetchall()
-    result = []
-    for row in user_roles:
-        result.append({
-            'user_id': row['user_id'],
-            'username': row['username'],
-            'role_id': row['role_id'],
-            'role_name': row['role_name']
-        })
-    return jsonify(result)
+    try:
+        db = get_db()
+        user_roles = db.execute('''
+            SELECT ur.user_id, u.username, ur.role_id, r.name as role_name
+            FROM UserRole ur
+            JOIN User u ON ur.user_id = u.id
+            JOIN Role r ON ur.role_id = r.id
+            ORDER BY ur.user_id
+        ''').fetchall()
+        result = []
+        for row in user_roles:
+            result.append({
+                'user_id': row['user_id'],
+                'username': row['username'],
+                'role_id': row['role_id'],
+                'role_name': row['role_name']
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/under_development')
 def under_development():
@@ -460,6 +486,9 @@ def create_task():
             return jsonify({'error': '任务标题不能为空'}), 400
             
         db = get_db()
+        if db.cursor() is None:
+            return jsonify({'error': '数据库游标为空'}), 500
+            
         cursor = db.cursor()
         
         cursor.execute('''

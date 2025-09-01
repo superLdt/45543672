@@ -1,8 +1,9 @@
+openpyxl==3.1.2
+>>>>>>> 0f6d017d476a2c8974a779fbbaa2e48852e6d809
 Flask==2.3.3
 Jinja2==3.1.2
 Werkzeug==2.3.7
 pandas==2.2.3
-<<<<<<< HEAD
 openpyxl==3.1.2
 flask-login==0.6.3
 =======
