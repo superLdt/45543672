@@ -14,6 +14,30 @@ class Config:
     # 数据库配置
     DATABASE = os.environ.get('DATABASE_PATH') or 'database.db'
     
+    # 多数据库支持配置
+    DATABASE_CONFIG = {
+        'type': os.environ.get('DATABASE_TYPE') or 'sqlite',  # sqlite | mysql | postgresql
+        'sqlite': {
+            'database': os.environ.get('DATABASE_PATH') or 'database.db'
+        },
+        'mysql': {
+            'host': os.environ.get('MYSQL_HOST') or 'localhost',
+            'port': int(os.environ.get('MYSQL_PORT') or 3306),
+            'user': os.environ.get('MYSQL_USER') or 'root',
+            'password': os.environ.get('MYSQL_PASSWORD') or '',
+            'database': os.environ.get('MYSQL_DATABASE') or 'smart_transport',
+            'charset': os.environ.get('MYSQL_CHARSET') or 'utf8mb4'
+        },
+        'postgresql': {
+            'host': os.environ.get('POSTGRESQL_HOST') or 'localhost',
+            'port': int(os.environ.get('POSTGRESQL_PORT') or 5432),
+            'user': os.environ.get('POSTGRESQL_USER') or 'postgres',
+            'password': os.environ.get('POSTGRESQL_PASSWORD') or '',
+            'database': os.environ.get('POSTGRESQL_DATABASE') or 'smart_transport',
+            'sslmode': os.environ.get('POSTGRESQL_SSLMODE') or 'prefer'
+        }
+    }
+    
     # Flask配置
     PERMANENT_SESSION_LIFETIME = 3600
     SESSION_TYPE = 'filesystem'
@@ -45,6 +69,7 @@ class DevelopmentConfig(Config):
         # 开发环境特定初始化
         print(f"🚀 开发模式启动")
         print(f"📁 数据库路径: {app.config['DATABASE']}")
+        print(f"🔧 数据库类型: {app.config['DATABASE_CONFIG']['type']}")
 
 class ProductionConfig(Config):
     """生产环境配置"""
@@ -52,6 +77,30 @@ class ProductionConfig(Config):
     
     # 生产环境数据库路径
     DATABASE = os.environ.get('DATABASE_PATH') or '/var/www/flask_app/database.db'
+    
+    # 生产环境多数据库配置
+    DATABASE_CONFIG = {
+        'type': os.environ.get('DATABASE_TYPE') or 'sqlite',
+        'sqlite': {
+            'database': os.environ.get('DATABASE_PATH') or '/var/www/flask_app/database.db'
+        },
+        'mysql': {
+            'host': os.environ.get('MYSQL_HOST') or 'localhost',
+            'port': int(os.environ.get('MYSQL_PORT') or 3306),
+            'user': os.environ.get('MYSQL_USER') or 'root',
+            'password': os.environ.get('MYSQL_PASSWORD') or '',
+            'database': os.environ.get('MYSQL_DATABASE') or 'smart_transport',
+            'charset': os.environ.get('MYSQL_CHARSET') or 'utf8mb4'
+        },
+        'postgresql': {
+            'host': os.environ.get('POSTGRESQL_HOST') or 'localhost',
+            'port': int(os.environ.get('POSTGRESQL_PORT') or 5432),
+            'user': os.environ.get('POSTGRESQL_USER') or 'postgres',
+            'password': os.environ.get('POSTGRESQL_PASSWORD') or '',
+            'database': os.environ.get('POSTGRESQL_DATABASE') or 'smart_transport',
+            'sslmode': os.environ.get('POSTGRESQL_SSLMODE') or 'prefer'
+        }
+    }
     
     @staticmethod
     def init_app(app):

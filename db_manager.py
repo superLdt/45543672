@@ -118,6 +118,10 @@ class DatabaseManager:
             self.logger.error('数据库连接失败')
             return None
             
+        if self.cursor is None:
+            self.logger.error('数据库游标为空')
+            return None
+            
         try:
             if params:
                 self.cursor.execute(query, params)  # type: ignore
@@ -135,6 +139,10 @@ class DatabaseManager:
         """安全执行更新操作，返回影响的行数"""
         if not self._ensure_connection():
             self.logger.error('数据库连接失败')
+            return None
+            
+        if self.cursor is None:
+            self.logger.error('数据库游标为空')
             return None
             
         try:
@@ -159,6 +167,10 @@ class DatabaseManager:
             self.logger.error('数据库未连接')
             return False
 
+        if self.cursor is None:
+            self.logger.error('数据库游标为空')
+            return False
+
         try:
             self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
             result = self.cursor.fetchone()
@@ -176,6 +188,10 @@ class DatabaseManager:
             self.logger.error('数据库未连接')
             return []
 
+        if self.cursor is None:
+            self.logger.error('数据库游标为空')
+            return []
+
         try:
             self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             return [row[0] for row in self.cursor.fetchall()]
@@ -190,6 +206,10 @@ class DatabaseManager:
         """检查用户表结构和数据"""
         if not self.check_table_exists('User'):
             print('用户表不存在')
+            return False
+
+        if self.cursor is None:
+            print('数据库游标为空')
             return False
 
         try:
@@ -216,8 +236,12 @@ class DatabaseManager:
 
     def create_manual_dispatch_tables(self):
         """创建人工派车相关表"""
-        if not self.cursor:
-            print('数据库未连接')
+        if not self._ensure_connection():
+            print('数据库连接失败')
+            return False
+            
+        if self.cursor is None:
+            print('数据库游标为空')
             return False
 
         try:
@@ -367,18 +391,27 @@ class DatabaseManager:
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_license_plate ON vehicle_capacity_reference(license_plate)')
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_type ON vehicle_capacity_reference(vehicle_type)')
 
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return None
             self.conn.commit()
             print('人工派车相关表创建成功')
             return True
             
         except Exception as e:
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f'创建表失败: {str(e)}')
             return False
 
     def insert_sample_dispatch_data(self):
         """插入示例派车数据"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return False
+
+        if self.cursor is None:
             return False
 
         try:
@@ -408,7 +441,7 @@ class DatabaseManager:
              created_at, updated_at, dispatch_track, initiator_role, initiator_user_id, initiator_department, 
              audit_required, auditor_role, auditor_user_id, audit_status, audit_time, audit_note,
              current_handler_role, current_handler_user_id, assigned_supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', processed_tasks)
 
             # 插入示例状态历史
@@ -454,11 +487,17 @@ class DatabaseManager:
             else:
                 print('车辆容积参考表中已有数据，跳过插入示例数据')
 
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.commit()
             print('示例数据插入成功')
             return True
             
         except Exception as e:
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f'插入示例数据失败: {str(e)}')
             return False
@@ -466,8 +505,11 @@ class DatabaseManager:
     # 人工派车业务方法
     def create_dispatch_task(self, task_data):
         """创建派车任务（支持双轨派车流程）"""
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接'}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空'}
 
         try:
             task_id = f"T{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -535,16 +577,28 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?)
             ''', (task_id, initial_status, operator_name, f'创建{dispatch_track}派车任务'))
 
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.commit()
             return {'success': True, 'task_id': task_id}
             
         except sqlite3.IntegrityError as e:
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': f'数据完整性错误: {str(e)}'}
         except sqlite3.Error as e:
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': f'数据库操作错误: {str(e)}'}
         except Exception as e:
+            if self.conn is None:
+                self.logger.error('数据库连接对象为空')
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': f'创建任务失败: {str(e)}'}
     
@@ -558,8 +612,11 @@ class DatabaseManager:
         Returns:
             dict: 包含success标志和数据列表的字典
         """
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接', 'data': []}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空', 'data': []}
 
         try:
             query = 'SELECT * FROM vehicle_capacity_reference WHERE 1=1'
@@ -598,8 +655,11 @@ class DatabaseManager:
         Returns:
             dict: 包含分页信息和数据列表的字典
         """
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接', 'list': [], 'total': 0, 'page': 1, 'limit': 10}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空', 'list': [], 'total': 0, 'page': 1, 'limit': 10}
 
         try:
             # 构建基础查询条件
@@ -660,8 +720,11 @@ class DatabaseManager:
         Returns:
             dict: 操作结果
         """
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接'}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空'}
 
         # 验证车辆类型
         valid_vehicle_types = {'单车', '挂车'}
@@ -693,10 +756,14 @@ class DatabaseManager:
                 ''', (vehicle_type, standard_volume, license_plate, suppliers_json))
                 message = f'车辆容积参考数据已插入: {license_plate}'
             
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.commit()
             return {'success': True, 'message': message}
             
         except Exception as e:
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': f'操作失败: {str(e)}'}
     
@@ -709,25 +776,35 @@ class DatabaseManager:
         Returns:
             dict: 操作结果
         """
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接'}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空'}
 
         try:
             self.cursor.execute('DELETE FROM vehicle_capacity_reference WHERE license_plate = ?', (license_plate,))
             
             if self.cursor.rowcount > 0:
+                if self.conn is None:
+                    return {'success': False, 'error': '数据库连接对象为空'}
                 self.conn.commit()
                 return {'success': True, 'message': f'车辆容积参考数据已删除: {license_plate}'}
             else:
                 return {'success': False, 'message': f'未找到车牌号为 {license_plate} 的车辆容积参考数据'}
                 
         except Exception as e:
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': f'删除失败: {str(e)}'}
             
     def get_dispatch_tasks(self, status=None, date_from=None, date_to=None):
         """获取派车任务列表"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return []
+
+        if self.cursor is None:
             return []
 
         try:
@@ -764,8 +841,11 @@ class DatabaseManager:
 
     def update_task_status(self, task_id, new_status, operator, note=None):
         """更新任务状态"""
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接'}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空'}
 
         try:
             self.cursor.execute('''
@@ -779,16 +859,23 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?)
             ''', (task_id, new_status, operator, note or f'状态更新为{new_status}'))
 
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.commit()
             return {'success': True}
             
         except Exception as e:
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': str(e)}
 
     def get_company_id_by_name(self, company_name):
         """根据公司名称获取公司ID"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return None
+
+        if self.cursor is None:
             return None
 
         try:
@@ -801,7 +888,10 @@ class DatabaseManager:
 
     def get_company_name_by_id(self, company_id):
         """根据公司ID获取公司名称"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return None
+
+        if self.cursor is None:
             return None
 
         try:
@@ -814,8 +904,11 @@ class DatabaseManager:
 
     def assign_vehicle(self, task_id, vehicle_data):
         """分配车辆到任务"""
-        if not self.cursor:
+        if not self._ensure_connection():
             return {'success': False, 'error': '数据库未连接'}
+
+        if self.cursor is None:
+            return {'success': False, 'error': '数据库游标为空'}
 
         try:
             # 获取任务的需求容积作为默认值
@@ -840,16 +933,23 @@ class DatabaseManager:
                 vehicle_data.get('volume_modified_by')
             ))
 
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.commit()
             return {'success': True}
             
         except Exception as e:
+            if self.conn is None:
+                return {'success': False, 'error': '数据库连接对象为空'}
             self.conn.rollback()
             return {'success': False, 'error': str(e)}
 
     def get_dispatch_task_detail(self, task_id):
         """获取派车任务详情"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return None
+
+        if self.cursor is None:
             return None
 
         try:
@@ -871,6 +971,10 @@ class DatabaseManager:
         """获取任务状态变更历史"""
         if not self._ensure_connection():
             self.logger.error('数据库未连接')
+            return []
+
+        if self.cursor is None:
+            self.logger.error('数据库游标为空')
             return []
 
         try:
@@ -901,7 +1005,10 @@ class DatabaseManager:
         返回:
             dict: 包含required_volume和confirmed_volume的默认值
         """
-        if not self.cursor:
+        if not self._ensure_connection():
+            return {'required_volume': None, 'confirmed_volume': None}
+
+        if self.cursor is None:
             return {'required_volume': None, 'confirmed_volume': None}
 
         try:
@@ -952,8 +1059,12 @@ class DatabaseManager:
 
     def update_manual_dispatch_tables(self):
         """更新现有表结构，添加双轨派车所需字段"""
-        if not self.cursor:
-            print('数据库未连接')
+        if not self._ensure_connection():
+            print('数据库连接失败')
+            return False
+
+        if self.cursor is None:
+            print('数据库游标为空')
             return False
 
         try:
@@ -1017,11 +1128,17 @@ class DatabaseManager:
             self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_track ON manual_dispatch_tasks(dispatch_track)")
             self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_manual_dispatch_supplier ON manual_dispatch_tasks(assigned_supplier_id)")
             
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.commit()
             print("✅ 表结构更新完成")
             return True
             
         except Exception as e:
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f"❌ 更新表结构失败: {str(e)}")
             return False
@@ -1057,13 +1174,20 @@ class DatabaseManager:
             return True
         except Exception as e:
             print(f"❌ 初始化表失败: {str(e)}")
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             return False
 
     def validate_and_update_status_fields(self):
         """验证和更新状态字段，确保使用新的清晰命名"""
-        if not self.cursor:
-            print('数据库未连接')
+        if not self._ensure_connection():
+            print('数据库连接失败')
+            return False
+
+        if self.cursor is None:
+            print('数据库游标为空')
             return False
 
         try:
@@ -1106,18 +1230,28 @@ class DatabaseManager:
             else:
                 print("✅ 所有状态值均有效")
             
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.commit()
             return True
             
         except Exception as e:
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f"❌ 验证状态字段失败: {str(e)}")
             return False
 
     def create_user_tables(self):
         """创建用户管理相关表"""
-        if not self.cursor:
-            print('数据库未连接')
+        if not self._ensure_connection():
+            print('数据库连接失败')
+            return False
+
+        if self.cursor is None:
+            print('数据库游标为空')
             return False
 
         try:
@@ -1217,17 +1351,26 @@ class DatabaseManager:
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_role_name ON Role(name)')
             self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_permission_module ON Permission(module)')
 
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.commit()
             return True
             
         except Exception as e:
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f'创建用户管理相关表失败: {str(e)}')
             return False
 
     def insert_default_data(self):
         """插入默认角色、权限和管理员用户，并配置角色权限"""
-        if not self.cursor:
+        if not self._ensure_connection():
+            return False
+
+        if self.cursor is None:
             return False
 
         try:
@@ -1323,17 +1466,32 @@ class DatabaseManager:
             # 6. 配置角色权限（整合init_permissions.py的功能）
             self._configure_role_permissions()
 
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.commit()
             print("✅ 默认数据插入成功")
             return True
             
         except Exception as e:
+            if self.conn is None:
+                print('数据库连接对象为空')
+                return False
             self.conn.rollback()
             print(f"❌ 默认数据插入失败: {str(e)}")
             return False
 
     def _configure_role_permissions(self):
         """配置角色权限（整合自init_permissions.py）"""
+        # 检查数据库连接
+        if not self._ensure_connection():
+            print("❌ 数据库连接失败，无法配置角色权限")
+            return False
+            
+        if self.cursor is None:
+            print("❌ 数据库游标为空，无法配置角色权限")
+            return False
+            
         # 角色权限配置映射
         ROLE_PERMISSIONS_CONFIG = {
             '超级管理员': [
@@ -1396,8 +1554,12 @@ class DatabaseManager:
 
     def check_and_fix_permissions(self):
         """检查并修复权限配置（整合自init_permissions.py）"""
-        if not self.connect():
+        if not self._ensure_connection():
             print("❌ 数据库连接失败，无法检查权限")
+            return False
+        
+        if self.cursor is None:
+            print("❌ 数据库游标为空，无法检查权限")
             return False
         
         try:
@@ -1426,7 +1588,8 @@ class DatabaseManager:
             if needs_fix:
                 print("🔄 检测到权限配置问题，开始修复...")
                 self._configure_role_permissions()
-                self.conn.commit()
+                if self.conn:
+                    self.conn.commit()
                 print("✅ 权限修复完成")
             else:
                 print("✅ 权限配置检查完成，无需修复")
@@ -1457,3 +1620,19 @@ if __name__ == '__main__':
         db_manager.disconnect()
     else:
         print('无法连接到数据库，检查文件是否存在。')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
