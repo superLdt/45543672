@@ -1,65 +1,189 @@
 import sqlite3
 import os
+import logging
+import threading
 from datetime import datetime
+from contextlib import contextmanager
+from typing import Optional, Dict, Any, List, Union
 from config import DATABASE  # 从config.py导入数据库路径配置
 
 class DatabaseManager:
+    """
+    数据库管理器
+    提供统一的数据库连接管理、事务处理和异常处理
+    符合项目架构规范要求
+    """
+    
+    # 类级别连接池管理
+    _connection_pool = {}
+    _pool_lock = threading.Lock()
+    
     def __init__(self, db_path=DATABASE):
         self.db_path = db_path
         self.conn = None
         self.cursor = None
-        self.connect()
-        self.create_tables()
-        self.insert_default_data()
-        self.insert_sample_dispatch_data()
-        self.update_manual_dispatch_tables()  # 更新现有表结构
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
+        # 初始化数据库连接
+        if self.connect():
+            self.create_tables()
+            self.insert_default_data()
+            self.insert_sample_dispatch_data()
+            self.update_manual_dispatch_tables()  # 更新现有表结构
 
-    def connect(self):
+    def connect(self) -> bool:
         """连接到数据库"""
         try:
-            self.conn = sqlite3.connect(self.db_path)
+            # 检查是否已经连接
+            if self.conn is not None:
+                try:
+                    # 测试连接是否有效
+                    self.conn.execute('SELECT 1')
+                    return True
+                except sqlite3.Error:
+                    # 连接已断开，需要重新连接
+                    self.conn = None
+                    
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            if self.conn is None:
+                self.logger.error(f"数据库连接对象为空: {self.db_path}")
+                return False
+                
             # 设置row_factory为sqlite3.Row，以便将查询结果转换为字典
             self.conn.row_factory = sqlite3.Row
             # 启用外键约束
             self.conn.execute('PRAGMA foreign_keys = ON')
+            # 设置连接超时
+            self.conn.execute('PRAGMA busy_timeout = 30000')  # 30秒超时
+            
             self.cursor = self.conn.cursor()
-            print(f'成功连接到数据库: {self.db_path}')
+            if self.cursor is None:
+                self.logger.error("数据库游标创建失败")
+                return False
+                
+            self.logger.info(f'成功连接到数据库: {self.db_path}')
             return True
+        except sqlite3.Error as e:
+            self.logger.error(f'连接数据库失败: {str(e)}')
+            return False
         except Exception as e:
-            print(f'连接数据库失败: {str(e)}')
+            self.logger.error(f'连接数据库时发生未知错误: {str(e)}')
             return False
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """断开数据库连接"""
-        if self.conn:
-            self.conn.close()
-            print('数据库连接已关闭')
+        try:
+            if self.cursor is not None:
+                self.cursor.close()
+                self.cursor = None
+                
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+                self.logger.info('数据库连接已关闭')
+        except sqlite3.Error as e:
+            self.logger.error(f'关闭数据库连接时出错: {str(e)}')
+        except Exception as e:
+            self.logger.error(f'关闭数据库连接时发生未知错误: {str(e)}')
+            
+    def _ensure_connection(self) -> bool:
+        """确保数据库连接有效"""
+        if self.conn is None or self.cursor is None:
+            return self.connect()
+        try:
+            # 测试连接是否有效
+            self.conn.execute('SELECT 1')
+            return True
+        except sqlite3.Error:
+            self.logger.warning('数据库连接已断开，尝试重新连接')
+            return self.connect()
+    
+    @contextmanager
+    def transaction(self):
+        """事务管理器上下文"""
+        if not self._ensure_connection():
+            raise Exception('数据库连接失败，无法开启事务')
+        
+        try:
+            yield self.conn
+            self.conn.commit()  # type: ignore
+        except Exception as e:
+            self.conn.rollback()  # type: ignore
+            self.logger.error(f'事务回滚: {str(e)}')
+            raise
+    
+    def execute_query(self, query: str, params: Optional[tuple] = None) -> Optional[List[sqlite3.Row]]:
+        """安全执行查询操作"""
+        if not self._ensure_connection():
+            self.logger.error('数据库连接失败')
+            return None
+            
+        try:
+            if params:
+                self.cursor.execute(query, params)  # type: ignore
+            else:
+                self.cursor.execute(query)  # type: ignore
+            return self.cursor.fetchall()  # type: ignore
+        except sqlite3.Error as e:
+            self.logger.error(f'SQL查询失败: {str(e)}, SQL: {query}')
+            return None
+        except Exception as e:
+            self.logger.error(f'查询操作发生未知错误: {str(e)}')
+            return None
+    
+    def execute_update(self, query: str, params: Optional[tuple] = None) -> Optional[int]:
+        """安全执行更新操作，返回影响的行数"""
+        if not self._ensure_connection():
+            self.logger.error('数据库连接失败')
+            return None
+            
+        try:
+            if params:
+                self.cursor.execute(query, params)  # type: ignore
+            else:
+                self.cursor.execute(query)  # type: ignore
+            self.conn.commit()  # type: ignore
+            return self.cursor.rowcount  # type: ignore
+        except sqlite3.Error as e:
+            self.conn.rollback()  # type: ignore
+            self.logger.error(f'SQL更新失败: {str(e)}, SQL: {query}')
+            return None
+        except Exception as e:
+            self.conn.rollback()  # type: ignore
+            self.logger.error(f'更新操作发生未知错误: {str(e)}')
+            return None
 
-    def check_table_exists(self, table_name):
+    def check_table_exists(self, table_name: str) -> bool:
         """检查表是否存在"""
-        if not self.cursor:
-            print('未连接到数据库')
+        if not self._ensure_connection():
+            self.logger.error('数据库未连接')
             return False
 
         try:
             self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
             result = self.cursor.fetchone()
             return result is not None
+        except sqlite3.Error as e:
+            self.logger.error(f'检查表{table_name}失败: {str(e)}')
+            return False
         except Exception as e:
-            print(f'检查表{table_name}失败: {str(e)}')
+            self.logger.error(f'检查表{table_name}时发生未知错误: {str(e)}')
             return False
 
-    def list_tables(self):
+    def list_tables(self) -> List[str]:
         """列出所有表"""
-        if not self.cursor:
-            print('未连接到数据库')
+        if not self._ensure_connection():
+            self.logger.error('数据库未连接')
             return []
 
         try:
             self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             return [row[0] for row in self.cursor.fetchall()]
+        except sqlite3.Error as e:
+            self.logger.error(f'列出表失败: {str(e)}')
+            return []
         except Exception as e:
-            print(f'列出表失败: {str(e)}')
+            self.logger.error(f'列出表时发生未知错误: {str(e)}')
             return []
 
     def check_user_table(self):
@@ -745,7 +869,9 @@ class DatabaseManager:
 
     def get_task_status_history(self, task_id):
         """获取任务状态变更历史"""
-        if not self.cursor:            return []
+        if not self._ensure_connection():
+            self.logger.error('数据库未连接')
+            return []
 
         try:
             self.cursor.execute('''
@@ -757,8 +883,11 @@ class DatabaseManager:
             columns = [description[0] for description in self.cursor.description]
             return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
             
+        except sqlite3.Error as e:
+            self.logger.error(f'获取状态历史失败: {str(e)}')
+            return []
         except Exception as e:
-            print(f'获取状态历史失败: {str(e)}')
+            self.logger.error(f'获取状态历史时发生未知错误: {str(e)}')
             return []
 
     def get_vehicle_default_volumes(self, task_id, license_plate=None):
