@@ -5,7 +5,7 @@
 from flask import Blueprint, request, jsonify, session
 from api.decorators import require_role, create_response
 from api.validators import validators
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 from datetime import datetime
 
 audit_bp = Blueprint('audit', __name__, url_prefix='/api/dispatch')

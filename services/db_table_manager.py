@@ -19,6 +19,16 @@ class DBTableManager:
         """
         self.database_type = database_type
         self._table_definitions = self._load_table_definitions()
+        
+        # 初始化连接管理器
+        db_config = {
+            'type': 'sqlite',
+            'sqlite': {
+                'database': 'database.db',
+                'driver': 'sqlite'
+            }
+        }
+        connection_manager.initialize(db_config)
     
     def _load_table_definitions(self) -> Dict[str, str]:
         """
@@ -28,8 +38,8 @@ class DBTableManager:
             Dict[str, str]: 表名到建表语句的映射
         """
         return {
-            "companies": """
-                CREATE TABLE IF NOT EXISTS companies (
+            "Company": """
+                CREATE TABLE IF NOT EXISTS Company (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL UNIQUE,
                     contact_person TEXT,
@@ -49,45 +59,12 @@ class DBTableManager:
                     status TEXT DEFAULT 'available',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (company_id) REFERENCES companies (id)
+                    FOREIGN KEY (company_id) REFERENCES Company (id)
                 )
             """,
-            "drivers": """
-                CREATE TABLE IF NOT EXISTS drivers (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    company_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    phone TEXT,
-                    license_number TEXT,
-                    status TEXT DEFAULT 'available',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (company_id) REFERENCES companies (id)
-                )
-            """,
-            "orders": """
-                CREATE TABLE IF NOT EXISTS orders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    order_number TEXT NOT NULL UNIQUE,
-                    company_id INTEGER NOT NULL,
-                    vehicle_id INTEGER,
-                    driver_id INTEGER,
-                    pickup_location TEXT,
-                    delivery_location TEXT,
-                    cargo_description TEXT,
-                    weight REAL,
-                    status TEXT DEFAULT 'pending',
-                    scheduled_time DATETIME,
-                    completed_time DATETIME,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (company_id) REFERENCES companies (id),
-                    FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
-                    FOREIGN KEY (driver_id) REFERENCES drivers (id)
-                )
-            """,
-            "users": """
-                CREATE TABLE IF NOT EXISTS users (
+
+            "User": """
+                CREATE TABLE IF NOT EXISTS User (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
@@ -96,7 +73,7 @@ class DBTableManager:
                     company_id INTEGER,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (company_id) REFERENCES companies (id)
+                    FOREIGN KEY (company_id) REFERENCES Company (id)
                 )
             """
         }
@@ -160,14 +137,14 @@ class DBTableManager:
             db = connection_manager.get_connection(self.database_type)
             
             if self.database_type == "sqlite":
-                query = "SELECT name FROM sqlite_master WHERE type='table'"
+                query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             elif self.database_type in ["mysql", "postgresql"]:
                 query = "SHOW TABLES"
             else:
                 return []
             
             result = db.execute_query(query)
-            tables = [row[0] for row in result] if result else []
+            tables = [row['name'] for row in result] if result else []
             
             # 过滤掉系统表
             system_tables = ["sqlite_sequence", "spatial_ref_sys"]

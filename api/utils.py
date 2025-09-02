@@ -1,5 +1,5 @@
 from datetime import datetime
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 
 def validate_dispatch_data(data):
     """验证派车任务数据（匹配前端表单字段）"""

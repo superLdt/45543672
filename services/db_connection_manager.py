@@ -54,10 +54,7 @@ class DBConnectionManager:
         if thread_key not in self._connections:
             try:
                 # 创建新的数据库连接
-                db_config = {
-                    'type': database_type,
-                    database_type: self._config.get(database_type, {})
-                }
+                db_config = self._config
                 db_instance = DatabaseFactory.create_database(db_config)
                 db_instance.connect()
                 self._connections[thread_key] = db_instance

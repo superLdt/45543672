@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from api.decorators import require_role, create_response
 from api.utils import validate_dispatch_data, generate_task_id
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 import datetime
 import sqlite3
 

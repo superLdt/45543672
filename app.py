@@ -12,7 +12,7 @@ import jinja2
 # 从配置文件导入数据库路径
 from config import DATABASE
 # 使用db_manager统一管理数据库初始化
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 
 # 应用初始化
 from flask_login import LoginManager, UserMixin, login_required, current_user,login_user,logout_user    
@@ -112,7 +112,7 @@ def index():
 # 修复权限查询函数，使用正确的表名
 import sqlite3
 
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 
 def get_user_modules(user_id):
     """获取用户有权限访问的模块列表，支持父子模块结构"""

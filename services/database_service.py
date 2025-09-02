@@ -6,7 +6,7 @@
 import sqlite3
 from contextlib import contextmanager
 from flask import g, current_app
-from db_manager import DatabaseManager
+from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
 import logging
 
 logger = logging.getLogger(__name__)
