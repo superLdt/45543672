@@ -79,6 +79,21 @@ class DBConnectionManager:
             except Exception:
                 # 忽略断开连接时的异常
                 pass
+                
+    def release_connection_by_key(self, thread_key: str) -> None:
+        """
+        根据连接键释放数据库连接
+        
+        Args:
+            thread_key: 连接键
+        """
+        if thread_key in self._connections:
+            try:
+                self._connections[thread_key].disconnect()
+                del self._connections[thread_key]
+            except Exception:
+                # 忽略断开连接时的异常
+                pass
     
     def release_all_connections(self) -> None:
         """释放所有数据库连接"""

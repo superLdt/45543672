@@ -274,7 +274,7 @@ class DatabaseManagerCompat:
             print(f'插入示例数据失败: {str(e)}')
             return False
     
-    def create_dispatch_task(self, task_data: Dict) -> Optional[int]:
+    def create_dispatch_task(self, task_data: Dict) -> Dict:
         """
         创建派车任务
         
@@ -282,14 +282,38 @@ class DatabaseManagerCompat:
             task_data: 任务数据字典
             
         返回:
-            Optional[int]: 创建的任务ID，失败返回None
+            Dict: 包含success和task_id的字典
         """
         try:
             # 使用新的数据管理器创建任务
             # 这里需要实现具体的创建逻辑
-            return 1  # 示例返回值
+            return {'success': True, 'task_id': 1}  # 示例返回值
         except Exception as e:
             print(f'创建派车任务失败: {str(e)}')
+            return {'success': False, 'error': str(e)}
+    
+    def get_dispatch_task_detail(self, task_id: str) -> Optional[Dict]:
+        """
+        获取派车任务详情
+        
+        参数:
+            task_id: 任务ID
+            
+        返回:
+            Optional[Dict]: 任务详情字典，失败返回None
+        """
+        try:
+            # 查询任务详情
+            query = "SELECT * FROM manual_dispatch_tasks WHERE task_id = ?"
+            result = self.execute_query(query, (task_id,))
+            
+            if result and len(result) > 0:
+                return result[0]  # 返回第一个匹配的任务
+            else:
+                return None
+                
+        except Exception as e:
+            print(f'获取任务详情失败: {str(e)}')
             return None
     
     # 实现其他原有方法...
@@ -311,6 +335,139 @@ class DatabaseManagerCompat:
             )
         except Exception as e:
             print(f'更新任务状态失败: {str(e)}')
+            return False
+
+    def get_vehicle_capacity_reference_paginated(self, vehicle_type: str = None, license_plate: str = None, 
+                                               page: int = 1, page_size: int = 10, offset: int = 0) -> Dict:
+        """
+        分页查询车辆容积参考数据
+        
+        参数:
+            vehicle_type: 车辆类型筛选条件
+            license_plate: 车牌号筛选条件
+            page: 页码，从1开始
+            page_size: 每页记录数
+            offset: 偏移量
+            
+        返回:
+            Dict: 包含总数和分页数据的字典
+        """
+        if not self._ensure_connection():
+            return {'success': False, 'error': '数据库连接失败', 'list': [], 'total': 0}
+        
+        try:
+            # 构建基础查询
+            base_query = "SELECT * FROM vehicle_capacity_reference WHERE 1=1"
+            count_query = "SELECT COUNT(*) FROM vehicle_capacity_reference WHERE 1=1"
+            
+            query_params = []
+            
+            # 处理筛选条件
+            if vehicle_type:
+                base_query += " AND vehicle_type LIKE ?"
+                count_query += " AND vehicle_type LIKE ?"
+                query_params.append(f"%{vehicle_type}%")
+            
+            if license_plate:
+                base_query += " AND license_plate LIKE ?"
+                count_query += " AND license_plate LIKE ?"
+                query_params.append(f"%{license_plate}%")
+            
+            # 获取总数
+            count_result = self.execute_query(count_query, tuple(query_params))
+            total = count_result[0]['COUNT(*)'] if count_result else 0
+            
+            # 构建分页查询
+            base_query += " ORDER BY updated_at DESC LIMIT ? OFFSET ?"
+            query_params.extend([page_size, offset])
+            
+            # 执行分页查询
+            data = self.execute_query(base_query, tuple(query_params))
+            
+            return {
+                'success': True,
+                'list': data,
+                'total': total,
+                'page': page,
+                'limit': page_size,
+                'totalPages': (total + page_size - 1) // page_size
+            }
+            
+        except Exception as e:
+            print(f'分页查询车辆容积参考数据失败: {str(e)}')
+            return {'success': False, 'error': str(e), 'list': [], 'total': 0}
+
+    def upsert_vehicle_capacity_reference(self, data: Dict) -> bool:
+        """
+        更新或插入车辆容积参考数据
+        
+        参数:
+            data: 车辆容积数据字典，必须包含license_plate字段
+            
+        返回:
+            bool: 操作是否成功
+        """
+        if not self._ensure_connection():
+            return False
+            
+        if 'license_plate' not in data:
+            print('缺少必要字段: license_plate')
+            return False
+            
+        try:
+            # 检查记录是否存在
+            check_query = "SELECT id FROM vehicle_capacity_reference WHERE license_plate = ?"
+            existing = self.execute_query(check_query, (data['license_plate'],))
+            
+            if existing:
+                # 更新操作
+                update_fields = []
+                update_params = []
+                
+                if 'vehicle_type' in data:
+                    update_fields.append("vehicle_type = ?")
+                    update_params.append(data['vehicle_type'])
+                
+                if 'standard_volume' in data:
+                    update_fields.append("standard_volume = ?")
+                    update_params.append(data['standard_volume'])
+                
+                if 'suppliers' in data:
+                    update_fields.append("suppliers = ?")
+                    update_params.append(json.dumps(data['suppliers']) if isinstance(data['suppliers'], (list, dict)) else data['suppliers'])
+                
+                update_fields.append("updated_at = datetime('now')")
+                
+                update_query = f"UPDATE vehicle_capacity_reference SET {', '.join(update_fields)} WHERE license_plate = ?"
+                update_params.append(data['license_plate'])
+                
+                return self.execute_update(update_query, tuple(update_params))
+            else:
+                # 插入操作
+                insert_fields = ['license_plate']
+                insert_placeholders = ['?']
+                insert_params = [data['license_plate']]
+                
+                if 'vehicle_type' in data:
+                    insert_fields.append('vehicle_type')
+                    insert_placeholders.append('?')
+                    insert_params.append(data['vehicle_type'])
+                
+                if 'standard_volume' in data:
+                    insert_fields.append('standard_volume')
+                    insert_placeholders.append('?')
+                    insert_params.append(data['standard_volume'])
+                
+                if 'suppliers' in data:
+                    insert_fields.append('suppliers')
+                    insert_placeholders.append('?')
+                    insert_params.append(json.dumps(data['suppliers']) if isinstance(data['suppliers'], (list, dict)) else data['suppliers'])
+                
+                insert_query = f"INSERT INTO vehicle_capacity_reference ({', '.join(insert_fields)}) VALUES ({', '.join(insert_placeholders)})"
+                return self.execute_update(insert_query, tuple(insert_params))
+                
+        except Exception as e:
+            print(f'更新或插入车辆容积参考数据失败: {str(e)}')
             return False
 
 

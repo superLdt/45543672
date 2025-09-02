@@ -9,14 +9,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from flask import Blueprint, session, redirect, url_for, request
 
-# 使用延迟导入避免循环依赖
-from flask import current_app
+# 使用新的DatabaseService替代直接数据库连接
+from services.database_service import DatabaseService
 
 def get_db():
-    if 'db' not in current_app.config:
-        from app import get_db as _get_db
-        return _get_db()
-    return current_app.config['db']
+    """获取数据库连接，使用新的DatabaseService架构"""
+    return DatabaseService.get_db()
 
 user_management_bp = Blueprint('user_management_bp', __name__, url_prefix='/user-management', template_folder='templates')
 

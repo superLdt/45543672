@@ -13,12 +13,14 @@ import jinja2
 from config import DATABASE
 # 使用db_manager统一管理数据库初始化
 from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
+# 导入错误处理模块
+from services.error_handler import init_error_handlers, APIError, ValidationError, PermissionError, NotFoundError
 
 # 应用初始化
 from flask_login import LoginManager, UserMixin, login_required, current_user,login_user,logout_user    
 
-# 导入公司API并设置数据库管理器
-from api.company import set_db_manager as set_company_db_manager
+# 导入公司API
+# from api.company import set_db_manager as set_company_db_manager  # 此函数不存在，已注释掉
 
 class User(UserMixin):
     def __init__(self, user_id, username, full_name, roles=None):
@@ -29,8 +31,12 @@ class User(UserMixin):
         # 支持单一角色访问
         self.role = roles[0] if roles and roles[0] else None
 from config import SECRET_KEY
+# 应用初始化
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
+# 初始化错误处理器
+init_error_handlers(app)
 
 # 初始化登录管理器
 login_manager = LoginManager()
@@ -58,7 +64,7 @@ app.logger.setLevel(logging.DEBUG)
 with app.app_context():
     DatabaseManager.init_database()
     # 设置公司API的数据库管理器
-    set_company_db_manager(DatabaseManager())
+    # set_company_db_manager(DatabaseManager())  # 此函数不存在，已注释掉
 
 
 # 数据库操作函数
@@ -85,6 +91,7 @@ def load_user(user_id):
 def get_db():
     db_manager = getattr(g, '_db_manager', None)
     if db_manager is None:
+        from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
         db_manager = g._db_manager = DatabaseManager()
         if not db_manager.connect():
             raise Exception('数据库连接失败')
@@ -313,6 +320,95 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """API登录接口，支持JSON格式登录"""
+    try:
+        # 检查是否为JSON请求
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 4001,
+                    'message': '请求格式必须是JSON'
+                }
+            }), 400
+        
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 4001,
+                    'message': '用户名和密码不能为空'
+                }
+            }), 400
+        
+        try:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute('SELECT id, password, full_name FROM User WHERE username = ? AND is_active = 1', (username,))
+            user = cursor.fetchone()
+            cursor.close()
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 5001,
+                    'message': f'数据库错误: {str(e)}'
+                }
+            }), 500
+        
+        if user and check_password_hash(user['password'], password):
+            # 获取用户角色（单一角色）
+            role = db.execute('''
+                SELECT r.name FROM Role r
+                JOIN UserRole ur ON r.id = ur.role_id
+                WHERE ur.user_id = ?
+            ''', (user['id'],)).fetchone()
+            user_role = role['name'] if role else None
+            
+            # 创建用户对象并添加角色信息
+            user_obj = User(user['id'], username, user['full_name'], [user_role])
+            # 使用Flask-Login进行登录
+            login_user(user_obj, remember=True)
+            # 同步设置session以兼容权限检查
+            session['user_id'] = user['id']
+            session['user_role'] = user_role
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'token': 'session_based',
+                    'user': {
+                        'id': user['id'],
+                        'username': username,
+                        'full_name': user['full_name'],
+                        'role': user_role
+                    }
+                }
+            })
+        
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 4003,
+                'message': '用户名或密码错误'
+            }
+        }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 5001,
+                'message': f'登录失败: {str(e)}'
+            }
+        }), 500
+
 @app.route('/debug/user')
 @login_required
 def debug_user():
@@ -372,7 +468,7 @@ def handle_template_not_found(e):
 def init_db():
     """统一的数据库初始化入口，使用DatabaseManager"""
     try:
-        from db_manager import DatabaseManager
+        from services.db_manager_compat import DatabaseManagerCompat as DatabaseManager
         db_manager = DatabaseManager()
         db_manager.create_tables()
         app.logger.info('数据库初始化完成')

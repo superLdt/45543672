@@ -62,7 +62,6 @@ class DBTableManager:
                     FOREIGN KEY (company_id) REFERENCES Company (id)
                 )
             """,
-
             "User": """
                 CREATE TABLE IF NOT EXISTS User (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,6 +73,44 @@ class DBTableManager:
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (company_id) REFERENCES Company (id)
+                )
+            """,
+            "manual_dispatch_tasks": """
+                CREATE TABLE IF NOT EXISTS manual_dispatch_tasks (
+                    task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    company_id INTEGER NOT NULL,
+                    vehicle_id INTEGER NOT NULL,
+                    driver_name TEXT NOT NULL,
+                    driver_phone TEXT NOT NULL,
+                    pickup_location TEXT NOT NULL,
+                    delivery_location TEXT NOT NULL,
+                    cargo_description TEXT,
+                    cargo_weight REAL,
+                    cargo_volume REAL,
+                    planned_departure_time DATETIME,
+                    planned_arrival_time DATETIME,
+                    actual_departure_time DATETIME,
+                    actual_arrival_time DATETIME,
+                    status TEXT DEFAULT 'pending',
+                    remarks TEXT,
+                    created_by INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (company_id) REFERENCES Company (id),
+                    FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
+                    FOREIGN KEY (created_by) REFERENCES User (id)
+                )
+            """,
+            "vehicle_capacity_reference": """
+                CREATE TABLE IF NOT EXISTS vehicle_capacity_reference (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_type TEXT NOT NULL,
+                    license_plate TEXT NOT NULL,
+                    max_weight REAL NOT NULL,
+                    max_volume REAL NOT NULL,
+                    description TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """
         }

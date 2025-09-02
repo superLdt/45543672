@@ -80,7 +80,7 @@ class DBDataManager:
             sql = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
             
             # 执行更新操作
-            result = db.execute_query(sql, values)
+            result = db.execute_update(sql, values)
             return result
         except DatabaseError as e:
             print(f"更新数据失败: {str(e)}")
@@ -107,7 +107,7 @@ class DBDataManager:
             sql = f"DELETE FROM {table_name} WHERE {where_clause}"
             
             # 执行删除操作
-            result = db.execute_query(sql, values)
+            result = db.execute_update(sql, values)
             return result
         except DatabaseError as e:
             print(f"删除数据失败: {str(e)}")
@@ -194,7 +194,14 @@ class DBDataManager:
             if self.database_type == "sqlite":
                 sql = f"PRAGMA table_info({table_name})"
                 result = db.execute_query(sql)
-                return [row[1] for row in result] if result else []
+                if result and len(result) > 0:
+                    # 处理字典格式的结果
+                    if isinstance(result[0], dict):
+                        return [row['name'] for row in result]
+                    else:
+                        # 处理元组格式的结果
+                        return [row[1] for row in result]
+                return []
             else:
                 # 对于其他数据库类型，返回空列表
                 return []
@@ -265,7 +272,7 @@ class DBDataManager:
         """
         try:
             db = connection_manager.get_connection(self.database_type)
-            return db.execute_query(sql, params)
+            return db.execute_update(sql, params)
         except DatabaseError as e:
             print(f"执行原始命令失败: {str(e)}")
             return 0
